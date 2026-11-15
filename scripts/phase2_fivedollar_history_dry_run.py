@@ -395,11 +395,16 @@ def validate_report(report: dict) -> None:
         raise ValueError("REPORT_SHA256_INVALID")
 
 
+def _community_api_key() -> str:
+    """Use the dedicated Community Access credential; never fall back to the Free key."""
+    return os.getenv("FIVEDOLLARFOOTBALL_COMMUNITY_API_KEY", "").strip()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", default="reports/phase2/fivedollar-history-dry-run.json")
     args = parser.parse_args()
-    report = run_probe(os.getenv("FIVEDOLLARFOOTBALL_API_KEY", ""))
+    report = run_probe(_community_api_key())
     validate_report(report)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)

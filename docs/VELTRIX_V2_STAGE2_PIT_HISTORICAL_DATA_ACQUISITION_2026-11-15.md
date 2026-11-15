@@ -186,3 +186,26 @@ The 5Dollar results endpoint still does not provide the exact first-publication 
 **BLOCKED — PLAN AND RIGHTS SCOPE**
 
 No subscription change, paid request, API call or database rights mutation was performed. The next implementation task is a dry-run-first, rate-budgeted 5Dollar odds-history collector with strict recorded_at parsing and staging-only persistence. The first live acquisition must remain blocked until both the account's Ultra entitlement and a separate odds_quote approval are confirmed.
+
+
+## 11. Community Access historical qualification key — 2026-11-15
+
+The user selected Brazil as the Community Access country pack. The previous setup record confirms that Community Access had not yet been connected and that the ordinary Free API key must remain unchanged.
+
+Community Access is a separate $0 plan. Official documentation states it adds one country pack, extends result/odds history from three to twelve months, and raises throughput to 300 requests/hour with a 20 requests/minute ceiling. It does not include full tick-by-tick odds history; that remains an Ultra/Education feature. It is suitable for the bounded one-year fixture/result qualification probe, not a replacement for the missing historical result publication timestamps or full odds-tick data.
+
+The dry-run workflow now reads only the dedicated GitHub Actions secret:
+- Secret name: FIVEDOLLARFOOTBALL_COMMUNITY_API_KEY
+- Existing Free secret FIVEDOLLARFOOTBALL_API_KEY is not overwritten or used by this workflow.
+- Country pack expected by the allowlist: Brazil (Brazil Serie A and Brazil Serie B) in addition to the top-five leagues.
+
+Manual blocker: activate Community Access on the provider account with Brazil selected, then add the Community credential as a repository Actions secret. The repository secret form is:
+https://github.com/Nexora-Apparel/veltrix-football/settings/secrets/actions/new
+
+Provider Community Access page:
+https://5dollarfootballapi.com/community
+
+Manual workflow:
+https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase2-historical-data-dry-run.yml
+
+The workflow performs a read-only 365-day, 40-request qualification probe and emits a sanitized artifact. It does not import to staging or certify historical PIT eligibility. The result data remains non-PIT for feature reconstruction unless the provider supplies source publication/revision timestamps. Do not execute the Phase 3 staging importer as a substitute for this qualification or as a way around PIT requirements.

@@ -564,3 +564,11 @@ def test_finished_fixture_availability_cannot_precede_kickoff():
             },
             available_at_utc=KICKOFF - timedelta(seconds=1),
         )
+
+
+def test_phase2_history_probe_uses_separate_community_secret_only(monkeypatch):
+    monkeypatch.setenv("FIVEDOLLARFOOTBALL_API_KEY", "free-key-must-not-be-used")
+    monkeypatch.setenv("FIVEDOLLARFOOTBALL_COMMUNITY_API_KEY", "community-key")
+    assert history_probe._community_api_key() == "community-key"
+    monkeypatch.delenv("FIVEDOLLARFOOTBALL_COMMUNITY_API_KEY")
+    assert history_probe._community_api_key() == ""

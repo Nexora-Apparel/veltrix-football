@@ -87,7 +87,7 @@ PROVIDER_REGISTRY: tuple[ProviderProfile, ...] = (
             (DataDomain.LINEUPS, CapabilityState.NOT_VERIFIED, "No qualified lineup contract."),
             (DataDomain.INJURIES, CapabilityState.NOT_VERIFIED, "No qualified injury contract."),
             (DataDomain.PLAYER_STATS, CapabilityState.NOT_VERIFIED, "No qualified player-stat contract."),
-        ), True, "Free tier; respect its accessible competitions and request limits."),
+        ), True, "Free key remains the default live source. Community Access is a separate credential/plan path (top five plus the selected Brazil pack, 12 months, 300 requests/hour); full tick history remains unavailable without Ultra or Education Access."),
     ProviderProfile("OpenFootball", "openfootball-cc0-archive", ProviderState.ARCHIVE_ONLY,
         _caps(
             (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Static, immutable source snapshots only; not a live fixture feed."),
