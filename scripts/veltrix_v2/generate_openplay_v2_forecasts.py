@@ -378,6 +378,8 @@ def generate(database_url: str, output_path: str | Path) -> dict:
                 prediction,detail=_build_prediction(target,model,training,model_sha,forecasted_at)
                 predictions.append(prediction);details.append(detail)
 
+    if not predictions and already_forecasted == 0:
+        raise RuntimeError("NO_ELIGIBLE_OPENPLAY_V2_PROSPECTIVE_FORECASTS")
     appended=[];duplicates=0
     if predictions:
         with psycopg.connect(database_url) as conn:
