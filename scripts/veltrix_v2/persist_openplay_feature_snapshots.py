@@ -88,7 +88,7 @@ def _load_targets(cur, cutoff_at: datetime) -> list[dict[str, Any]]:
         JOIN teams ht ON ht.id=f.home_team_id
         JOIN teams at ON at.id=f.away_team_id
         JOIN LATERAL (
-            SELECT x.crosswalk_version_id,x.canonical_entity_key
+            SELECT x.crosswalk_version_id,x.canonical_entity_key,x.recorded_at
             FROM entity_crosswalk_versions x
             WHERE x.provider='5DollarFootballAPI'
               AND x.source_id='5dollarfootballapi'
