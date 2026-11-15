@@ -2,7 +2,7 @@
 
 ## Source and scope
 
-The adapter parses OpenFootball Football.TXT files. The OpenFootball World repository identifies its football data as public domain/CC0 and includes Nigeria Premier Football League seasons. Each imported snapshot must be bound to an exact Git commit SHA and its commit timestamp; the parser does not infer availability from the file's human-readable retrieval comment.
+The adapter parses OpenFootball Football.TXT files. The OpenFootball repositories used by VELTRIX identify their football data as CC0-1.0. Each imported snapshot must be bound to an exact Git commit SHA, the commit timestamp, exact source-content hash and actual retrieval timestamp; the parser does not infer availability from the file's human-readable retrieval comment. The Stage 2 collector rechecks the repository SPDX licence metadata at runtime.
 
 ## Temporal precision
 
@@ -20,8 +20,8 @@ For date-only observations, model eligibility is conservatively delayed until 00
 
 ## Limitations
 
-- Date-only rows carry point-in-time-certified snapshot and import evidence and may inform future forecasts only after the conservative eligibility boundary.
-- They may be training observations in a walk-forward fold only after their snapshot/import times precede that fold's cutoff; they are never evaluation targets because exact kickoff times are absent.
+- Date-only rows may inform future forecast features only after both the source snapshot and actual import timestamps are at or before the forecast cutoff and the conservative eligibility boundary has passed.
+- They are never walk-forward evaluation targets because exact kickoff times are absent. The current model evaluator also requires recorded_at <= cutoff, so a snapshot imported today cannot be silently used for a historical cutoff before today's import. Retrospective archive-proof integration is a separate gate.
 - They cannot be backdated to their match dates or used for historical pre-match backtesting.
 - Team identity is source-scoped; cross-provider team mapping remains a separate, evidence-backed step.
 - Unscored fixtures are counted but never converted into results.
