@@ -67,6 +67,10 @@ on:
       - "scripts/veltrix_v2/build_verified_public_bundle.py"
       - ".github/workflows/report-certification-attestation.yml"
       - "requirements.txt"
+      - "db/migrations/0011_odds_quote_observations.sql"
+      - "veltrix_v2/providers/odds_api_v4/postgres_store.py"
+      - "tests/providers/odds_api_v4/test_postgres_store.py"
+      - "tests/providers/odds_api_v4/test_postgres_store_postgres.py"
       - ".github/workflows/phase5-shadow-regression.yml"
       - ".github/workflows/vercel-preview-runtime-publication-smoke.yml"
   workflow_dispatch:
