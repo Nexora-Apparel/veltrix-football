@@ -78,6 +78,7 @@ def test_collector_preserves_revisions_and_verifier_checks_snapshot_hashes(tmp_p
     assert any(row["source_timezone"] == "UNKNOWN" and row["kickoff_at"] is None for row in rows)
     assert any(row["home_goals"] == 2 for row in rows)
     assert any(row["home_goals"] == 3 for row in rows)
+    assert all(row["point_in_time_certifiable"] is False for row in rows)
     verified = verify_pack(tmp_path)
     assert verified["status"] == "PASS"
     assert verified["team_name_normalization_count"] >= 1
