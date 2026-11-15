@@ -171,3 +171,8 @@ Value betting remains LOCKED. Production deployment, prediction publication, Tel
 - OddsRelay historical terms: https://oddsrelay.io/products/historical-odds
 - OddsRelay terms: https://oddsrelay.io/terms
 - TheRundown historical odds: https://therundown.io/historical-odds-api
+
+
+## 7. Account entitlement read-back — 2026-11-15 23:31 WAT
+
+Read-only query of `provider_entitlement_observations` found exactly one 5Dollar account observation: `plan_code=community`, `entitlement_status=ACTIVE`, seven approved competition IDs, `checked_at=2026-11-12T22:51:54.745Z`, `quota_remaining=299`. No Ultra entitlement observation exists. The last verified plan is therefore Community, not Ultra. Because the observation is dated 12 November, it is not proof of the live account state on 15 November; however, it is sufficient to keep the Ultra-only history route blocked. No plan change, payment or history request was made. A fresh entitlement check must be performed using an authorized no-credit account-status mechanism or provider confirmation before any Ultra route is called.
