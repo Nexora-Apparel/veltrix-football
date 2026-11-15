@@ -162,7 +162,7 @@ def main() -> int:
         }
         evidence["evidence_sha256"] = canonical_sha256(evidence)
         output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+        output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(f"VELTRIX_5D_STATUS_PROBE: {exc}", file=sys.stderr)
         return 2
 
