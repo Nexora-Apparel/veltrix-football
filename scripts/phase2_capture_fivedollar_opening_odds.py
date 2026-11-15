@@ -119,8 +119,13 @@ def _load_targets(connection, *, lookback_days: int, limit: int, now: datetime) 
         cur.execute("""
             SELECT f.id,f.provider_fixture_id,f.competition_id,f.kickoff_at,
                    f.season_key,x.crosswalk_version_id,x.valid_from,x.valid_until,
-                   x.canonical_entity_key
+                   x.canonical_entity_key,ht.provider_team_id AS provider_home_team_id,
+                   at.provider_team_id AS provider_away_team_id,
+                   c.provider_competition_id
             FROM fixtures f
+            JOIN teams ht ON ht.id=f.home_team_id AND ht.provider=%s
+            JOIN teams at ON at.id=f.away_team_id AND at.provider=%s
+            JOIN competitions c ON c.id=f.competition_id AND c.provider=%s
             JOIN entity_crosswalk_versions x
               ON x.entity_type='FIXTURE' AND x.provider=f.provider
              AND x.source_id=%s AND x.provider_entity_id=f.provider_fixture_id
@@ -138,12 +143,38 @@ def _load_targets(connection, *, lookback_days: int, limit: int, now: datetime) 
             ORDER BY f.kickoff_at ASC,f.provider_fixture_id
             LIMIT %s
         """, (
-            SOURCE_ID, PROVIDER, now - timedelta(days=lookback_days), now,
+            PROVIDER, PROVIDER, PROVIDER, SOURCE_ID, PROVIDER,
+            now - timedelta(days=lookback_days), now,
             scope, now, now, PROVIDER, SOURCE_ID, limit,
         ))
         rows = cur.fetchall()
         names = [c.name for c in cur.description]
     return [dict(zip(names, row)) for row in rows]
+
+
+def _validate_fixture_identity(raw_body: bytes, target: dict) -> None:
+    try:
+        envelope = json.loads(raw_body)
+        data = envelope["data"]
+        home_id = data["teams"]["home"]["id"]
+        away_id = data["teams"]["away"]["id"]
+        competition_id = data["league"]["id"]
+        kickoff_raw = data["kickoff_utc"]
+        kickoff = datetime.fromisoformat(str(kickoff_raw).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise ValueError("FIVEDOLLAR_ODDS_FIXTURE_IDENTITY_FIELDS_MISSING") from exc
+    if not isinstance(data, dict) or str(data.get("id")) != str(target["provider_fixture_id"]):
+        raise ValueError("FIVEDOLLAR_ODDS_FIXTURE_ID_MISMATCH")
+    if str(home_id) != str(target["provider_home_team_id"]):
+        raise ValueError("FIVEDOLLAR_ODDS_HOME_TEAM_ID_MISMATCH")
+    if str(away_id) != str(target["provider_away_team_id"]):
+        raise ValueError("FIVEDOLLAR_ODDS_AWAY_TEAM_ID_MISMATCH")
+    if str(competition_id) != str(target["provider_competition_id"]):
+        raise ValueError("FIVEDOLLAR_ODDS_COMPETITION_ID_MISMATCH")
+    if kickoff.tzinfo is None or kickoff.utcoffset() is None:
+        raise ValueError("FIVEDOLLAR_ODDS_KICKOFF_TIMEZONE_UNTRUSTED")
+    if abs((kickoff.astimezone(timezone.utc) - target["kickoff_at"].astimezone(timezone.utc)).total_seconds()) > 60:
+        raise ValueError("FIVEDOLLAR_ODDS_KICKOFF_MISMATCH")
 
 
 def _request_fixture(api_key: str, fixture_id: str, *, last_started: float | None):
@@ -354,6 +385,7 @@ def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
             raw,headers,requested_at,retrieved_at,status,last_started = _request_fixture(
                 api_key,fixture_id,last_started=last_started
             )
+            _validate_fixture_identity(raw,target)
             parsed = parse_fixture_opening_1x2(
                 raw,expected_fixture_id=fixture_id,retrieved_at=retrieved_at,
                 kickoff_at=target["kickoff_at"],
