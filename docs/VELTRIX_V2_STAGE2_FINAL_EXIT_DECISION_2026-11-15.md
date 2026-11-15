@@ -15,7 +15,7 @@ This is a definitive no-go decision against the current evidence set, not a decl
 
 ## 2. Opening-odds evidence — reconciled
 
-The fixed 90-day, seven-competition universe contains 763 eligible 5Dollar fixtures. Manifests 109–116 are independently reconciled in the named staging database:
+The fixed 90-day, seven-competition universe contains 763 eligible 5Dollar fixtures. Manifests 109–119 are independently reconciled in the named staging database:
 
 | Manifest | Workflow run | Requests | HTTP responses | Opening observations | Distinct fixtures | PIT eligible |
 |---:|---:|---:|---:|---:|---:|---:|
@@ -32,11 +32,11 @@ The fixed 90-day, seven-competition universe contains 763 eligible 5Dollar fixtu
 | 119 | 43733924743 | 25 | 25 | 25 | 25 | 25 |
 | **Total** | | **275** | **275** | **275** | **275** | **275** |
 
-Independent aggregate read-back confirms 275/275 distinct provider fixture IDs map to canonical fixtures, are PIT eligible, preserve valid opening timestamp ordering, use Bet365 1X2, and have active RESOLVED fixture crosswalks. No duplicates or ineligible observations were found in these eight manifests.
+Independent aggregate read-back confirms 275/275 distinct provider fixture IDs map to canonical fixtures, are PIT eligible, preserve valid opening timestamp ordering, use Bet365 1X2, and have active RESOLVED fixture crosswalks. No duplicates or ineligible observations were found in these eleven manifests.
 
 **Coverage:** 275/763 = 36.04%. 488 fixtures remain without a captured opening quote. At least 748 timestamped quotes are required to reach 98% of this denominator, so at least 473 additional valid quotes are still required. The full acquisition target remains 488 additional quotes.
 
-All eight batches were capped at 25 fixture requests, used a fresh Community quota preflight, used no automatic retries, retained the provider's opening timestamp and were written only to staging. The latest completed batch is workflow #43733924743, artifact #14169571727, SHA-256 `0a186a816796490c3da46492ac06b01ed9997b7609c20d552a61bb47f54bf5bd`.
+All eleven batches were capped at 25 fixture requests, used a fresh Community quota preflight, used no automatic retries, retained the provider's opening timestamp and were written only to staging. The latest completed batch is workflow #43733924743, artifact #14169571727, SHA-256 `0a186a816796490c3da46492ac06b01ed9997b7609c20d552a61bb47f54bf5bd`.
 
 ## 3. Second-batch persistence discrepancy — resolved
 
@@ -70,8 +70,8 @@ Formal source decision: **BLOCKED — ENTITLEMENT NOT VERIFIED**. The detailed e
 | OpenFootball / FootballData archive verification | PASS as artifacts only | Verified, but retrospective/non-PIT |
 | OpenPlay staging feature bundle | PASS as staging sidecar | Verified derived bundle; identity coverage remains partial |
 | 5Dollar fixture crosswalk | PASS | 763/763 exact active RESOLVED mappings |
-| 5Dollar opening-odds persistence | PASS | 200/200 independently read back |
-| Opening-odds coverage | FAIL / INCOMPLETE | 26.21%; 548 more to reach 98%; 563 to complete universe |
+| 5Dollar opening-odds persistence | PASS | 275/275 independently read back |
+| Opening-odds coverage | FAIL / INCOMPLETE | 36.04%; 473 more to reach 98%; 488 to complete universe |
 | Historical/closing odds entitlement | BLOCKED | 5Dollar Ultra not evidenced; Odds API paid historical access unverified |
 | CLV / closing-line benchmark | NOT MET | Zero timestamped closing or historical snapshots |
 | Walk-forward and prospective certification | NOT MET | Sample, settlement, date, odds-coverage and benchmark thresholds unmet |
