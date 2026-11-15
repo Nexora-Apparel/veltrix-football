@@ -192,7 +192,7 @@ def parse_archive(
     return OpenFootballArchive(
         competition_id=competition_id, season_title=season_title,
         source_path=source_path, snapshot_commit_sha=snapshot_commit_sha.lower(),
-        snapshot_available_at=imported_at, imported_at=imported_at,
+        snapshot_available_at=snapshot_available_at, imported_at=imported_at,
         content_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
         fixture_line_count=fixture_lines, result_count=result_count,
         rejected_result_count=rejected, not_yet_eligible_count=not_yet_eligible,
