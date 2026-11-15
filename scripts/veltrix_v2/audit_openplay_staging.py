@@ -80,17 +80,20 @@ def audit(database_url: str, input_dir: str | Path) -> dict:
                                           AND recorded_at>=source_published_at
                                           AND rights_approval_id=%s
                                           AND provider_response_id IS NOT NULL),
+                       count(*) FILTER (WHERE payload->>'timestamp_guarantee_evidence_id'=%s
+                                          AND payload->>'timestamp_guarantee_evidence_sha256'=%s
+                                          AND payload->>'temporal_use_scope'='only for cutoffs at or after actual VELTRIX recorded_at'),
                        min(source_published_at),max(source_published_at)
                 FROM source_observations
                 WHERE provider=%s AND source_id=%s
                   AND entity_type='match_result_snapshot'
                   AND endpoint='release-assets/data-v0.1.0/matches.parquet'
-            """, (APPROVAL_ID,PROVIDER,SOURCE_ID))
-            snapshot_rows,unique_snapshots,pit_snapshots,documented_snapshots,valid_chronology,first_saved,last_saved = cur.fetchone()
+            """, (APPROVAL_ID,TIMESTAMP_EVIDENCE_ID,TIMESTAMP_DICTIONARY_SHA256,PROVIDER,SOURCE_ID))
+            snapshot_rows,unique_snapshots,pit_snapshots,documented_snapshots,valid_chronology,timestamp_evidence_rows,first_saved,last_saved = cur.fetchone()
             expected_matches = PARQUET_ROWS["matches.parquet"]
             if not (
                 snapshot_rows == unique_snapshots == pit_snapshots
-                == documented_snapshots == valid_chronology == expected_matches
+                == documented_snapshots == valid_chronology == timestamp_evidence_rows == expected_matches
                 and first_saved is not None and last_saved is not None
             ):
                 raise RuntimeError("OPENPLAY_MATCH_SNAPSHOT_READBACK_MISMATCH")
@@ -137,7 +140,9 @@ def audit(database_url: str, input_dir: str | Path) -> dict:
         "parquet_tables":len(PARQUET_ROWS),
         "parquet_rows":sum(PARQUET_ROWS.values()),
         "manifest_sha256":expected_manifest_hash,
-        "point_in_time_certifiable":False,
+        "dataset_asset_metadata_point_in_time_certifiable":False,
+        "match_page_snapshots_point_in_time_certifiable":True,
+        "historical_cutoffs_before_import_eligible":False,
         "commercial_use_allowed":False,
     }
 
