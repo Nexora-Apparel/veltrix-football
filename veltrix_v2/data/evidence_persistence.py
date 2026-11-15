@@ -182,7 +182,7 @@ def persist_fixture_snapshot_response(
     )
     for purpose in (DataUsePurpose.STORAGE, DataUsePurpose.CACHE):
         decision = evaluate_source_use(
-            rights_approval, purpose, at_utc=recorded_at, commercial=True
+            rights_approval, purpose, at_utc=recorded_at, commercial=False
         )
         if not decision.allowed:
             raise PermissionError(decision.reason_code)
