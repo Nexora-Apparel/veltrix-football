@@ -288,10 +288,10 @@ def _persist_capture(connection, *, manifest_id: int, target: dict, raw: bytes,
 
 def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
             output_dir: str | Path) -> dict:
-    if not api_key:
-        raise RuntimeError("FIVEDOLLAR_API_KEY_REQUIRED")
     if not 1 <= lookback_days <= 90 or not 1 <= max_fixtures <= MAX_FIXTURES:
         raise ValueError("OPENING_ODDS_CAPTURE_BOUNDS_INVALID")
+    if not api_key:
+        raise RuntimeError("FIVEDOLLAR_API_KEY_REQUIRED")
     validate_staging_dsn_target(dsn)
     import psycopg
 
