@@ -60,6 +60,10 @@ def iter_openplay_feature_bundle(
         raise ValueError("OPENPLAY_BUNDLE_RIGHTS_POLICY_MISMATCH")
     if manifest.get("rights_approval_id") != OPENPLAY_APPROVAL_ID:
         raise ValueError("OPENPLAY_BUNDLE_APPROVAL_ID_MISMATCH")
+    if (manifest.get("raw_redistribution_allowed") is not False
+        or manifest.get("database_writes") != 0
+        or manifest.get("timestamp_evidence_sha256") != "24a1037a948afa1759e3bc2babeb8b17b9e1e2dc3c8a8beea2e18f9b5b671279"):
+        raise ValueError("OPENPLAY_BUNDLE_MANIFEST_PROVENANCE_MISMATCH")
     rows_name = manifest.get("feature_rows_file")
     if not isinstance(rows_name, str) or not rows_name or Path(rows_name).name != rows_name:
         raise ValueError("OPENPLAY_BUNDLE_ROWS_FILE_INVALID")
@@ -89,6 +93,34 @@ def iter_openplay_feature_bundle(
                 raise ValueError("OPENPLAY_BUNDLE_ROW_NOT_PIT_CERTIFIABLE")
             if row.get("source_timestamp_basis") != "documented_guarantee":
                 raise ValueError("OPENPLAY_BUNDLE_ROW_TIMESTAMP_BASIS_INVALID")
+            if row.get("monetisation_prohibited") is not True:
+                raise ValueError("OPENPLAY_BUNDLE_ROW_MONETISATION_POLICY_MISMATCH")
+            assets = row.get("asset_provenance") or {}
+            required_assets = {
+                "matches.parquet", "team_match_stats.parquet", "player_match_stats.parquet",
+                "lineups.parquet", "shots.parquet", "cards.parquet", "formations.parquet",
+                "teams.parquet", "competitions.parquet",
+            }
+            if not required_assets.issubset(assets):
+                raise ValueError("OPENPLAY_BUNDLE_ROW_ASSET_PROVENANCE_INCOMPLETE")
+            if assets["matches.parquet"].get("provider_response_id") != row.get("provider_response_id"):
+                raise ValueError("OPENPLAY_BUNDLE_ROW_MATCH_RESPONSE_MISMATCH")
+            crosswalks = row.get("crosswalk_provenance") or {}
+            if (set(crosswalks) != {"team", "opponent", "competition"}
+                or crosswalks["team"].get("provider_entity_id") != row.get("provider_team_id")
+                or crosswalks["team"].get("canonical_entity_id") != row.get("canonical_team_id")
+                or crosswalks["opponent"].get("provider_entity_id") != row.get("provider_opponent_id")
+                or crosswalks["opponent"].get("canonical_entity_id") != row.get("canonical_opponent_id")
+                or crosswalks["competition"].get("provider_entity_id") != row.get("competition_code")
+                or crosswalks["competition"].get("canonical_entity_id") != row.get("canonical_competition_id")
+                or crosswalks["team"].get("evidence_observation_id") != assets["teams.parquet"].get("source_observation_id")
+                or crosswalks["opponent"].get("evidence_observation_id") != assets["teams.parquet"].get("source_observation_id")
+                or crosswalks["competition"].get("evidence_observation_id") != assets["competitions.parquet"].get("source_observation_id")):
+                raise ValueError("OPENPLAY_BUNDLE_ROW_CROSSWALK_PROVENANCE_MISMATCH")
+            approval = row.get("approval_provenance") or {}
+            if (approval.get("status") != "APPROVED"
+                or approval.get("evidence_sha256") != "5e6bd00416f180109751e422521d76910da8b491c62507c4d9836e6700c38c46"):
+                raise ValueError("OPENPLAY_BUNDLE_ROW_APPROVAL_PROVENANCE_MISMATCH")
             count += 1
             yield row
     if count != manifest.get("feature_count"):
@@ -127,6 +159,28 @@ def eligible_openplay_features_as_of(
             or not row.get("provider_response_id")):
             continue
         if cutoff <= _aware_utc(row.get("eligibility_at"), "ELIGIBILITY_AT"):
+            continue
+        assets = row.get("asset_provenance") or {}
+        required_assets = {
+            "matches.parquet", "team_match_stats.parquet", "player_match_stats.parquet",
+            "lineups.parquet", "shots.parquet", "cards.parquet", "formations.parquet",
+            "teams.parquet", "competitions.parquet",
+        }
+        if not required_assets.issubset(assets):
+            continue
+        if assets["matches.parquet"].get("provider_response_id") != row.get("provider_response_id"):
+            continue
+        crosswalks = row.get("crosswalk_provenance") or {}
+        if (set(crosswalks) != {"team", "opponent", "competition"}
+            or crosswalks["team"].get("provider_entity_id") != row.get("provider_team_id")
+            or crosswalks["team"].get("canonical_entity_id") != row.get("canonical_team_id")
+            or crosswalks["opponent"].get("provider_entity_id") != row.get("provider_opponent_id")
+            or crosswalks["opponent"].get("canonical_entity_id") != row.get("canonical_opponent_id")
+            or crosswalks["competition"].get("provider_entity_id") != row.get("competition_code")
+            or crosswalks["competition"].get("canonical_entity_id") != row.get("canonical_competition_id")
+            or crosswalks["team"].get("evidence_observation_id") != assets["teams.parquet"].get("source_observation_id")
+            or crosswalks["opponent"].get("evidence_observation_id") != assets["teams.parquet"].get("source_observation_id")
+            or crosswalks["competition"].get("evidence_observation_id") != assets["competitions.parquet"].get("source_observation_id")):
             continue
         # Recheck component clocks rather than trusting a single derived field.
         for field in ("source_published_at", "available_at", "recorded_at"):
