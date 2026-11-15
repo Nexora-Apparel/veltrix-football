@@ -171,3 +171,15 @@ Required tests:
 ## 10. Explicit non-authorization
 
 This design does not authorize live or test provider requests, API-key loading, credit reservation against a real account, historical odds purchase, automatic scheduling, model training, prediction publication, Telegram activation or value-bet unlock. All remain disabled.
+
+
+## Personal-use quota policy correction — 2026-11-15
+
+This design is subordinate to the VELTRIX personal-use policy. It must not turn commercial billing evidence into a model-development or publication prerequisite.
+
+- The durable monthly/account-period reservation ledger is an optional accounting implementation for provider accounts where an authoritative billing period and allowance are actually exposed and useful. It must not be treated as the universal provider activation gate.
+- For personal-use research where the provider exposes current remaining quota but does not expose a reliable billing period or monthly allowance, the request may use the independent account activation gate plus a strict local per-run cap and request-count cap. No monthly allowance or billing period may be fabricated.
+- The one-event UK market probe uses a single immutable per-run guard: one credit-consuming request, maximum estimated cost 3 credits, no retries, fresh no-credit quota observation, approved competition/market/region rights and staging-only persistence. It does not require a monthly budget snapshot or billing-period record.
+- Provider terms, actual endpoint entitlement, current observable quota, raw-response evidence and accurate post-request quota reconciliation remain mandatory. If quota is unknown or insufficient, defer only that Odds API request and continue independent 5DollarFootballAPI capture and model evaluation.
+- The ledger's existing billing_period_start, billing_period_end and monthly-cap fields describe the optional period-accounting mode; they are not model-quality fields. Do not route the one-event probe through the legacy period-bound reservation adapter unless its schema and adapter are explicitly revised to support a no-period quota snapshot.
+- Model-quality gates and publication-integrity gates remain separate and must never depend on invoices, commercial subscription evidence or monetisation plans.
