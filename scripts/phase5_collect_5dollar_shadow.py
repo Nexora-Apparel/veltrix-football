@@ -910,7 +910,7 @@ def run_capture(
         "persisted_shadow_ledger_events": int(staging_ledger.get("events_appended", 0)) if staging_ledger else 0,
         "new_shadow_predictions_persisted": int(staging_ledger.get("events_appended", 0)) if staging_ledger else 0,
         "paper_ledger_chain_verified": bool(staging_ledger and staging_ledger.get("chain_verified") is True),
-        "paper_ledger_post_commit_verified": bool(staging_ledger and staging_ledger.get("post_commit_verified") is True),\n        "paper_ledger_post_commit_verified": bool(staging_ledger and staging_ledger.get("post_commit_verified") is True),
+        "paper_ledger_post_commit_verified": bool(staging_ledger and staging_ledger.get("post_commit_verified") is True),
         "duplicate_predictions_skipped": int(staging_ledger.get("duplicate_predictions_skipped", 0)) if staging_ledger else 0,
         "rejected_admissions": [
             {"fixture_id": item.fixture_id, "reason_code": item.reason_code}
@@ -1008,6 +1008,10 @@ def main() -> int:
         "captured_first_observed_rows": result["captured_first_observed_rows"],
         "mapped_upcoming_targets": result["mapped_upcoming_targets"],
         "admitted_shadow_predictions": result["admitted_shadow_predictions"],
+        "persisted_shadow_ledger_events": result["persisted_shadow_ledger_events"],
+        "duplicate_predictions_skipped": result["duplicate_predictions_skipped"],
+        "paper_ledger_chain_verified": result["paper_ledger_chain_verified"],
+        "paper_ledger_post_commit_verified": result["paper_ledger_post_commit_verified"],
         "publication_status": result["publication_status"],
         "settlement_status": result["settlement_status"],
     }, indent=2))
