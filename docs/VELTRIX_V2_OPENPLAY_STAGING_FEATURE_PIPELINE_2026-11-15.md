@@ -126,3 +126,25 @@ changes.
 - The builder performs zero Neon writes.
 - No production database changes, PR merge, Vercel deployment, schedule
   activation, Telegram delivery, prediction publication or value-bet unlock.
+
+## Final staging execution and independent artifact verification — 2026-11-15
+
+Workflow [#43723395022](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43723395022) completed successfully on builder commit `1f56456f893717e26375ab99f999b8e66b533306`. The subsequent test-only commit `cdad8632c0d77afb831744bb0c6a880284ffa98f` is the current PR head; its Phase 2 foundation, PostgreSQL 16/18, Phase 5 shadow regression, historical audit and certification-integrity checks all passed.
+
+The workflow completed all 13 execution stages: qualification, download, isolated Neon staging import, independent read-back, timestamp inheritance audit, conservative identity crosswalk construction, crosswalk persistence, feature-bundle build and non-raw artifact upload.
+
+Final bundle evidence:
+- 20,178 JSONL feature rows.
+- JSONL SHA-256: `9ed328dd7c9ae235c47252e32bde0bb06d2a030ec38d151eeda7de264408bdc1`.
+- Artifact SHA-256 digest: `5e101a56f8f68b9b6bc6f9982bc3e282aa76e5f2c96a6b4fd91c31d412a2e3cc`.
+- Manifest status: `PASS_STAGING_FEATURE_BUNDLE`.
+- 89 resolved team mappings and 5 resolved competition mappings.
+- 46 matches excluded for known gaps/data issues; 16,389 excluded for unresolved mappings.
+- 646 duplicate rows quarantined across the audited feature tables.
+- Zero Neon writes during feature-bundle generation.
+
+The downloaded artifact was independently opened and checked. Its JSONL line count equals the manifest feature count; recomputed JSONL SHA-256 matches the manifest; all 20,178 rows omit the invalid `team.possession_pct` field and carry the explicit `SOURCE_VALUES_VIOLATE_DOCUMENTED_PERCENTAGE_RANGE` exclusion marker.
+
+The feature bundle is prospective-only relative to actual VELTRIX recording and crosswalk/approval validity times. It cannot be backdated into pre-import walk-forward folds. OpenPlay remains an evaluation sidecar; no baseline probability logic was modified and no model-training claim is made.
+
+**Gate result:** OpenPlay row-level staging feature extraction is ACCEPTED. Stage 2 remains OPEN for the separate historical-source, cross-provider identity, odds-entitlement/coverage and model-evaluation gates.
