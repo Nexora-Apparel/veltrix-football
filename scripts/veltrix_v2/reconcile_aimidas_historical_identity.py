@@ -155,7 +155,7 @@ def read_canonical_registry(database_url: str) -> tuple[list[dict], dict]:
     if parse_qs(parsed.query).get("sslmode", [""])[0].casefold() not in {"require", "verify-ca", "verify-full"}:
         raise RuntimeError("AIMIDAS_RECONCILIATION_TLS_REQUIRED")
     import psycopg
-    with psycopg.connect(database_url, autocommit=True) as conn:
+    with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
             cur.execute("SET TRANSACTION READ ONLY")
             cur.execute("SELECT current_database(), current_user, current_setting('transaction_read_only')")
