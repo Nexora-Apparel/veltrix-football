@@ -10,6 +10,7 @@ on:
       - 'scripts/veltrix_v2/audit_openplay_staging.py'
       - 'scripts/veltrix_v2/build_openplay_identity_crosswalk_candidates.py'
       - 'scripts/veltrix_v2/apply_openplay_exact_identity_crosswalk.py'
+      - 'tests/veltrix_v2/test_openplay_identity_crosswalk_candidates.py'
       - 'tests/veltrix_v2/test_openplay_exact_crosswalk_apply.py'
       - 'tests/veltrix_v2/test_openplay_staging_import.py'
       - 'docs/legal/openplay-whoscored-opta-authorization-2026-11-15.md'
