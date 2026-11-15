@@ -153,6 +153,7 @@ def eligible_openplay_features_as_of(
             continue
         if (row.get("point_in_time_certifiable") is not True
             or row.get("commercial_use_allowed") is not False
+            or row.get("monetisation_prohibited") is not True
             or row.get("rights_approval_id") != OPENPLAY_APPROVAL_ID
             or row.get("source_timestamp_basis") != "documented_guarantee"
             or not row.get("source_observation_id")
@@ -168,9 +169,21 @@ def eligible_openplay_features_as_of(
         }
         if not required_assets.issubset(assets):
             continue
+        if any(
+            not asset.get("provider_response_id")
+            or not asset.get("source_observation_id")
+            or not isinstance(asset.get("sha256"), str)
+            or len(asset.get("sha256")) != 64
+            for asset in (assets[name] for name in required_assets)
+        ):
+            continue
         if assets["matches.parquet"].get("provider_response_id") != row.get("provider_response_id"):
             continue
         crosswalks = row.get("crosswalk_provenance") or {}
+        approval = row.get("approval_provenance") or {}
+        if (approval.get("status") != "APPROVED"
+            or approval.get("evidence_sha256") != "5e6bd00416f180109751e422521d76910da8b491c62507c4d9836e6700c38c46"):
+            continue
         if (set(crosswalks) != {"team", "opponent", "competition"}
             or crosswalks["team"].get("provider_entity_id") != row.get("provider_team_id")
             or crosswalks["team"].get("canonical_entity_id") != row.get("canonical_team_id")
