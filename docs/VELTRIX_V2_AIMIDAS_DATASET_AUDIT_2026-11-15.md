@@ -173,7 +173,12 @@ This is a verified identity crosswalk result, not a PIT admission. Keep the sour
 ### Remaining bounded actions
 
 1. COMPLETE — staging-only importer and independent read-after-commit verifier; workflow #43753939202 passed and 14/14 raw file observations were read back.
-2. Obtain reviewer-backed evidence before marking the 369 Brazil Série B fixture mappings RESOLVED in `entity_crosswalk_versions`; no fixture crosswalk was inserted by this file-level import.
+2. COMPLETE — read-only historical identity audit for the six 2016–2025 archives: 19,605/19,605 rows inspected, zero exact/conflicting duplicate groups, zero canonical fixture candidates because the canonical fixture registry begins after the archive date range. No crosswalks or normalized rows were written. See `docs/VELTRIX_V2_AIMIDAS_HISTORICAL_IDENTITY_RECONCILIATION_2026-11-15.md`.
 3. Keep the 2016–2025 Brazil Série B historical gap explicit; do not silently substitute Brazil Série A or Italy Série B.
 4. Keep average odds separate from bookmaker quote observations and continue searching for timestamped closing odds.
 5. Admit only leakage-safe features for future cutoffs after the actual Veltrix import timestamp; keep retrospective walk-forward certification blocked.
+
+
+### Historical archive identity reconciliation — 2026-11-15
+
+The six pinned historical archives were reconciled in a separate read-only workflow. All 19,605 source rows received stable file/line/row-fingerprint identities with raw season and date values preserved. Exact and conflicting duplicate groups: 0. The current canonical fixture registry contains 2,496 fixtures but starts in November 2025, after the historical archive end dates (May 2025); therefore no canonical fixture candidates were found. 6,495 rows have both exact-normalized teams represented but no matching canonical fixture; 13,110 rows have at least one team absent from the current canonical registry. No `RESOLVED` mappings, fixture rows or result rows were created. The workflow passed (19 focused tests) and uploaded only a sanitized aggregate summary. Full audit: `docs/VELTRIX_V2_AIMIDAS_HISTORICAL_IDENTITY_RECONCILIATION_2026-11-15.md`.
