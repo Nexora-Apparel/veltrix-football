@@ -15,6 +15,7 @@ from veltrix_v2.models.poisson import (
     InsufficientHistoryError,
     MatchObservation,
     observation_eligible_as_of,
+    observation_is_valid,
     observation_weight_as_of,
     predict_match,
 )
@@ -224,12 +225,7 @@ def walk_forward_evaluate(
             continue
         # A target result cannot become available before kickoff or be recorded
         # before its availability timestamp. Reject impossible source chronology.
-        if (target.available_at < target.kickoff_at
-                or target.recorded_at < target.available_at
-                or not observation_eligible_as_of(
-                    target, cutoff_at=evaluation_as_of,
-                    competition_id=target.competition_id,
-                )):
+        if not observation_is_valid(target):
             skipped_invalid += 1
             continue
         if (not isinstance(target.home_goals, int) or isinstance(target.home_goals, bool)

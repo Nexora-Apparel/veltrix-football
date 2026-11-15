@@ -108,6 +108,15 @@ def _valid_observation(match: MatchObservation) -> bool:
     return True
 
 
+def observation_is_valid(match: MatchObservation) -> bool:
+    """Validate a result observation without requiring historical PIT eligibility.
+
+    Walk-forward targets may be scored as outcome labels when their result
+    chronology and provenance are valid, even if they are not admissible as
+    historical training observations.
+    """
+    return _valid_observation(match)
+
 
 def observation_eligible_as_of(match: MatchObservation, *, cutoff_at: datetime,
                                competition_id: str | None = None) -> bool:
