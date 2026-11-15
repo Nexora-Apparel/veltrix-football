@@ -17,7 +17,7 @@ import tempfile
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Mapping
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -604,6 +604,8 @@ def build_from_staging(database_url: str, output_dir: str | Path) -> dict[str, A
     parsed = urlparse(database_url)
     if (parsed.hostname or "").casefold() != EXPECTED_HOST:
         raise RuntimeError("OPENPLAY_FEATURE_STAGING_HOST_MISMATCH")
+    if parse_qs(parsed.query).get("sslmode", [""])[0].casefold() not in {"require", "verify-ca", "verify-full"}:
+        raise RuntimeError("OPENPLAY_FEATURE_STAGING_TLS_REQUIRED")
     import psycopg
 
     now = datetime.now(timezone.utc)
@@ -613,6 +615,7 @@ def build_from_staging(database_url: str, output_dir: str | Path) -> dict[str, A
         root = Path(temp)
         with psycopg.connect(database_url) as conn:
             with conn.cursor() as cur:
+                cur.execute("SET TRANSACTION READ ONLY")
                 cur.execute("SELECT current_database(),current_user")
                 database, role = cur.fetchone()
                 if database != EXPECTED_DATABASE or role != "neondb_owner":
