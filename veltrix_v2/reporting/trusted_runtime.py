@@ -79,7 +79,11 @@ def _validate_https_url(url: str, hosts: frozenset[str]) -> str:
         or not parsed.path.startswith("/")
         or (
             host == RAW_HOST
-            and not parsed.path.startswith(f"/{REPOSITORY}/main/")
+            and (
+                not parsed.path.startswith(f"/{REPOSITORY}/main/")
+                or "%" in parsed.path
+                or any(part in {".", ".."} for part in parsed.path.split("/"))
+            )
         )
     ):
         raise DeploymentVerificationError("EVIDENCE_URL_NOT_ALLOWLISTED")
