@@ -637,3 +637,48 @@ At the time of this ledger:
 6. **Certification:** calculate each market independently against the unchanged thresholds. Do not unlock value betting or release on partial evidence.
 
 **Controls unchanged:** no production writes; no PR merge; no paid provider upgrade; no public prediction publication; no Telegram sends; no schedule activation; value betting locked.
+
+## New-chat continuation checkpoint — 2026-11-15
+
+This is the authoritative handoff for the next VELTRIX FOOTBALL 2.0 session. Preserve prior ledger history; do not restart completed work.
+
+### Repository state at handoff
+- PR #120: open, draft, unmerged.
+- Branch: `integration/v2-report-bundle-wiring-20261114`.
+- Latest PR head at checkpoint: `c34057da78f7ce9e0b59db2a1f794a209171d120`.
+- Current ledger file SHA before this checkpoint append: `81fe3091df7ba406df7bc1c29f57abe9be0aeeda`.
+- Re-fetch PR #120 and the ledger before further edits; GitHub PR metadata, PR body text and older checkpoint summaries can contain stale head/CI information.
+- The previous checkpoint's statement that the latest workflow batch on `c34057d` passed is not verified by a fresh exact-head workflow result in this session. Do not claim exact-head CI success unless freshly checked.
+
+### Latest read-only operational staging audit
+- Target: Neon project `withered-sky-75161174`, branch `br-silent-violet-bc5de88s`, database `veltrix_football_staging`.
+- Last persisted 5Dollar entitlement observation: `Community / ACTIVE`, checked `2026-11-12T22:51:54.745Z`; no Ultra observation exists. This does not establish current 15-Nov entitlement.
+- 788 provider-timestamped 5Dollar Bet365 1X2 opening observations are retained and PIT-marked as opening quotes only. They are not closing-price/tick-history evidence.
+- 25 additional latest-pre-match observations have unknown source timestamp basis and remain non-PIT, excluded from selection and CLV.
+- Dedicated `odds_quote_observations` table has zero rows.
+- 0 V2 `feature_snapshots`, 0 feature links and 0 eligibility events.
+- Canonical fixture table inspected in the staging target had 2,496 finished fixtures and no upcoming fixture rows.
+- Paper ledger contains 25 legacy `veltrix-results-poisson-v1` shadow predictions across 25 fixtures/four WAT dates; all non-PIT. 0 eligible settlements.
+- 26,547 OpenPlay `match_result_snapshot` observations have historical page-save availability evidence, but are not prebuilt features. Feature admission must independently prove each observation was available before the forecast cutoff.
+- These checks were read-only. No provider request, quota spend, odds/fixture/feature/ledger write, settlement, forecast generation or production write occurred.
+
+### Six requested workstreams — exact status
+1. **Historical bookmaker closing-odds qualification:** provider comparison is documented; no historical bookmaker-specific closing archive has yet been qualified and acquired. 5Dollar Ultra remains preferred if currently entitled; alternatives remain subject to competition coverage, timestamp and rights proof.
+2. **5Dollar Ultra entitlement:** blocked on a fresh authenticated `GET /v1/status`. The API key is in protected GitHub Actions secrets. The connected GitHub tools expose no workflow-dispatch action; do not expose or copy secrets and do not upgrade/pay.
+3. **Prospective timestamped odds:** historical opening observations exist; no new prospective quote was captured during this session. Keep provider source timestamp, retrieval timestamp, prediction cutoff and final close as separate fields. Never call an opening quote a close.
+4. **New eligible V2 prospective forecasts:** none generated. First reconcile upcoming fixtures, construct source-availability-validated feature snapshots and links, record eligibility, then generate from the new V2 model build. Do not reuse or relabel legacy Poisson shadow events.
+5. **Settlement:** 0 eligible settlements. The manual staging-only settlement runner exists on the integration branch; it must only settle verified FINISHED fixtures with exact identity, score/result evidence, response/manifest hashes, rights checks, hash-chain verification and fresh-connection post-commit confirmation. The old future targets must not be prematurely settled.
+6. **Market certification:** all markets NOT_CERTIFIED. Keep the agreed per-market thresholds unchanged: 1,000 chronological walk-forward fixtures; 300 prospective settled selections; 90 distinct Africa/Lagos kickoff dates; at least 98% timestamped odds coverage over the predeclared eligible universe; net ROI > 0 with date-clustered 95% lower bound > 0; and for 1X2, Brier and log loss both better than the aligned de-vigged bookmaker benchmark.
+
+### Immediate next-session execution order
+1. Re-fetch PR #120 head, branch comparison, latest workflow runs/checks and exact ledger state. Resolve any stale checkpoint/head mismatch before branch work.
+2. Inspect the current 5Dollar capture, status-probe, odds and settlement workflow files plus their CLI/test entrypoints. Confirm which workflow exists on the default branch versus only the integration branch.
+3. Use a controlled GitHub Actions runner with protected secrets to run the no-credit authenticated `/v1/status` preflight and persist raw response, timestamp, response hash and quota headers. If dispatch remains unavailable, log the precise manual runner action required; do not merge solely to expose a workflow.
+4. If and only if current entitlement proves Ultra, perform the bounded historical tick-history capture with exact response retention, timestamps, fixture crosswalk, rights and quota checks. Otherwise keep the endpoint blocked and continue alternative provider qualification without paid upgrade.
+5. Reconcile upcoming fixtures into canonical IDs and create PIT features only from source observations whose availability is strictly before each forecast cutoff. Build and test the new V2 forecast-admission pipeline; append prospective forecasts only after all gates pass.
+6. Continue prospective odds capture and settle only after actual FINISHED status. Verify every append from a fresh database connection.
+7. Calculate market scorecards only from admitted V2 forecasts, eligible timestamped odds and verified settlements. Do not infer certification from raw row counts or opening prices.
+8. Append every meaningful code, CI, provider, database and blocker change to this ledger. No unrecorded project progress.
+
+### Non-negotiable controls
+No paid upgrade, PR merge, production write/deploy, public prediction publication, Telegram delivery, schedule activation or value-bet unlock without explicit authorization. Keep the 389 accepted AI Midas mappings, two source-absent fixtures and two contradictory quarantined team-stat rows unchanged.
