@@ -219,3 +219,12 @@ At the time of this ledger:
 - Coverage: 325/763 = 42.60%; 438 remain to full universe; 423 additional quotes are required to reach the 98% minimum (748/763).
 - Latest completed batch: workflow [#43734327570](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734327570), artifact [#14170016337](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734327570/artifacts/14170016337), SHA-256 `f752a53019de07e1a3b3c23b139fc5edf5f0d20dbe8e3bc2b06ff4912751a559`.
 - Formal decision remains **NO-GO — Stage 2 not complete / not release-ready**. See `docs/VELTRIX_V2_STAGE2_FINAL_EXIT_DECISION_2026-11-15.md`. Historical/closing odds entitlement and certification thresholds remain blocked. Stage 3 stays on hold.
+
+
+### Opening-odds continuation update — 2026-11-15 (manifests 109–123)
+
+- Manifests 109–123 are independently reconciled: 375/375 request rows, 375/375 provider responses, 375/375 opening quote observations, 375 distinct fixtures and 375 PIT-eligible observations.
+- All 375 rows map to canonical fixtures, preserve valid provider opening timestamp ordering, use Bet365 1X2 and have active RESOLVED fixture crosswalks. No duplicates or ineligible rows.
+- Coverage: 375/763 = 49.15%; 388 remain to full universe; 373 additional quotes are required to reach the 98% minimum (748/763).
+- Latest completed batch: workflow [#43734702902](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734702902), artifact [#14168979796](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734702902/artifacts/14168979796), SHA-256 `295114a6c9ee623ef5fa8fb2dba430e9684913925467074450c5fa60d89877b9`.
+- Formal decision remains **NO-GO — Stage 2 not complete / not release-ready**. See `docs/VELTRIX_V2_STAGE2_FINAL_EXIT_DECISION_2026-11-15.md`. Historical/closing odds entitlement and certification thresholds remain blocked. Stage 3 stays on hold.
