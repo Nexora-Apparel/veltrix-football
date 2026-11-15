@@ -47,7 +47,11 @@ MIGRATIONS = {
     "0010_telegram_delivery_reconciliation": "2aa079df0c16eefbab9eb55961419d208a6788764c85fe2a0fd81e2bd00d9378",
     "0011_odds_quote_observations": "c72763fe3ea9f5b004731c0bfb03a38dc06633c9effc8ef0c0d678ad207c7a4d",
 }
-MANIFEST_KEY = f"aimidas-{SOURCE_COMMIT}-csv-pack-v1"
+MANIFEST_KEY_PREFIX = f"aimidas-{SOURCE_COMMIT}-csv-pack-v1"
+
+
+def manifest_key_for(manifest_hash: str) -> str:
+    return f"{MANIFEST_KEY_PREFIX}-{manifest_hash[:16]}"
 
 
 def sha256(raw: bytes) -> str:
@@ -145,6 +149,7 @@ def import_pack(database_url: str, input_dir: Path) -> dict:
     if retrieved_at.tzinfo is None or retrieved_at.utcoffset() is None:
         raise RuntimeError("AIMIDAS_RETRIEVAL_CLOCK_NOT_AWARE")
     now = datetime.now(timezone.utc)
+    manifest_key = manifest_key_for(manifest_hash)
 
     import psycopg
     from psycopg.types.json import Jsonb
@@ -161,7 +166,7 @@ def import_pack(database_url: str, input_dir: Path) -> dict:
                 RETURNING capture_manifest_id
                 """,
                 (
-                    MANIFEST_KEY, manifest_hash,
+                    manifest_key, manifest_hash,
                     Jsonb({
                         "provider": PROVIDER, "source_id": SOURCE_ID,
                         "repository": REPOSITORY, "source_commit": SOURCE_COMMIT,
@@ -179,7 +184,7 @@ def import_pack(database_url: str, input_dir: Path) -> dict:
             else:
                 cur.execute(
                     "SELECT capture_manifest_id,manifest_sha256 FROM capture_manifests WHERE manifest_key=%s",
-                    (MANIFEST_KEY,),
+                    (manifest_key,),
                 )
                 existing = cur.fetchone()
                 if not existing or existing[1].strip() != manifest_hash:
@@ -336,12 +341,13 @@ def import_pack(database_url: str, input_dir: Path) -> dict:
 def audit_import(database_url: str, manifest_hash: str) -> dict:
     import psycopg
     failures: list[str] = []
+    manifest_key = manifest_key_for(manifest_hash)
     with psycopg.connect(database_url) as conn:
         preflight(conn, database_url)
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT capture_manifest_id,manifest_sha256,requests_planned FROM capture_manifests WHERE manifest_key=%s",
-                (MANIFEST_KEY,),
+                (manifest_key,),
             )
             manifest_row = cur.fetchone()
             if not manifest_row or manifest_row[1].strip() != manifest_hash or manifest_row[2] != len(SOURCE_FILES):
