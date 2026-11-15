@@ -335,7 +335,7 @@ def test_run_capture_orchestrates_mocked_pages_with_optional_staging_ledger(
             "ledger_event_count": 1,
             "ledger_head_sha256": "e" * 64,
             "chain_verified": True,
-        }
+        }\n            "post_commit_verified": True,\n        }
 
     monkeypatch.setattr(
         capture, "_persist_paper_predictions_to_staging",
@@ -460,17 +460,21 @@ def test_empty_finished_page_still_persists_raw_response_and_manifest(monkeypatc
 
 def test_duplicate_only_capture_is_not_reported_as_new_ledger_admission():
     assert _capture_completion_status(
-        25, {"events_appended": 0, "duplicate_predictions_skipped": 25, "chain_verified": True},
+        25, {"events_appended": 0, "duplicate_predictions_skipped": 25, "chain_verified": True, "post_commit_verified": True},
         persist_staging=True,
     ) == "SHADOW_CAPTURE_COMPLETE_DUPLICATES_ONLY"
     assert _capture_completion_status(
-        25, {"events_appended": 0, "duplicate_predictions_skipped": 0, "chain_verified": True},
+        25, {"events_appended": 0, "duplicate_predictions_skipped": 0, "chain_verified": True, "post_commit_verified": True},
         persist_staging=True,
     ) == "SHADOW_CAPTURE_ADMITTED_WITHOUT_LEDGER_EVENTS"
     assert _capture_completion_status(
-        25, {"events_appended": 1, "duplicate_predictions_skipped": 24, "chain_verified": True},
+        25, {"events_appended": 1, "duplicate_predictions_skipped": 24, "chain_verified": True, "post_commit_verified": True},
         persist_staging=True,
     ) == "SHADOW_CAPTURE_COMPLETE"
+    assert _capture_completion_status(
+        25, {"events_appended": 25, "duplicate_predictions_skipped": 0, "chain_verified": True},
+        persist_staging=True,
+    ) == "SHADOW_CAPTURE_LEDGER_POST_COMMIT_UNVERIFIED"
     assert _capture_completion_status(
         25, None, persist_staging=False,
     ) == "SHADOW_CAPTURE_ADMITTED_NOT_PERSISTED"
