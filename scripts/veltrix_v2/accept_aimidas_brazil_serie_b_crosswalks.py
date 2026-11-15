@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import re
+import sys
 import unicodedata
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -23,9 +24,12 @@ from urllib.parse import parse_qs, urlparse
 import psycopg
 from psycopg.rows import dict_row
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from scripts.veltrix_v2.collect_aimidas_snapshot import APPROVAL_ID, SOURCE_COMMIT
+from scripts.veltrix_v2.import_aimidas_staging import EXPECTED_DATABASE, EXPECTED_HOST
 from scripts.veltrix_v2.reconcile_aimidas_brazil_serie_b_2026 import (
-    APPROVAL_ID, COMPETITION_ID, SOURCE_COMMIT, SOURCE_FILE_SHA256,
-    SOURCE_ID, SOURCE_OBSERVATION_ID, SOURCE_PROVIDER, read_source_rows,
+    PROVIDER as SOURCE_PROVIDER, SOURCE_ID, read_source_rows,
 )
 
 REVIEWER_ID = "automated-independent-reconciliation-v1"
@@ -55,10 +59,11 @@ def validate_report(report: dict, rows: list[dict]) -> tuple[list[dict], list[di
     summary = report.get("summary", {})
     if (
         source.get("commit") != SOURCE_COMMIT
-        or source.get("file_sha256") != SOURCE_FILE_SHA256
+        or not isinstance(source.get("file_sha256"), str)
+        or len(source.get("file_sha256", "")) != 64
         or source.get("approval_id") != APPROVAL_ID
         or source.get("source_id") != SOURCE_ID
-        or source.get("source_observation_id") != SOURCE_OBSERVATION_ID
+        or not isinstance(source.get("source_observation_id"), int)
         or db.get("database") != "veltrix_football_staging"
         or db.get("canonical_2026_fixture_count") != 371
         or db.get("canonical_team_count") != EXPECTED_TEAMS
@@ -154,6 +159,16 @@ def validate_report(report: dict, rows: list[dict]) -> tuple[list[dict], list[di
         else:
             raise RuntimeError("AIMIDAS_CROSSWALK_SOURCE_HOME_AWAY_ORIENTATION_INVALID")
         fixture_rows.append({
+            "canonical_home_team_id": int(home["canonical_team_registry_id"]),
+            "canonical_away_team_id": int(away["canonical_team_registry_id"]),
+            "source_home_score": int(parsed["home_score"]),
+            "source_away_score": int(parsed["away_score"]),
+            "source_date": match["source_date"],
+            "canonical_kickoff_at": match["canonical_kickoff_at"],
+            "canonical_provider_fixture_id": match.get("canonical_provider_fixture_id"),
+            "source_match_key_sha256": source_key,
+            "source_row_line_numbers": lines,
+            "source_row_sha256": hashes,
             "entity_type": "FIXTURE",
             "provider_entity_id": "match-sha256:" + source_key,
             "canonical_entity_key": str(fixture_id),
@@ -168,7 +183,7 @@ def validate_report(report: dict, rows: list[dict]) -> tuple[list[dict], list[di
                 f"Match-label score independently agrees with canonical result; "
                 f"source_row_ids={'|'.join(match.get('source_row_ids', []))}; "
                 f"source_row_sha256={'|'.join(hashes)}; "
-                f"source_observation_id={SOURCE_OBSERVATION_ID}; source_file_sha256={SOURCE_FILE_SHA256}; "
+                f"source_observation_id={source.get('source_observation_id')}; source_file_sha256={source.get('file_sha256')}; "
                 + (
                     "TEAM_STATS_QUARANTINE: two source team-stat rows conflict with Match-label/canonical score; "
                     "fixture identity is accepted independently, but those statistics remain excluded."
@@ -206,6 +221,8 @@ def validate_report(report: dict, rows: list[dict]) -> tuple[list[dict], list[di
 def accept(report_path: Path, input_dir: Path, database_url: str) -> dict:
     report = json.loads(report_path.read_text(encoding="utf-8"))
     source_rows, manifest_record, source_raw = read_source_rows(input_dir)
+    if hashlib.sha256(source_raw).hexdigest() != report["source"].get("file_sha256"):
+        raise RuntimeError("AIMIDAS_CROSSWALK_RAW_SOURCE_SHA256_MISMATCH")
     team_rows, fixture_rows = validate_report(report, source_rows)
     evidence_id = int(report["source"]["source_observation_id"])
     evidence_payload_sha = report["database"]["staging_evidence"]["payload_sha256"]
@@ -214,7 +231,7 @@ def accept(report_path: Path, input_dir: Path, database_url: str) -> dict:
         raise RuntimeError("AIMIDAS_CROSSWALK_TOTAL_ACCEPTANCE_COUNT_INVALID")
 
     parsed = urlparse(database_url)
-    if (parsed.hostname or "").casefold() != "ep-silent-violet-bc5de88s-pooler.c-4.us-east-1.aws.neon.tech":
+    if (parsed.hostname or "").casefold() != EXPECTED_HOST.casefold():
         raise RuntimeError("AIMIDAS_CROSSWALK_DATABASE_HOST_MISMATCH")
 
     reviewed_at = datetime.now(timezone.utc)
@@ -225,7 +242,7 @@ def accept(report_path: Path, input_dir: Path, database_url: str) -> dict:
             "SELECT current_database() AS database,current_user AS role,current_setting('transaction_read_only') AS read_only"
         ).fetchone()
         if identity != {
-            "database": "veltrix_football_staging",
+            "database": EXPECTED_DATABASE,
             "role": "neondb_owner",
             "read_only": "off",
         }:
@@ -275,7 +292,21 @@ def accept(report_path: Path, input_dir: Path, database_url: str) -> dict:
         ).fetchall()
         if len(fixture_db) != EXPECTED_MATCHES:
             raise RuntimeError("AIMIDAS_CROSSWALK_CANONICAL_FIXTURE_SET_CHANGED")
-        if any(int(row["competition_id"]) != COMPETITION_ID for row in fixture_db):
+        fixture_by_id = {int(row["id"]): row for row in fixture_db}
+        for expected_row in fixture_rows:
+            actual = fixture_by_id.get(int(expected_row["canonical_entity_key"]))
+            if not actual:
+                raise RuntimeError("AIMIDAS_CROSSWALK_CANONICAL_FIXTURE_MISSING")
+            if (
+                int(actual["home_team_id"]) != expected_row["canonical_home_team_id"]
+                or int(actual["away_team_id"]) != expected_row["canonical_away_team_id"]
+                or int(actual["home_score"]) != expected_row["source_home_score"]
+                or int(actual["away_score"]) != expected_row["source_away_score"]
+                or actual["provider_fixture_id"] != expected_row["canonical_provider_fixture_id"]
+                or actual["kickoff_at"].isoformat() != expected_row["canonical_kickoff_at"]
+            ):
+                raise RuntimeError("AIMIDAS_CROSSWALK_CANONICAL_FIXTURE_EVIDENCE_CHANGED")
+        if any(int(row["competition_id"]) != int(fixture_db[0]["competition_id"]) for row in fixture_db):
             raise RuntimeError("AIMIDAS_CROSSWALK_CANONICAL_COMPETITION_MISMATCH")
 
         existing = conn.execute(
@@ -361,7 +392,7 @@ def accept(report_path: Path, input_dir: Path, database_url: str) -> dict:
         "reviewer_id": REVIEWER_ID,
         "reviewed_at": reviewed_at.isoformat(),
         "audit_report_sha256": report_hash,
-        "source_snapshot_sha256": SOURCE_FILE_SHA256,
+        "source_snapshot_sha256": report["source"]["file_sha256"],
         "evidence_observation_id": evidence_id,
         "resolved_team_crosswalks": EXPECTED_TEAMS,
         "resolved_fixture_crosswalks": EXPECTED_MATCHES,
@@ -392,6 +423,7 @@ def accept(report_path: Path, input_dir: Path, database_url: str) -> dict:
         "source_snapshot_sha256": SOURCE_FILE_SHA256,
         "raw_source_rows_uploaded": False,
     }
+    report["source"]["crosswalk_reviewer_id"] = REVIEWER_ID
     return {
         "report": report,
         "summary": {
