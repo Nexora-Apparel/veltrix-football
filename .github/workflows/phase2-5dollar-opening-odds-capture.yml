@@ -1,5 +1,5 @@
-# Controlled continuation: manifests 109–134 reconciled at 25/25 each.
-# This push schedules the next single bounded batch after a fresh quota preflight.
+# Controlled continuation: manifests 109–135 reconciled at 25/25 each.
+# Quota-reset continuation: this push starts one bounded batch after a fresh live quota preflight.
 # workflow_dispatch remains unavailable until this workflow is on the default branch.
 name: VELTRIX Phase 2 — Manual 5Dollar Opening Odds Capture
 
