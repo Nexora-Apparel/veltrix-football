@@ -182,3 +182,19 @@ This is a verified identity crosswalk result, not a PIT admission. Keep the sour
 ### Historical archive identity reconciliation — 2026-11-15
 
 The six pinned historical archives were reconciled in a separate read-only workflow. All 19,605 source rows received stable file/line/row-fingerprint identities with raw season and date values preserved. Exact and conflicting duplicate groups: 0. The current canonical fixture registry contains 2,496 fixtures but starts in November 2025, after the historical archive end dates (May 2025); therefore no canonical fixture candidates were found. 6,495 rows have both exact-normalized teams represented but no matching canonical fixture; 13,110 rows have at least one team absent from the current canonical registry. No `RESOLVED` mappings, fixture rows or result rows were created. The workflow passed (19 focused tests) and uploaded only a sanitized aggregate summary. Full audit: `docs/VELTRIX_V2_AIMIDAS_HISTORICAL_IDENTITY_RECONCILIATION_2026-11-15.md`.
+
+
+## 10. Brazil Série B 2026 independent fixture reconciliation — 2026-11-15
+
+The earlier section 8 reported 369 unique source-to-canonical fixture candidates and 369 score agreements. A dedicated independent reconciliation now rechecked the complete 738-row raw CSV against the 2026 canonical 5DollarFootballAPI fixture registry and clarifies the crosswalk disposition:
+
+- 738/738 team-stat rows parsed; 369/369 distinct match labels; 20/20 source team identities mapped one-to-one to distinct canonical team IDs.
+- 371 canonical 2026 fixtures inspected. All 369 source matches resolve to one unique canonical fixture ID; all 369 canonical fixture IDs are distinct.
+- Independent score check: 369/369 canonical full-time scores agree with the source match-label score. Additional source-row validation: 738/738 team-level Goals / Goals Conceded pairs agree with home/away score orientation.
+- Date reconciliation: 333 canonical UTC kickoff dates equal the source date; 36 are one UTC calendar day later. The source date remains a date-only value and is not converted to a kickoff timestamp.
+- Exact discrepancies: (1) Náutico 1–0 Botafogo SP, 2026-09-03 23:00 UTC, canonical fixture 1927 / provider fixture 3538579905, is absent despite being inside the source file date range; this is an unexplained source-coverage hole. (2) Londrina 2–1 Náutico, 2026-11-11 22:00 UTC, canonical fixture 1807 / provider fixture 1878457839, is after the source file's final date of 2026-11-08 and is a snapshot cutoff gap.
+- No replacement mappings or rows were invented. Both missing fixtures remain unresolved.
+- A dedicated read-only reconciliation implementation now emits stable source row IDs, canonical-row SHA-256 fingerprints, match-key hashes and the 369 candidate fixture links. Raw CSV rows are not included in the sanitized artifact.
+- Important correction: the 369 are independently verified candidate identities, not persisted or reviewer-approved RESOLVED crosswalks. The database contains file-level AI Midas evidence only; no match-level crosswalk records were written. All 369 candidates remain REVIEW_REQUIRED pending a recorded reviewer acceptance event.
+- Full report: docs/VELTRIX_V2_AIMIDAS_BRAZIL_SERIE_B_2026_IDENTITY_RECONCILIATION_2026-11-15.md.
+- AI Midas evidence remains non-PIT. It does not qualify historical closing odds, bookmaker-specific closing quotes or CLV. Value betting remains LOCKED.
