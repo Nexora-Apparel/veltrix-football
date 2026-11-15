@@ -265,7 +265,7 @@ def reconcile(rows: list[dict], registry: dict, source_record: dict, *,
             "canonical_team": canonical_name,
             "canonical_provider_team_id": candidates[0]["provider_team_id"],
             "canonical_team_registry_id": candidates[0]["id"],
-            "mapping_method": "EXPLICIT_REVIEWED_ALIAS" if source_name != canonical_name else "EXACT_NAME",
+            "mapping_method": "EXPLICIT_ALIAS_TABLE" if source_name != canonical_name else "EXACT_NAME",
             "review_status": "REVIEW_REQUIRED",
         })
     if len(team_mappings) != expected_teams or len({item["canonical_team_registry_id"] for item in team_mappings}) != expected_teams:
