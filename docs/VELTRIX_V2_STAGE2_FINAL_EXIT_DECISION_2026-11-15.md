@@ -117,3 +117,39 @@ Manifest 123 has completed and independently reconciled, bringing the total to 3
 ## 13. Acquisition continuation update — 2026-11-15
 
 Manifest 124 has completed and independently reconciled, bringing the total to 400/763 (52.42%) opening quotes across 400 distinct fixtures. Manifests 109–124 each have 25/25 requests, responses, observations and PIT-eligible fixtures. The 98% threshold requires at least 348 more valid quotes; full acquisition requires 363. The latest Community quota read-back is 16 remaining, below the next batch's required preflight headroom of 26. The next run must wait for the provider's quota reset at 17:00 UTC and must obtain a fresh preflight. The Stage 2 decision remains NO-GO.
+
+
+## Stage 2 final evidence addendum — 2026-11-15 (supersedes earlier interim counts)
+
+### Opening-odds persistence and acquisition reconciliation
+
+The earlier apparent discrepancy was caused by querying the normalized `odds_quote_observations` table instead of the capture workflow's raw provenance table, `source_observations`. The acquisition workflow writes the source observation and links it to `provider_responses`; normalization into the separate quote table is not the capture persistence contract. No provider request was repeated to diagnose this.
+
+Read-only verification on Neon project `withered-sky-75161174`, branch `br-silent-violet-bc5de88s`, database `veltrix_football_staging`, schema `public`, role `neondb_owner`:
+- Manifests 109–124: 16 completed batches.
+- 400/400 capture request rows; 400/400 HTTP 200 provider responses; 400/400 linked `source_observations` rows.
+- 400 distinct provider fixture IDs; 400 unique payload hashes; 400 PIT flags.
+- Independent fixture join: 400/400 match canonical 5Dollar fixture IDs; zero missing identities.
+- 400/400 Bet365 1X2 quotes; 400/400 provider `opened_at` timestamps precede canonical kickoff; 400/400 retrieval timestamps follow opening time.
+- Observation IDs 431621–432020. No provider calls were repeated for this reconciliation.
+
+The separate normalized `odds_quote_observations` table is not the acquisition write target and its zero count is not evidence of failed capture persistence. Do not use that table's count as the raw capture acceptance criterion.
+
+### Coverage and quota
+
+The predeclared 90-day universe is 763 fixtures across the seven approved competitions. Captured: 400/763 = 52.42%; outstanding: 363. The 98% threshold requires at least 748 valid observations, leaving a further 348 needed. Competition counts: Brazil Serie A 58/115; Brazil Serie B 95/151; England Premier League 50/100; France Ligue 1 45/90; Germany Bundesliga I 36/81; Italy Serie A 50/110; Spain La Liga 66/116.
+
+The last persisted provider response reports 16 requests remaining against the 300-request quota. This is below the required next-batch preflight headroom (25 fixture requests plus status check). Capture is paused until after the documented 17:00 UTC quota reset and a fresh quota preflight confirms sufficient headroom. Continue in batches of at most 25, 3.1-second pacing, no automatic retries, and independently reconcile each manifest before the next batch. No more requests are authorized by this addendum.
+
+### Historical and closing-odds source determination
+
+- 5DollarFootballAPI documents `GET /v1/fixtures/{id}/odds/history` as Ultra-only; Free and Pro receive 403 insufficient_plan. No Ultra entitlement evidence exists for this account. The restriction is therefore an entitlement blocker, not a code defect. See https://5dollarfootballapi.com/docs/odds-history.
+- The Odds API documents historical snapshots at 10-minute intervals initially and 5-minute intervals from September 2022; historical endpoints require a paid usage plan. VELTRIX's persisted account evidence remains catalogue-only: three `/v4/sports/` responses, zero odds/event-odds responses and zero historical-odds responses. Sport-key catalogue access does not establish paid historical endpoint, UK bookmaker, league, market or timestamp coverage. See https://the-odds-api.com/liveapi/guides/v4/.
+- Independent candidates identified but not accepted: SockOdds advertises recorded price changes/opening/closing history on Pro and states its archive starts 22 Dec 2025 for listed leagues and 8 Oct 2026 elsewhere; coverage and entitlement for all seven VELTRIX competitions are not yet verified. See https://sockodds.com/use-cases/historical-odds-data-api/.
+- Odds-API.io advertises historical closing lines since December 2025 and currently lists Premier League, LaLiga, Serie A, Bundesliga, Ligue 1 and Brazil Serie A, but the published list does not establish Brazil Serie B coverage. No account, contract/rights, API response, identity crosswalk, source timestamp, completeness or plan entitlement has been verified for VELTRIX. Treat as a research candidate only, not admissible certification evidence. See https://odds-api.io/historical-odds-api.
+
+**Formal disposition:** no acceptable, account-entitled, seven-competition historical tick/closing source has been established. 5Dollar Ultra and The Odds API paid historical access remain unverified/blocked. The two alternative vendors remain candidates only. Do not ingest or count their marketing coverage claims as evidence. The limitation means no defensible historical price movement or CLV calculation can currently be certified; the 98% timestamped odds gate is also unmet at 52.42%. Opening quotes alone do not supply timestamped closing prices or line movement.
+
+### Stage 2 exit decision
+
+**NO-GO — Stage 2 remains OPEN / NOT COMPLETE / NOT RELEASE-READY.** The persistence discrepancy is resolved as a table-selection/audit-path misunderstanding, and 400 opening quotes are verified. However, only 52.42% of the 763-fixture universe is covered, the 98% threshold is not met, historical/closing odds entitlement is unresolved, CLV evidence is absent, and the market-specific walk-forward/prospective certification thresholds remain unmet. Stage 3, prediction publication, Telegram delivery, schedule activation, production deployment and value betting remain blocked.
