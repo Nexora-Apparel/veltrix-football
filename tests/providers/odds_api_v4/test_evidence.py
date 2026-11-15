@@ -142,3 +142,24 @@ def test_price_change_creates_a_distinct_immutable_observation_key():
     second = evidence(quote(price="2.20"))
     assert first.admitted and second.admitted
     assert first.observation_key != second.observation_key
+
+
+def test_quote_can_be_stored_for_future_cutoffs_without_retroactive_eligibility():
+    q = quote()
+    result = evaluate_quote_admission(
+        quote=q,
+        crosswalk=FixtureCrosswalk(
+            "the_odds_api", "odds_api_v4", "event-abc", 123,
+            "FIXTURE", "RESOLVED", RETRIEVED - timedelta(days=1), None, 7,
+        ),
+        rights=QuoteRights(
+            "approval-odds-1", "the_odds_api", "odds_api_v4", "APPROVED",
+            frozenset({"COLLECTION", "STORAGE"}),
+            RETRIEVED - timedelta(days=3), RETRIEVED - timedelta(days=2),
+            RETRIEVED + timedelta(days=30), "a" * 64,
+        ),
+        fixture_id=123, prediction_cutoff_at=None, kickoff_at=KICKOFF,
+        evaluated_at=RETRIEVED + timedelta(seconds=1),
+    )
+    assert result.admitted
+    assert result.observation_key
