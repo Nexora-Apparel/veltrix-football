@@ -304,3 +304,18 @@ At the time of this ledger:
 - Correct team-row integrity count: 736/738 consistent, 2 quarantined. Match-level score agreements remain 369/369.
 - The dedicated audit implementation now preserves both discrepancy row IDs and SHA-256 fingerprints in the sanitized artifact and labels the affected match QUARANTINED_ROW_SCORE_MISMATCH.
 - This supersedes the prior 738/738 team-row consistency statement in the immediately preceding AI Midas Série B ledger entry. Full detail: docs/VELTRIX_V2_AIMIDAS_BRAZIL_SERIE_B_2026_IDENTITY_RECONCILIATION_2026-11-15.md.
+
+
+### Historical odds source research continuation — 2026-11-15
+
+- New highest-priority historical coverage candidate: The Odds API. Its official coverage page lists Brazil Série B historical data from 2022-06-30; featured-market snapshots are 5-minute intervals from September 2022. Historical prices are paid, while coverage-discovery endpoints cost 1 credit/request. Historical odds calls cost 10 credits per region per market. The snapshot timestamp and bookmaker/market last_update must both be preserved; quote-level freshness must be checked because a bookmaker's last_update can be materially older than the snapshot. This is a sampled pre-kickoff close proxy, not automatically an exact final sportsbook close.
+- Odds-API.io: timestamped bookmaker-specific historical closing lines since December 2025; bulk endpoint supports 10 leagues, 366 days, 30 bookmakers and 100 events/page; paid bulk access starts at £49/month. Brazil Série B league support remains unverified; do not purchase before confirming league slug and market coverage.
+- SockOdds: Pro-only per-change history with observed_at; Brazil Série B not in its earlier-history league list, and unlisted leagues begin 2026-10-08. Supplementary only, not a deep Brazil Série B archive.
+- Odds.School: public Brazil Série B pages show 49 sportsbooks (18 in selected analysis) and per-bookmaker update times, but archive completeness and bulk/API rights are unverified. No scraping until written permission.
+- SharpPick: public page reports 130 Brazil Série B matches / 20,710 snapshots at 5-minute intervals; terms prohibit bulk crawling/scraping or redistribution without permission, and bookmaker-specific quote identity is not established. No automated ingestion.
+- Betfair Historical Data: timestamped exchange data since 2015, but exchange back/lay prices are not bookmaker prices. Separate benchmark only.
+- OddsIntel Data: consensus closing price and close_ts since 2026-10-10, but no bookmaker names; not eligible for bookmaker-specific closing-price certification.
+- The existing 5Dollar opening-odds continuation remains 400/763 (52.42%); 348 additional quotes required to reach 748/763 (98%). No API requests or paid odds captures were made during this research.
+- Next acquisition step: fresh The Odds API quota preflight, followed by low-cost coverage-only discovery and a fixture × bookmaker × market × timestamp coverage matrix. Do not request paid price snapshots until coverage and quota headroom are known.
+- Full research report: docs/VELTRIX_V2_HISTORICAL_ODDS_SOURCE_RESEARCH_2026-11-15.md.
+- Historical closing odds remain NOT QUALIFIED; CLV remains NOT CERTIFIED; PIT walk-forward remains NOT MET; value betting remains LOCKED.
