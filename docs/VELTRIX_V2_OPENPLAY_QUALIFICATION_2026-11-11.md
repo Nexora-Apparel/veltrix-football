@@ -25,7 +25,7 @@
 - Required attribution: `openplay (Noah Bair)`, linked to the source repository.
 - Upstream origin disclosed by maintainer: public match pages on WhoScored.com displaying Opta / Stats Perform data.
 
-The maintainer's release licence states that reuse, including commercial reuse, is permitted with attribution. However, because the maintainer identifies WhoScored / Opta as the underlying data origin, VELTRIX retains an upstream-rights review gate. **This technical qualification is not a legal rights approval.**
+The maintainer's release licence states that reuse, including commercial reuse, is permitted with attribution. The project owner has separately confirmed authorization covering the underlying WhoScored / Opta data for non-commercial VELTRIX FOOTBALL use. The project must retain attribution and provenance; monetisation and commercial use are prohibited under the confirmed authorization scope.
 
 ## Audited table sizes
 
@@ -73,9 +73,10 @@ The release is a static snapshot through 2025/26. It is not a current 2026/27 pl
 
 - Technical integrity: **PASS**.
 - Historical player/lineup/xG data candidate: **accepted for continued isolated research and feature-contract development**.
-- Commercial rights and upstream provenance: **REVIEW REQUIRED**.
-- Production ingestion: **NOT APPROVED**.
-- Commercial model training: **NOT APPROVED pending rights review**.
+- Rights status: **AUTHORIZED FOR NON-COMMERCIAL VELTRIX FOOTBALL USE**, based on project-owner confirmation; formal evidence metadata remains to be attached.
+- Isolated technical ingestion: **APPROVED TO PROCEED**, subject to provenance, point-in-time and data-quality controls.
+- Non-commercial model training and evaluation: **APPROVED TO PROCEED**.
+- Commercial use / monetisation: **PROHIBITED**.
 - Neon writes: zero.
 - Prediction models changed: no.
 - Telegram publication/schedule: unchanged and stopped.
@@ -86,5 +87,5 @@ The release is a static snapshot through 2025/26. It is not a current 2026/27 pl
 2. Build a competition-season coverage-aware adapter that keeps source xG model IDs, native player/team IDs, source timestamps and data-issue flags.
 3. Create point-in-time player form, minutes, expected-minutes, shot-quality and team-style features without post-kickoff leakage.
 4. Exclude known gaps and issue rows according to predeclared rules.
-5. Complete the upstream-rights review before training or production use.
-6. Find a separate rights-cleared current-season player/lineup provider; FPL automated ingestion is excluded after terms review.
+5. Attach the authorization grantor, written evidence URI/hash, effective date and any additional conditions to the source-governance record; do not invent missing metadata.
+6. Find a separate rights-cleared current-season player/lineup provider; this static release does not provide a current 2026/27 feed and FPL automated ingestion remains excluded after terms review.
