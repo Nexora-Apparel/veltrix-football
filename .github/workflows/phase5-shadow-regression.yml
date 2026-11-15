@@ -109,6 +109,7 @@ jobs:
           python -c 'import json; d=json.load(open("/tmp/veltrix-settlement-dry-run.json")); assert d["mode"] == "DRY_RUN" and d["would_connect_to_database"] is False and d["would_call_provider"] is False and d["would_write_database"] is False and d["settlement"] is False'
           python -m compileall -q veltrix_v2/ledger/settlement_reconciliation.py tests/veltrix_v2/test_settlement_reconciliation.py
           python -m compileall -q veltrix_v2/evaluation/prospective_settlement_metrics.py tests/veltrix_v2/test_prospective_settlement_metrics.py
+          python -m compileall -q tests/veltrix_v2/test_phase5_settlement_workflow.py
           python -m compileall -q tests/scripts/test_phase5_collect_5dollar_shadow.py
           python -m compileall -q veltrix_v2/data/provider_evidence_capture.py
           python -m compileall -q tests/veltrix_v2/test_provider_evidence_capture.py
@@ -126,6 +127,7 @@ jobs:
           tests/veltrix_v2/test_paper_settlement.py
           tests/veltrix_v2/test_settlement_reconciliation.py
           tests/veltrix_v2/test_prospective_settlement_metrics.py
+          tests/veltrix_v2/test_phase5_settlement_workflow.py
           tests/providers/odds_api_v4
           --ignore=tests/providers/odds_api_v4/test_reservation_postgres.py
           --ignore=tests/providers/odds_api_v4/test_quota_evidence_postgres.py
