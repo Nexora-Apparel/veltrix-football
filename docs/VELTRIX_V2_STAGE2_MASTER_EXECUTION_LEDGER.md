@@ -319,3 +319,11 @@ At the time of this ledger:
 - Next acquisition step: fresh The Odds API quota preflight, followed by low-cost coverage-only discovery and a fixture × bookmaker × market × timestamp coverage matrix. Do not request paid price snapshots until coverage and quota headroom are known.
 - Full research report: docs/VELTRIX_V2_HISTORICAL_ODDS_SOURCE_RESEARCH_2026-11-15.md.
 - Historical closing odds remain NOT QUALIFIED; CLV remains NOT CERTIFIED; PIT walk-forward remains NOT MET; value betting remains LOCKED.
+
+
+### Brazil Série B audit execution proof — 2026-11-15
+
+- Workflow run 43758559130: dedicated aimidas-brazil-serie-b-identity job SUCCESS; 21 focused tests passed.
+- Sanitized artifact 14178319188; ZIP SHA-256 4b8c0ed7489cf82dd48c34ca1ba55f884ae5fe652fb2190c919139721a764500.
+- Row-level evidence: 738 unique source row IDs and SHA-256 fingerprints, 369 unique match-key hashes, 369 unique canonical fixture IDs. Raw CSV content was not uploaded.
+- Final disposition: 369 match-level identity/score candidates verified; 2 missing canonical fixtures unresolved; 2 team-stat rows quarantined; reviewer acceptance pending; 0 crosswalk writes; value betting LOCKED.
