@@ -1,6 +1,11 @@
 name: VELTRIX Stage 2 — OpenFootball PIT archive snapshot pack
 
 on:
+  push:
+    branches:
+      - integration/v2-report-bundle-wiring-20261114
+    paths:
+      - ".github/workflows/phase2-openfootball-pit-snapshot-pack.yml"
   workflow_dispatch:
     inputs:
       max_requests:
