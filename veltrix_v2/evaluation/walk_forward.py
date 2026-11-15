@@ -45,7 +45,6 @@ class FixtureEvaluation:
     competition_id: str
     kickoff_at: datetime
     cutoff_at: datetime
-    recorded_at: datetime
     actual_home_goals: int
     actual_away_goals: int
     actual_1x2: str
@@ -60,6 +59,7 @@ class FixtureEvaluation:
     model_over_2_5: float
     baseline_over_2_5: float
     model_build_id: str | None = None
+    recorded_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -286,7 +286,6 @@ def walk_forward_evaluate(
         scored.append(FixtureEvaluation(
             fixture_id=target.fixture_id, competition_id=target.competition_id,
             kickoff_at=target.kickoff_at, cutoff_at=cutoff,
-            recorded_at=target.recorded_at,
             actual_home_goals=target.home_goals, actual_away_goals=target.away_goals,
             actual_1x2=("HOME" if actual == 0 else "DRAW" if actual == 1 else "AWAY"),
             model_home_win=prediction.home_win, model_draw=prediction.draw,
@@ -295,6 +294,7 @@ def walk_forward_evaluate(
             model_btts_yes=prediction.btts_yes, baseline_btts_yes=base[3],
             model_over_2_5=prediction.over_2_5, baseline_over_2_5=base[4],
             model_build_id=model_build_id,
+            recorded_at=target.recorded_at,
         ))
 
     model_1x2 = [(x.model_home_win, x.model_draw, x.model_away_win) for x in scored]
@@ -340,6 +340,7 @@ def walk_forward_evaluate(
                 for target_row in test_rows:
                     fit_rows = [row for row in calibration_pool
                                 if row.kickoff_at < target_row.cutoff_at
+                                and row.recorded_at is not None
                                 and row.recorded_at <= target_row.cutoff_at]
                     if len(fit_rows) < 50:
                         continue
