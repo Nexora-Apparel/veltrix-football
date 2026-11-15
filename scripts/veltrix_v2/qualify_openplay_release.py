@@ -190,6 +190,36 @@ def audit_release(output_dir: str | Path) -> dict:
             "missing_required_columns": missing,
         }
 
+    matches_path = (root / "matches.parquet").as_posix().replace("'", "''")
+    scrape_row = db.execute(f"""
+        SELECT
+            COUNT(*) AS match_rows,
+            COUNT(scraped_at) AS non_null_scraped_at,
+            COUNT(TRY_CAST(scraped_at AS TIMESTAMPTZ)) AS parseable_scraped_at,
+            COUNT(*) FILTER (WHERE TRY_CAST(scraped_at AS TIMESTAMPTZ) IS NULL) AS unparseable_scraped_at,
+            MIN(TRY_CAST(scraped_at AS TIMESTAMPTZ)) AS first_page_saved_at_utc,
+            MAX(TRY_CAST(scraped_at AS TIMESTAMPTZ)) AS last_page_saved_at_utc,
+            COUNT(DISTINCT match_id) AS unique_match_ids
+        FROM read_parquet('{matches_path}')
+    """).fetchone()
+    scrape_timestamp_audit = {
+        "match_rows": scrape_row[0],
+        "non_null_scraped_at": scrape_row[1],
+        "parseable_scraped_at": scrape_row[2],
+        "unparseable_scraped_at": scrape_row[3],
+        "first_page_saved_at_utc": str(scrape_row[4]) if scrape_row[4] is not None else None,
+        "last_page_saved_at_utc": str(scrape_row[5]) if scrape_row[5] is not None else None,
+        "unique_match_ids": scrape_row[6],
+        "data_dictionary_semantics": "When the page was saved (UTC)",
+        "data_dictionary_url": "https://github.com/nlbair/openplay/blob/1681bc4076a290c6a020394ac24792d5141aeeb4/DATA_DICTIONARY.md",
+        "temporal_status": (
+            "CAPTURE_TIMESTAMP_CANDIDATE"
+            if scrape_row[0] == scrape_row[1] == scrape_row[2] == scrape_row[6]
+            else "TIMESTAMP_COVERAGE_INCOMPLETE"
+        ),
+        "historical_pit_admitted": False,
+    }
+
     coverage_rows = _csv_rows(root / "coverage.csv")
     issue_rows = _csv_rows(root / "data_issues.csv")
     gap_rows = _csv_rows(root / "known_gaps.csv")
@@ -252,6 +282,7 @@ def audit_release(output_dir: str | Path) -> dict:
             "data_issues_by_type": issue_counts,
         },
         "v1_scope_coverage": coverage_summary,
+        "scrape_timestamp_audit": scrape_timestamp_audit,
         "schema_failures": schema_failures,
         "limitations": [
             "This is a static snapshot through 2025/26; it is not a current-season 2026/27 feed.",
