@@ -27,6 +27,14 @@ SOURCE_SPECS = (
     ("openfootball/italy", "2024-25/1-seriea.txt", "OPENFOOTBALL_IT_SERIE_A_2024_25"),
     ("openfootball/italy", "2025-26/1-seriea.txt", "OPENFOOTBALL_IT_SERIE_A_2025_26"),
     ("openfootball/italy", "2026-27/1-seriea.txt", "OPENFOOTBALL_IT_SERIE_A_2026_27"),
+    ("openfootball/europe", "france/2024-25_fr1.txt", "OPENFOOTBALL_FR_LIGUE1_2024_25"),
+    ("openfootball/europe", "france/2025-26_fr1.txt", "OPENFOOTBALL_FR_LIGUE1_2025_26"),
+    ("openfootball/europe", "france/2026-27_fr1.txt", "OPENFOOTBALL_FR_LIGUE1_2026_27"),
+    ("openfootball/south-america", "brazil/2024_br1.txt", "OPENFOOTBALL_BR_SERIE_A_2024"),
+    ("openfootball/south-america", "brazil/2025_br1.txt", "OPENFOOTBALL_BR_SERIE_A_2025"),
+    ("openfootball/south-america", "brazil/2026_br1.txt", "OPENFOOTBALL_BR_SERIE_A_2026"),
+    ("openfootball/south-america", "brazil/2024_br2.txt", "OPENFOOTBALL_BR_SERIE_B_2024"),
+    ("openfootball/south-america", "brazil/2025_br2.txt", "OPENFOOTBALL_BR_SERIE_B_2025"),
 )
 
 def aware(value: str) -> datetime:

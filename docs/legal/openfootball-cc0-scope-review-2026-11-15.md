@@ -10,6 +10,9 @@ GitHub repository metadata was verified as CC0-1.0 (Creative Commons Zero v1.0 U
 | https://github.com/openfootball/espana | Spanish La Liga | 2024-25/1-liga.txt; 2025-26/1-liga.txt; 2026-27/1-liga.txt |
 | https://github.com/openfootball/deutschland | German Bundesliga | 2024-25/1-bundesliga.txt; 2025-26/1-bundesliga.txt; 2026-27/1-bundesliga.txt |
 | https://github.com/openfootball/italy | Italian Serie A | 2024-25/1-seriea.txt; 2025-26/1-seriea.txt; 2026-27/1-seriea.txt |
+| https://github.com/openfootball/europe | French Ligue 1 | france/2024-25_fr1.txt; france/2025-26_fr1.txt; france/2026-27_fr1.txt |
+| https://github.com/openfootball/south-america | Brazilian Serie A | brazil/2024_br1.txt; brazil/2025_br1.txt; brazil/2026_br1.txt |
+| https://github.com/openfootball/south-america | Brazilian Serie B | brazil/2024_br2.txt; brazil/2025_br2.txt |
 
 ## Approved internal use
 
@@ -32,6 +35,6 @@ The archive proof links repository, path, commit SHA, commit timestamp, raw-cont
 
 ## Exclusions
 
-France Ligue 1 and Brazil Serie A/B are not included in this first pack because their exact source repository/path and licence evidence have not yet been verified. Nigeria NPFL remains a separate source scope. No third-party assets or odds are included.
+The first pack includes six CC0 repositories and seven competition scopes. Brazil Serie B has no 2026 archive path in the selected repository as of this review; its available 2024 and 2025 seasons are included. Nigeria NPFL remains a separate source scope. No third-party assets or odds are included.
 
 Decision: approve the four listed CC0 repositories for the stated internal uses. This rights approval alone does not certify individual rows, source completeness, cross-provider identity or market performance.

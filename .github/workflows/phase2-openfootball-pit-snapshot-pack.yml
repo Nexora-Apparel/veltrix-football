@@ -6,6 +6,7 @@ on:
       - integration/v2-report-bundle-wiring-20261114
     paths:
       - ".github/workflows/phase2-openfootball-pit-snapshot-pack.yml"
+      - "scripts/veltrix_v2/collect_openfootball_pit_snapshots.py"
   workflow_dispatch:
     inputs:
       max_requests:
@@ -34,7 +35,7 @@ jobs:
       - name: Checkout exact VELTRIX branch
         uses: actions/checkout@v4
         with:
-          ref: integration/v2-report-bundle-wiring-20261114
+          ref: ${{ github.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v5

@@ -10,11 +10,11 @@ A snapshot fetched today cannot be represented as if it had been captured on the
 
 ## 2. Rights-approved scope
 
-The first pack covers four CC0-1.0 repositories: England Premier League, Spain La Liga, Germany Bundesliga and Italy Serie A. Three seasons are enumerated for each: 2024-25, 2025-26 and 2026-27. The collector rechecks each repository's SPDX licence metadata at runtime.
+The first pack covers six CC0-1.0 repositories and seven competition scopes: England Premier League, Spain La Liga, Germany Bundesliga, Italy Serie A, France Ligue 1, Brazil Serie A and Brazil Serie B. Three seasons are enumerated for the four European core leagues and France; Brazil Serie A uses 2024, 2025 and 2026 calendar-year files, while Brazil Serie B uses the available 2024 and 2025 files. The collector rechecks each repository's SPDX licence metadata at runtime.
 
 The detailed scope review is docs/legal/openfootball-cc0-scope-review-2026-11-15.md. It covers text fixture/result facts only. It does not cover logos, media, odds, xG, lineups or player-level data. Competition/team IDs remain source-scoped pending evidence-backed crosswalks.
 
-France and Brazil remain outstanding. Nigeria NPFL is separate and must not be mapped to another competition by name or country alone.
+Nigeria NPFL is separate and must not be mapped to another competition by name or country alone. Brazil Serie B 2026 is absent from the selected archive and remains a season coverage gap.
 
 ## 3. Collector implementation
 

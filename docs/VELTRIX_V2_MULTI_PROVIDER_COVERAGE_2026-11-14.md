@@ -11,7 +11,7 @@ The model pipeline requests data domains, not named vendors. This registry is po
 | Provider | State | Permitted role |
 |---|---|---|
 | 5DollarFootballAPI | Active, limited | Primary live fixtures/results within free quota and accessible competitions |
-| OpenFootball | Archive only | CC0 date-only historical results; snapshot evidence is being expanded, and production feature use remains gated |
+| OpenFootball | Archive only | CC0 date-only historical results across EPL, La Liga, Bundesliga, Serie A, Ligue 1 and Brazil Serie A/B; snapshot evidence is being expanded, and production feature use remains gated |
 | StatsBomb Open Data | Research archive, gated | Selected historical matches include event data, lineups and shot-level xG; research-use/attribution review required |
 | The Odds API | Optional, gated | Odds only after rights, allowance, remaining quota and explicit spend caps are verified |
 | GOAL API | Suspended — credits exhausted | No calls, retries, scans or credit checks until reset and requalification |
