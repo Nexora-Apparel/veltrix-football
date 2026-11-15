@@ -166,3 +166,33 @@ The Odds API is not a new unapproved source. Stage 2 already records source appr
 The repository already references the configured GitHub secret `THE_ODDS_API_KEY` in its provider-verification and Phase 5 quota workflows. The secret value was not read or exposed during this research. A dedicated no-credit preflight has been added to the Phase 2 validation workflow. It calls only `GET /v4/sports/?all=true`, checks whether `soccer_brazil_serie_b` is returned, validates the zero-credit quota header and reports current request quota. It does not call historical events, historical markets or price endpoints, and it does not write to Neon.
 
 This no-credit preflight is an account/sport-entitlement check only. It does not prove historical event, bookmaker, market or quote-level coverage. A separate 1-credit historical events/markets discovery request remains gated on the fresh quota result and will be evaluated independently.
+
+
+## 6. Veltrix competition-scope gate and Brazil discovery disposition
+
+A live read-only inspection of the staging source-approval record found:
+
+- Approval: approval-the-odds-api-v4-owner-authorized-2026-11-14
+- Provider/source: the_odds_api / odds_api_v4
+- Status: APPROVED
+- Permitted uses: COLLECTION, STORAGE, BENCHMARKING, MODEL_TRAINING, PUBLIC_DISPLAY and CACHE
+- Commercial use: allowed
+- Raw redistribution: prohibited
+- **Approved competition scope is exactly:** soccer_epl, soccer_spain_la_liga, soccer_germany_bundesliga, soccer_italy_serie_a and soccer_france_ligue_one.
+- Brazil Série B is not in the approved competition scope.
+
+Therefore, The Odds API's public technical Brazil Série B coverage does not authorize Veltrix to collect, store, benchmark or train on Brazil Série B prices. No Brazil Série B prices were requested or stored. The two Brazil discovery exercises below were metadata-only, were not persisted, and are excluded from admitted project data. No further Brazil Série B requests will be made to this provider unless the source approval scope is formally expanded.
+
+Metadata-only Brazil discovery audit trail:
+
+- Londrina vs Náutico, kickoff 2026-11-11 22:00 UTC: request 21:55; provider returned snapshot 21:50:36 with 10 events and no matching target event; one discovery credit consumed.
+- Ponte Preta vs Operário PR, kickoff 2026-11-12 22:00 UTC: request 21:55; provider returned snapshot 21:50:36; event ID 8f0eea6f49be834102d357833c5f6026; 16 providers (14 sportsbooks and 2 exchanges); 1X2 three-way market key h2h_3_way listed for 16 providers, totals for 13, BTTS for 3; bookmaker/market update timestamps ranged 21:49:39–21:50:35 UTC. No odds prices were returned by the discovery endpoint.
+- A first parser attempt received the markets response but failed to parse its data envelope; the corrected run reproduced the discovery and generated the sanitized artifact. Total discovery credits consumed across the two samples and retry: 5.
+- Latest quota after the successful discovery: 210 used / 290 remaining. No odds-price endpoint calls and no database writes were made.
+- The 16-provider count includes Betfair and Matchbook exchange entries; do not count those as bookmaker sportsbooks.
+
+The technical discovery result is retained here only as source-research context. It is not an admitted Brazil Série B odds observation and cannot support model training, closing-price certification or CLV.
+
+## 7. Approved-league continuation
+
+Continue The Odds API historical price research only within the five approved sport keys. The next pilot target is a canonical Spain La Liga fixture (Atletico Madrid vs Barcelona, 2026-11-08 20:00 UTC; canonical fixture ID 1426), subject to exact historical event identity and quote timestamp checks. Any historical odds response must be stored only in the isolated staging database under the existing approval; do not upload raw price responses to GitHub artifacts or commit them to the repository.
