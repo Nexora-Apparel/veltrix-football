@@ -1,5 +1,5 @@
-# Controlled continuation: the source_observations read-back audit reconciles
-# manifests 109 and 110; each new push triggers one bounded follow-up batch.
+# Controlled continuation: manifests 109–111 reconciled at 25/25 each.
+# This push schedules the next single bounded batch after a fresh quota preflight.
 # workflow_dispatch remains unavailable until this workflow is on the default branch.
 name: VELTRIX Phase 2 — Manual 5Dollar Opening Odds Capture
 
