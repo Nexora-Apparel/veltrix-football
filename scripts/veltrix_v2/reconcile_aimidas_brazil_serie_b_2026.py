@@ -359,6 +359,8 @@ def reconcile(rows: list[dict], registry: dict, source_record: dict, *,
         for source_date, label in grouped
     }
     missing = []
+    source_dates = [date.fromisoformat(row["source_date"]) for row in rows]
+    source_date_min, source_date_max = min(source_dates), max(source_dates)
     for fixture in fixtures:
         fixture_date = date.fromisoformat(fixture["kickoff_date"])
         represented = any(
@@ -367,6 +369,12 @@ def reconcile(rows: list[dict], registry: dict, source_record: dict, *,
             for home_id, away_id, source_date in mapped_pairs
         )
         if not represented:
+            if fixture_date > source_date_max:
+                absence_reason = "AFTER_SOURCE_FILE_LAST_DATE"
+            elif source_date_min <= fixture_date <= source_date_max:
+                absence_reason = "WITHIN_SOURCE_DATE_RANGE_BUT_MATCH_ROW_ABSENT"
+            else:
+                absence_reason = "BEFORE_SOURCE_FILE_FIRST_DATE"
             missing.append({
                 "canonical_fixture_id": fixture["fixture_id"],
                 "canonical_provider_fixture_id": fixture["provider_fixture_id"],
@@ -375,6 +383,9 @@ def reconcile(rows: list[dict], registry: dict, source_record: dict, *,
                 "away_team": fixture["away_name"],
                 "home_score": fixture["home_score"],
                 "away_score": fixture["away_score"],
+                "source_date_min": source_date_min.isoformat(),
+                "source_date_max": source_date_max.isoformat(),
+                "absence_reason": absence_reason,
                 "source_row_present": False,
                 "disposition": "UNRESOLVED_NO_REPLACEMENT_MAPPING",
             })
@@ -439,6 +450,9 @@ def reconcile(rows: list[dict], registry: dict, source_record: dict, *,
             "team_stat_matches_with_discrepancies": len({item["source_match_key_sha256"] for item in row_score_discrepancies}),
             "source_to_canonical_utc_date_delta_counts": dict(sorted(date_deltas.items())),
             "canonical_fixtures_absent_from_source": len(missing),
+            "canonical_fixture_absence_reason_counts": dict(sorted(Counter(item["absence_reason"] for item in missing).items())),
+            "reviewer_signoff_required_for_all_candidates": True,
+            "crosswalk_rows_resolved": 0,
             "crosswalk_rows_written": 0,
             "normalized_fixture_rows_written": 0,
             "database_mutations": 0,
