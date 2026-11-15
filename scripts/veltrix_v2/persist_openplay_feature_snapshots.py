@@ -72,6 +72,8 @@ def _feature_value(row: Mapping[str, Any]) -> dict[str, Any]:
         "eligibility_at": row["eligibility_at"],
         "source_timestamp_basis": row["source_timestamp_basis"],
         "source_observation_payload_sha256": row["source_observation_payload_sha256"],
+        "crosswalk_provenance": row["crosswalk_provenance"],
+        "asset_provenance": row["asset_provenance"],
     }
 
 
@@ -134,7 +136,7 @@ def _verify_source_rows(cur, selected: list[Mapping[str, Any]], cutoff_at: datet
         """
         SELECT id,provider,source_id,entity_type,provider_entity_id,payload_sha256,
                source_published_at,available_at,recorded_at,point_in_time_certifiable,
-               rights_approval_id
+               rights_approval_id,source_timestamp_basis
         FROM source_observations
         WHERE id = ANY(%s)
         """,
@@ -147,7 +149,7 @@ def _verify_source_rows(cur, selected: list[Mapping[str, Any]], cutoff_at: datet
         if obs is None:
             raise ValueError("FEATURE_SOURCE_OBSERVATION_MISSING")
         (_, provider, source_id, entity_type, provider_entity_id, payload_hash,
-         published_at, available_at, recorded_at, pit, rights_id) = obs
+         published_at, available_at, recorded_at, pit, rights_id, timestamp_basis) = obs
         if (
             provider != OPENPLAY_PROVIDER or source_id != OPENPLAY_SOURCE_ID
             or entity_type != "match_result_snapshot"
@@ -155,6 +157,7 @@ def _verify_source_rows(cur, selected: list[Mapping[str, Any]], cutoff_at: datet
             or str(payload_hash).strip() != feature["source_observation_payload_sha256"]
             or published_at is None or available_at is None or recorded_at is None
             or pit is not True or rights_id != APPROVAL_ID
+            or timestamp_basis != "documented_guarantee"
             or published_at >= cutoff_at or available_at >= cutoff_at or recorded_at >= cutoff_at
             or published_at.astimezone(timezone.utc).isoformat() != parse_time(feature["source_published_at"]).isoformat()
             or available_at.astimezone(timezone.utc).isoformat() != parse_time(feature["available_at"]).isoformat()
@@ -174,7 +177,7 @@ def _verify_source_rows(cur, selected: list[Mapping[str, Any]], cutoff_at: datet
             cur.execute(
                 """
                 SELECT provider,source_id,entity_type,canonical_entity_key,mapping_status,
-                       valid_from,valid_until,recorded_at,evidence_observation_id
+                       mapping_method,valid_from,valid_until,recorded_at,evidence_observation_id
                 FROM entity_crosswalk_versions WHERE crosswalk_version_id=%s
                 """,
                 (int(mapping["crosswalk_version_id"]),),
@@ -183,10 +186,12 @@ def _verify_source_rows(cur, selected: list[Mapping[str, Any]], cutoff_at: datet
             if (
                 mapped is None or mapped[0] != OPENPLAY_PROVIDER or mapped[1] != OPENPLAY_SOURCE_ID
                 or mapped[2] != entity_type_expected or mapped[3] != str(canonical_id)
-                or mapped[4] != "RESOLVED" or mapped[5] >= cutoff_at
-                or (mapped[6] is not None and mapped[6] <= cutoff_at)
-                or mapped[7] >= cutoff_at
-                or int(mapped[8]) != int(
+                or mapped[4] != "RESOLVED"
+                or mapped[5] != ("EXACT_NAME_AND_COMPETITION_OVERLAP" if entity_type_expected == "TEAM" else "EXPLICIT_REGION_NAME_ALIAS")
+                or mapped[6] >= cutoff_at
+                or (mapped[7] is not None and mapped[7] <= cutoff_at)
+                or mapped[8] >= cutoff_at
+                or int(mapped[9]) != int(
                     feature["asset_provenance"]["teams.parquet"]["source_observation_id"]
                     if entity_type_expected == "TEAM"
                     else feature["asset_provenance"]["competitions.parquet"]["source_observation_id"]
@@ -363,6 +368,24 @@ def persist(database_url: str, manifest_path: str | Path, output_path: str | Pat
                     or approval[10] is not False
                 ):
                     raise RuntimeError("OPENPLAY_FEATURE_APPROVAL_NOT_ACTIVE_OR_SCOPE_MISMATCH")
+                cur.execute(
+                    """
+                    SELECT status,effective_at,recorded_at,evidence_sha256
+                    FROM source_approval_status_events
+                    WHERE approval_id=%s
+                    ORDER BY effective_at DESC,recorded_at DESC,event_id DESC LIMIT 1
+                    """,
+                    (APPROVAL_ID,),
+                )
+                latest_approval_event = cur.fetchone()
+                if (
+                    latest_approval_event is None
+                    or latest_approval_event[0] != "APPROVED"
+                    or latest_approval_event[1] > cutoff_at
+                    or latest_approval_event[2] > cutoff_at
+                    or str(latest_approval_event[3]).strip() != manifest.get("approval_evidence_sha256")
+                ):
+                    raise RuntimeError("OPENPLAY_FEATURE_APPROVAL_STATUS_EVENT_INVALID")
                 targets = _load_targets(cur, cutoff_at)
                 snapshots = []
                 skipped = []
