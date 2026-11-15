@@ -275,6 +275,7 @@ def test_walk_forward_exposes_only_cutoff_eligible_openplay_context():
                 "opponent": {
                     "provider_entity_id": opponent, "canonical_entity_id": opponent,
                     "mapping_status": "RESOLVED", "evidence_observation_id": 108,
+                    "mapping_method": "EXACT_NAME_AND_COMPETITION_OVERLAP",
                     "crosswalk_version_id": 21, "valid_from": crosswalk_times,
                     "recorded_at": crosswalk_times, "valid_until": None,
                 },
