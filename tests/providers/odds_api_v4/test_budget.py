@@ -32,9 +32,11 @@ def test_event_odds_uses_conservative_requested_market_bound():
     assert plan_request(req, budget()).estimated_credits == 4
 
 
-def test_discovery_is_zero_credit_but_requires_valid_budget():
+def test_discovery_is_zero_credit_and_monthly_fields_are_optional():
     req = PlannedRequest("events_discovery")
     assert plan_request(req, budget()).estimated_credits == 0
+    assert plan_request(req, budget(monthly_allowance=None, monthly_hard_cap=None,
+                                    month_committed=None)).allowed
     assert not plan_request(req, budget(monthly_allowance=-1)).allowed
 
 
@@ -84,3 +86,19 @@ def test_zero_hard_limits_and_malformed_market_container_fail_closed():
     assert plan_request(req, budget(per_run_hard_cap=0)).reason_code == "BUDGET_LIMIT_MUST_BE_POSITIVE"
     malformed = PlannedRequest("bulk_odds", markets="h2h", sport_key="soccer")
     assert plan_request(malformed, budget()).reason_code == "REQUEST_SHAPE_INVALID"
+
+
+def test_paid_request_requires_fresh_observed_provider_remaining_but_not_monthly_allowance():
+    req = PlannedRequest("event_odds", regions=1, markets=("h2h", "totals", "btts"), sport_key="soccer_epl")
+    result = plan_request(req, budget(monthly_allowance=None, monthly_hard_cap=None,
+                                      month_committed=None, provider_remaining=3,
+                                      per_run_hard_cap=3, run_committed=0))
+    assert result.allowed and result.estimated_credits == 3
+    unknown = plan_request(req, budget(monthly_allowance=None, monthly_hard_cap=None,
+                                       month_committed=None, provider_remaining=None,
+                                       per_run_hard_cap=3, run_committed=0))
+    assert not unknown.allowed and unknown.reason_code == "PROVIDER_QUOTA_UNKNOWN"
+    insufficient = plan_request(req, budget(monthly_allowance=None, monthly_hard_cap=None,
+                                            month_committed=None, provider_remaining=2,
+                                            per_run_hard_cap=3, run_committed=0))
+    assert not insufficient.allowed and insufficient.reason_code == "PROVIDER_ALLOWANCE_EXCEEDED"
