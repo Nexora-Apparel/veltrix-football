@@ -228,3 +228,13 @@ At the time of this ledger:
 - Coverage: 375/763 = 49.15%; 388 remain to full universe; 373 additional quotes are required to reach the 98% minimum (748/763).
 - Latest completed batch: workflow [#43734702902](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734702902), artifact [#14168979796](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734702902/artifacts/14168979796), SHA-256 `295114a6c9ee623ef5fa8fb2dba430e9684913925467074450c5fa60d89877b9`.
 - Formal decision remains **NO-GO — Stage 2 not complete / not release-ready**. See `docs/VELTRIX_V2_STAGE2_FINAL_EXIT_DECISION_2026-11-15.md`. Historical/closing odds entitlement and certification thresholds remain blocked. Stage 3 stays on hold.
+
+
+### Opening-odds continuation update — 2026-11-15 (manifests 109–124)
+
+- Manifests 109–124 are independently reconciled: 400/400 request rows, 400/400 provider responses, 400/400 opening quote observations, 400 distinct fixtures and 400 PIT-eligible observations.
+- All 400 rows map to canonical fixtures, preserve valid provider opening timestamp ordering, use Bet365 1X2 and have active RESOLVED fixture crosswalks. No duplicates or ineligible rows.
+- Coverage: 400/763 = 52.42%; 363 remain to full universe; 348 additional quotes are required to reach the 98% minimum (748/763).
+- Latest completed batch: workflow [#43734920511](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734920511), artifact [#14170381591](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734920511/artifacts/14170381591), SHA-256 `e45a5d9b092affa0e6cfd8a70f70c4695c2b81de83b1a5cce837655950490827`.
+- Latest Community quota read-back: 16 remaining. This is below the next 25-fixture batch's required preflight headroom (26 including status); do not dispatch another capture until a fresh quota preflight after the 17:00 UTC reset.
+- Formal decision remains **NO-GO — Stage 2 not complete / not release-ready**. See `docs/VELTRIX_V2_STAGE2_FINAL_EXIT_DECISION_2026-11-15.md`. Historical/closing odds entitlement and certification thresholds remain blocked. Stage 3 stays on hold.
