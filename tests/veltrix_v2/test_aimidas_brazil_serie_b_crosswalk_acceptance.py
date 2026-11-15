@@ -39,7 +39,7 @@ def _report():
     } for i, (source, canonical, cid, method) in enumerate(team_names)]
     matches = [_fixture_match(i) for i in range(369)]
     matches[-1]["team_stat_discrepancy_count"] = 2
-    matches[-1]["team_stats_quality_status"] = "ROW_STATS_INCONSISTENT"
+    matches[-1]["team_stats_quality_status"] = "QUARANTINED_ROW_SCORE_MISMATCH"
     return {
         "schema_version": "veltrix-aimidas-brazil-serie-b-identity-audit-v1",
         "source": {
