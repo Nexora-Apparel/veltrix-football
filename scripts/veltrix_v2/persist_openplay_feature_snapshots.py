@@ -36,6 +36,10 @@ def sha256(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def _is_sha256(value: str) -> bool:
+    return len(value) == 64 and all(char in "0123456789abcdef" for char in value.casefold())
+
+
 def parse_time(value: str) -> datetime:
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if parsed.tzinfo is None or parsed.utcoffset() is None:
@@ -221,50 +225,112 @@ def _insert_snapshot(cur, target: Mapping[str, Any], cutoff_at: datetime,
             "rights_approval_id": row["rights_approval_id"],
             "value_sha256": sha256(canonical_json_bytes(value)),
         })
+    # Stable content identity excludes the execution clock. Re-running the
+    # workflow with unchanged source rows reuses the immutable snapshot.
     feature_set_sha = sha256(canonical_json_bytes({
         "fixture_id": target["fixture_id"],
-        "cutoff_at": cutoff_at.isoformat(),
+        "fixture_crosswalk_version_id": target["fixture_crosswalk_version_id"],
         "feature_schema_version": FEATURE_SCHEMA,
         "selector_version": SELECTOR_VERSION,
         "links": link_payloads,
     }))
-    snapshot_key = f"openplay:{target['fixture_id']}:{cutoff_at.isoformat()}:{feature_set_sha}"
+    snapshot_key = f"openplay:{target['fixture_id']}:{feature_set_sha}"
+
+    cur.execute(
+        """
+        SELECT feature_snapshot_id,prediction_cutoff_at,feature_set_sha256
+        FROM feature_snapshots WHERE snapshot_key=%s
+        """,
+        (snapshot_key,),
+    )
+    existing = cur.fetchone()
+    if existing:
+        snapshot_id, snapshot_cutoff, stored_hash = int(existing[0]), existing[1], str(existing[2]).strip()
+        if stored_hash != feature_set_sha or snapshot_cutoff > cutoff_at:
+            raise ValueError("FEATURE_SNAPSHOT_IDEMPOTENCY_CONFLICT")
+        for _, row in selected_rows:
+            if parse_time(row["eligibility_at"]) >= snapshot_cutoff:
+                raise ValueError("FEATURE_SNAPSHOT_REUSE_CUTOFF_INVALID")
+        cur.execute(
+            """
+            SELECT feature_key,value_sha256,source_observation_id,crosswalk_version_id,
+                   source_published_at,retrieved_at,rights_approval_id
+            FROM feature_snapshot_links WHERE feature_snapshot_id=%s
+            ORDER BY feature_key
+            """,
+            (snapshot_id,),
+        )
+        actual = cur.fetchall()
+        expected = sorted(
+            (
+                item["feature_key"],item["value_sha256"],item["source_observation_id"],
+                item["crosswalk_version_id"],parse_time(item["source_published_at"]),
+                parse_time(item["retrieved_at"]),item["rights_approval_id"],
+            )
+            for item in link_payloads
+        )
+        normalised_actual = sorted(
+            (
+                row[0],str(row[1]).strip(),int(row[2]),int(row[3]),
+                row[4].astimezone(timezone.utc),row[5].astimezone(timezone.utc),row[6],
+            )
+            for row in actual
+        )
+        if normalised_actual != expected:
+            raise ValueError("FEATURE_SNAPSHOT_REUSE_LINKS_MISMATCH")
+        cur.execute(
+            """
+            SELECT eligibility_status,evidence_sha256
+            FROM feature_snapshot_eligibility_events
+            WHERE feature_snapshot_id=%s
+            ORDER BY recorded_at DESC,eligibility_event_id DESC LIMIT 1
+            """,
+            (snapshot_id,),
+        )
+        event = cur.fetchone()
+        if event is None or event[0] != "ELIGIBLE" or not _is_sha256(str(event[1]).strip()):
+            raise ValueError("FEATURE_SNAPSHOT_REUSE_ELIGIBILITY_EVENT_INVALID")
+        return {
+            "fixture_id": target["fixture_id"],
+            "provider_fixture_id": target["provider_fixture_id"],
+            "home_team": target["home_team"],
+            "away_team": target["away_team"],
+            "competition": target["competition"],
+            "kickoff_at": target["kickoff_at"].isoformat(),
+            "prediction_cutoff_at": snapshot_cutoff.astimezone(timezone.utc).isoformat(),
+            "feature_snapshot_id": snapshot_id,
+            "feature_count": len(link_payloads),
+            "home_match_rows": sum(1 for key, _ in selected_rows if key.startswith("home.")),
+            "away_match_rows": sum(1 for key, _ in selected_rows if key.startswith("away.")),
+            "feature_set_sha256": feature_set_sha,
+            "eligibility_evidence_sha256": str(event[1]).strip(),
+            "reused_existing_snapshot": True,
+        }
+
+    snapshot_cutoff = cutoff_at
     evidence_sha = sha256(canonical_json_bytes({
         "snapshot_key": snapshot_key,
         "fixture_crosswalk_version_id": target["fixture_crosswalk_version_id"],
+        "prediction_cutoff_at": snapshot_cutoff.isoformat(),
         "feature_set_sha256": feature_set_sha,
         "links": [
-            {k: v for k, v in item.items() if k not in {"feature_value"}}
+            {k: v for k, v in item.items() if k != "feature_value"}
             for item in link_payloads
         ],
         "eligibility": "ELIGIBLE",
         "rule": "source publication, availability, VELTRIX record, rights and all crosswalk clocks strictly precede cutoff; match date strictly precedes target date",
     }))
-
     cur.execute(
         """
         INSERT INTO feature_snapshots(
             snapshot_key,fixture_id,prediction_cutoff_at,feature_schema_version,
             model_build_id,feature_set_sha256,selector_version
         ) VALUES (%s,%s,%s,%s,%s,%s,%s)
-        ON CONFLICT (snapshot_key) DO NOTHING
         RETURNING feature_snapshot_id
         """,
-        (snapshot_key,target["fixture_id"],cutoff_at,FEATURE_SCHEMA,MODEL_BUILD_ID,feature_set_sha,SELECTOR_VERSION),
+        (snapshot_key,target["fixture_id"],snapshot_cutoff,FEATURE_SCHEMA,MODEL_BUILD_ID,feature_set_sha,SELECTOR_VERSION),
     )
-    inserted = cur.fetchone()
-    if inserted:
-        snapshot_id = int(inserted[0])
-    else:
-        cur.execute(
-            "SELECT feature_snapshot_id,feature_set_sha256 FROM feature_snapshots WHERE snapshot_key=%s",
-            (snapshot_key,),
-        )
-        existing = cur.fetchone()
-        if not existing or str(existing[1]).strip() != feature_set_sha:
-            raise ValueError("FEATURE_SNAPSHOT_IDEMPOTENCY_CONFLICT")
-        snapshot_id = int(existing[0])
-
+    snapshot_id = int(cur.fetchone()[0])
     for item in link_payloads:
         cur.execute(
             """
@@ -273,7 +339,6 @@ def _insert_snapshot(cur, target: Mapping[str, Any], cutoff_at: datetime,
                 source_observation_id,crosswalk_version_id,source_published_at,
                 retrieved_at,rights_approval_id,eligibility_reason_code,value_sha256
             ) VALUES (%s,%s,'PRESENT',%s::jsonb,%s,%s,%s,%s,%s,%s,%s)
-            ON CONFLICT (feature_snapshot_id,feature_key) DO NOTHING
             """,
             (
                 snapshot_id,item["feature_key"],
@@ -292,31 +357,25 @@ def _insert_snapshot(cur, target: Mapping[str, Any], cutoff_at: datetime,
     link_count, present_count = cur.fetchone()
     if int(link_count) != len(link_payloads) or int(present_count) != len(link_payloads):
         raise ValueError("FEATURE_SNAPSHOT_LINK_COUNT_MISMATCH")
-
     cur.execute(
-        "SELECT 1 FROM feature_snapshot_eligibility_events WHERE feature_snapshot_id=%s AND evidence_sha256=%s LIMIT 1",
-        (snapshot_id,evidence_sha),
+        """
+        INSERT INTO feature_snapshot_eligibility_events(
+            feature_snapshot_id,eligibility_status,reason_codes,evidence_sha256
+        ) VALUES (%s,'ELIGIBLE',%s::jsonb,%s)
+        """,
+        (
+            snapshot_id,
+            json.dumps([
+                "TARGET_FIXTURE_IDENTITY_RESOLVED",
+                "HOME_AND_AWAY_TEAM_CROSSWALKS_RESOLVED",
+                "COMPETITION_CROSSWALK_RESOLVED",
+                "SOURCE_PUBLICATION_AVAILABILITY_AND_RECORDING_PRECEDE_CUTOFF",
+                "SOURCE_MATCH_DATE_STRICTLY_PRECEDES_TARGET_DATE",
+                "APPROVED_NONCOMMERCIAL_RIGHTS_VALID_AT_CUTOFF",
+            ]),
+            evidence_sha,
+        ),
     )
-    if cur.fetchone() is None:
-        cur.execute(
-            """
-            INSERT INTO feature_snapshot_eligibility_events(
-                feature_snapshot_id,eligibility_status,reason_codes,evidence_sha256
-            ) VALUES (%s,'ELIGIBLE',%s::jsonb,%s)
-            """,
-            (
-                snapshot_id,
-                json.dumps([
-                    "TARGET_FIXTURE_IDENTITY_RESOLVED",
-                    "HOME_AND_AWAY_TEAM_CROSSWALKS_RESOLVED",
-                    "COMPETITION_CROSSWALK_RESOLVED",
-                    "SOURCE_PUBLICATION_AVAILABILITY_AND_RECORDING_PRECEDE_CUTOFF",
-                    "SOURCE_MATCH_DATE_STRICTLY_PRECEDES_TARGET_DATE",
-                    "APPROVED_NONCOMMERCIAL_RIGHTS_VALID_AT_CUTOFF",
-                ]),
-                evidence_sha,
-            ),
-        )
     return {
         "fixture_id": target["fixture_id"],
         "provider_fixture_id": target["provider_fixture_id"],
@@ -324,12 +383,14 @@ def _insert_snapshot(cur, target: Mapping[str, Any], cutoff_at: datetime,
         "away_team": target["away_team"],
         "competition": target["competition"],
         "kickoff_at": target["kickoff_at"].isoformat(),
+        "prediction_cutoff_at": snapshot_cutoff.isoformat(),
         "feature_snapshot_id": snapshot_id,
         "feature_count": len(link_payloads),
         "home_match_rows": sum(1 for key, _ in selected_rows if key.startswith("home.")),
         "away_match_rows": sum(1 for key, _ in selected_rows if key.startswith("away.")),
         "feature_set_sha256": feature_set_sha,
         "eligibility_evidence_sha256": evidence_sha,
+        "reused_existing_snapshot": False,
     }
 
 
@@ -462,6 +523,8 @@ def persist(database_url: str, manifest_path: str | Path, output_path: str | Pat
         "source_feature_rows":manifest["feature_count"],
         "targets_considered":len(targets),
         "eligible_target_snapshots":len(snapshots),
+        "new_snapshots_created":sum(1 for item in snapshots if not item["reused_existing_snapshot"]),
+        "existing_snapshots_reused":sum(1 for item in snapshots if item["reused_existing_snapshot"]),
         "skipped_targets":skipped,
         "feature_links_written":sum(item["feature_count"] for item in snapshots),
         "snapshots":snapshots,
