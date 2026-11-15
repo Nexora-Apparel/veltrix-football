@@ -57,6 +57,7 @@ def parse_archive(
     *,
     competition_id: str,
     source_path: str,
+    source_id: str = "openfootball/world",
     snapshot_commit_sha: str,
     snapshot_available_at: datetime,
     imported_at: datetime,
@@ -74,6 +75,8 @@ def parse_archive(
         raise ValueError("COMPETITION_ID_REQUIRED")
     if not isinstance(source_path, str) or not source_path.strip():
         raise ValueError("SOURCE_PATH_REQUIRED")
+    if not isinstance(source_id, str) or not source_id.strip():
+        raise ValueError("SOURCE_ID_REQUIRED")
     if not re.fullmatch(r"[0-9a-fA-F]{40}", snapshot_commit_sha or ""):
         raise ValueError("SNAPSHOT_COMMIT_SHA_INVALID")
     if not _aware(snapshot_available_at) or not _aware(imported_at):
@@ -158,7 +161,7 @@ def parse_archive(
             away_goals=away_goals,
             kickoff_date=current_date,
             provider="OpenFootball",
-            source_id="openfootball/world",
+            source_id=source_id,
             availability_basis="immutable_github_commit_and_import_timestamp_with_date_boundary",
             point_in_time_certifiable=True,
             payload_sha256=hashlib.sha256(line.encode("utf-8")).hexdigest(),

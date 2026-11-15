@@ -38,6 +38,7 @@ def test_pack_records_immutable_snapshot_and_actual_retrieval_time(tmp_path):
     assert manifest["all_sources_succeeded"] is True
     assert manifest["snapshot_count"] == 1
     assert manifest["observation_version_count"] == 1
+    assert rows[0]["source_id"] == "openfootball/england"
     assert rows[0]["source_commit_timestamp"] == "2025-01-06T10:00:00+00:00"
     assert rows[0]["recorded_at"] == IMPORTED.isoformat()
     assert rows[0]["point_in_time_certifiable"] is True
