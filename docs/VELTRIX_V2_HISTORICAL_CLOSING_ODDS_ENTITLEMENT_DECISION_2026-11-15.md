@@ -17,7 +17,7 @@ No credit-consuming request was made for this decision. The prior no-credit cata
 
 ### Community-access route
 
-GET /v1/fixtures/{id}/odds exposes Bet365 opening, closing and in-play price fields. The opening 1X2 quote includes opened_at (UTC), and the capture workflow stores this as the source publication/availability timestamp. The 200 independently reconciled opening observations are admitted only as opening-price evidence.
+GET /v1/fixtures/{id}/odds exposes Bet365 opening, closing and in-play price fields. The opening 1X2 quote includes opened_at (UTC), and the capture workflow stores this as the source publication/availability timestamp. The 275 independently reconciled opening observations are admitted only as opening-price evidence.
 
 The closing and in-play fields in this fixture response do not carry their own timestamped quote history. They cannot establish when the quote was observed, cannot be treated as point-in-time features, and cannot support defensible CLV or price-movement calculations. Do not substitute the fixture's retrieval time, kickoff time, or opening timestamp for a missing closing timestamp.
 
@@ -51,7 +51,7 @@ The existing catalogue-only account probe (three /v4/sports/ responses in the ea
 
 ## 4. Certification and coverage impact
 
-- Current 5Dollar Community opening observations: 200 / 763 = 26.21% of the frozen 90-day seven-competition fixture universe, subject to the latest independent read-back.
+- Current 5Dollar Community opening observations: 275 / 763 = 36.04% of the frozen 90-day seven-competition fixture universe, subject to the latest independent read-back.
 - Opening-only quotes do not establish closing-price coverage.
 - 5Dollar tick-history observations: zero.
 - The Odds API event-odds responses: zero.
@@ -61,7 +61,7 @@ The existing catalogue-only account probe (three /v4/sports/ responses in the ea
 - The 98% timestamped odds-coverage certification threshold is not met.
 - Market certification and value betting remain locked.
 
-The absence of historical/closing evidence does not invalidate the 200 valid opening observations. It limits their use to the explicitly timestamped opening-price context and prevents closing-line benchmarks, CLV evaluation, and any certification gate requiring 98% timestamped odds coverage.
+The absence of historical/closing evidence does not invalidate the 275 valid opening observations. It limits their use to the explicitly timestamped opening-price context and prevents closing-line benchmarks, CLV evaluation, and any certification gate requiring 98% timestamped odds coverage.
 
 ## 5. Required next evidence
 
@@ -94,4 +94,4 @@ Stage 2 cannot pass the historical/closing-odds gate or the 98% timestamped odds
 
 ## 8. Opening-odds acquisition continuation — 2026-11-15
 
-Six additional bounded batches have now been independently reconciled after manifests 109 and 110, bringing manifests 109–116 to 200/200 opening quote observations across 200 distinct fixtures. Each completed batch had 25 requests, 25 responses, 25 PIT-eligible observations, zero duplicates, zero ineligible quotes, fresh Community quota preflight, no retries and no more than 25 fixture requests. Latest verified batch: workflow #43733321610, artifact #14169004455, ZIP SHA-256 `3f8dd0a575cc50dc52aa75d32fc2901051a3d7351f45e3f38b003bcf3e9c9c24`. The fixed 763-fixture denominator leaves 563 fixtures (73.79%) without a captured opening quote. This progress does not change the historical/closing odds entitlement decision or Stage 2 release gate.
+Nine additional bounded batches have now been independently reconciled after manifests 109 and 110, bringing manifests 109–119 to 275/275 opening quote observations across 275 distinct fixtures. Each completed batch had 25 requests, 25 responses, 25 PIT-eligible observations, zero duplicates, zero ineligible quotes, fresh Community quota preflight, no retries and no more than 25 fixture requests. Latest verified batch: workflow #43733924743, artifact #14169571727, ZIP SHA-256 `0a186a816796490c3da46492ac06b01ed9997b7609c20d552a61bb47f54bf5bd`. The fixed 763-fixture denominator leaves 488 fixtures (63.96%) without a captured opening quote. This progress does not change the historical/closing odds entitlement decision or Stage 2 release gate.
