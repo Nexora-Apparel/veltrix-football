@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       bundle_path:
-        description: "Relative path under command-data/public-data/bundles"
+        description: "Canonical shared bundle path on command-data"
         required: true
+        default: "public-data/v2_report_bundle.json"
         type: string
       enable_delivery:
         description: "Must remain false until release certification is complete"
