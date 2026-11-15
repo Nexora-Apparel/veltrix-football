@@ -175,3 +175,31 @@ def test_deployment_factory_requires_attestation_credentials_and_host_allowlist(
         build_deployment_publication_verifier({})
     with pytest.raises(DeploymentVerificationError, match="EVIDENCE_HOST_ALLOWLIST_REQUIRED"):
         build_deployment_publication_verifier({"GH_TOKEN": "token"})
+
+
+def test_application_runtime_uses_default_deployment_factory_when_bundle_url_is_set():
+    from veltrix_v2.reporting.runtime import load_runtime_publication_dependencies
+    dependencies = load_runtime_publication_dependencies({
+        "VELTRIX_V2_REPORT_BUNDLE_URL": (
+            "https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/"
+            "command-data/public-data/v2_report_bundle.json"
+        ),
+        "GH_TOKEN": "test-token",
+        "VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS": "raw.githubusercontent.com,evidence.example",
+    })
+    assert dependencies is not None
+    assert callable(dependencies.verifier)
+    assert callable(dependencies.bundle_reader)
+    assert dependencies.bundle_url.endswith("/command-data/public-data/v2_report_bundle.json")
+
+
+def test_application_runtime_does_not_construct_trusted_factory_without_credentials():
+    from veltrix_v2.reporting.runtime import load_runtime_publication_dependencies
+    with pytest.raises(DeploymentVerificationError, match="GITHUB_ATTESTATION_READ_TOKEN_REQUIRED"):
+        load_runtime_publication_dependencies({
+            "VELTRIX_V2_REPORT_BUNDLE_URL": (
+                "https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/"
+                "command-data/public-data/v2_report_bundle.json"
+            ),
+            "VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS": "raw.githubusercontent.com",
+        })
