@@ -260,7 +260,7 @@ def _persist_staging(dsn: str, approval, response: ProviderResponse, payload: di
             (
                 PROVIDER, response.endpoint, "odds_snapshot", provider_entity_id,
                 payload_hash, response.fetched_at_utc, metadata, SOURCE_ID,
-                "historical_odds_snapshot", "2026", kickoff, snapshot,
+                "odds_quote", "2026", kickoff, snapshot,
                 "archival_snapshot_timestamp", approval.approval_id,
                 "veltrix-v2-the-odds-api-historical-snapshot-v1", response_id,
                 now, snapshot.isoformat(), "archival_snapshot_timestamp",
