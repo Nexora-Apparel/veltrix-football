@@ -37,10 +37,10 @@ class FakeCursor:
             self.row = ("the_odds_api", "odds_api_v4", "event-1", "123",
                         "FIXTURE", "RESOLVED", RETRIEVED - timedelta(days=1), None)
         elif "FROM source_approvals" in sql:
-            self.row = ("approval-1", "the_odds_api", "odds_api_v4", "APPROVED",
-                        ["COLLECTION", "STORAGE"], RETRIEVED - timedelta(days=2),
-                        RETRIEVED - timedelta(days=1), RETRIEVED + timedelta(days=10),
-                        "a" * 64)
+            self.row = ("approval-1", "the_odds_api", "odds_api_v4", "soccer_epl,soccer_spain_la_liga",
+                        "odds_quote", "APPROVED", ["COLLECTION", "STORAGE"],
+                        RETRIEVED - timedelta(days=2), RETRIEVED - timedelta(days=1),
+                        RETRIEVED + timedelta(days=10), "a" * 64)
         elif "FROM source_approval_status_events" in sql:
             self.row = None
         elif "INSERT INTO odds_quote_observations" in sql:
@@ -154,3 +154,21 @@ def test_writer_rejects_missing_raw_response_record():
     store = PostgresOddsQuoteStore(lambda: FakeConnection(cursor))
     with pytest.raises(ValueError, match="PERSISTED_PROVIDER_RESPONSE_IDENTITY_MISMATCH"):
         store.write_capture(parsed(), context())
+
+
+def test_writer_rejects_competition_outside_approved_scope():
+    class OutOfScopeCursor(FakeCursor):
+        def execute(self, sql, params=()):
+            super().execute(sql, params)
+            if "FROM source_approvals" in sql:
+                self.row = ("approval-1", "the_odds_api", "odds_api_v4",
+                            "soccer_spain_la_liga", "odds_quote", "APPROVED",
+                            ["COLLECTION", "STORAGE"],
+                            RETRIEVED - timedelta(days=2), RETRIEVED - timedelta(days=1),
+                            RETRIEVED + timedelta(days=10), "a" * 64)
+
+    cursor = OutOfScopeCursor()
+    store = PostgresOddsQuoteStore(lambda: FakeConnection(cursor))
+    result = store.write_capture(parsed(), context())
+    assert result.inserted == 0
+    assert result.rejected == 1
