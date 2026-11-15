@@ -9,13 +9,13 @@
 
 ## 1. Decision
 
-Stage 2 exit is denied at this checkpoint. The acquisition and qualification work is materially advanced, but the evidence is not sufficient for Stage 2 completion, model certification, value betting, or production release. Continue only the remaining Stage 2 work. Stage 3 remains on hold.
+Stage 2 exit is denied at this checkpoint. The full 763-fixture opening-odds universe is now acquired and independently reconciled (100% coverage), but historical/closing odds and CLV evidence are still absent, and the market-specific model certification thresholds remain unmet. The evidence is not sufficient for Stage 2 completion, value betting or production release. Continue only the remaining Stage 2 work. Stage 3 remains on hold.
 
 This is a definitive no-go decision against the current evidence set, not a declaration that the project is permanently blocked. Reconsider only after the outstanding criteria below are independently evidenced and this decision is superseded by a new signed-off report.
 
 ## 2. Opening-odds evidence — reconciled
 
-The fixed 90-day, seven-competition universe contains 763 eligible 5Dollar fixtures. Manifests 109–121 are independently reconciled in the named staging database:
+The fixed 90-day, seven-competition universe contains 763 eligible 5Dollar fixtures. The full final acquisition spans manifests 109–139: 30 batches of 25 requests plus one final batch of 13. The manifest-level ledger is reconciled to 763/763 requests, HTTP responses and source observations, with zero retries. The table below preserves the first 13 manifests as an audit sample; the final 763-row reconciliation and competition totals are recorded in the final acquisition addendum:
 
 | Manifest | Workflow run | Requests | HTTP responses | Opening observations | Distinct fixtures | PIT eligible |
 |---:|---:|---:|---:|---:|---:|---:|
