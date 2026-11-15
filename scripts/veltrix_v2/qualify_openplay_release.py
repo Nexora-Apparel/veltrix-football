@@ -21,7 +21,9 @@ TAG = "data-v0.1.0"
 TAG_COMMIT = "ac0bd9aff52016066433ebebf818bec4278fcf54"
 API_RELEASE = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/tags/{TAG}"
 API_REF = f"https://api.github.com/repos/{OWNER}/{REPO}/git/ref/tags/{TAG}"
-USER_AGENT = "VELTRIX-FOOTBALL-OPENPLAY-READONLY-QUALIFIER/1.0"
+USER_AGENT = "VELTRIX-FOOTBALL-OPENPLAY-QUALIFIER/2.0"
+AUTHORIZATION_RECORD = Path(__file__).resolve().parents[2] / "docs" / "legal" / "openplay-whoscored-opta-authorization-2026-11-15.md"
+AUTHORIZATION_URI = "https://github.com/Nexora-Apparel/veltrix-football/blob/main/docs/legal/openplay-whoscored-opta-authorization-2026-11-15.md"
 
 EXPECTED_ROWS = {
     "competitions.parquet": 22,
@@ -191,13 +193,31 @@ def audit_release(output_dir: str | Path) -> dict:
             "matches_with_data_issues": int(row.get("matches_with_data_issues") or 0),
         })
 
+    if not AUTHORIZATION_RECORD.is_file():
+        raise RuntimeError("OPENPLAY_AUTHORIZATION_RECORD_MISSING")
+    authorization_sha256 = _sha256(AUTHORIZATION_RECORD.read_bytes())
     report = {
-        "schema_version": "openplay-release-qualification-v1",
-        "status": "REVIEW_REQUIRED" if schema_failures else "STRUCTURE_AND_HASHES_PASS",
-        "source_acceptance": False,
+        "schema_version": "openplay-release-qualification-v2",
+        "status": "FAILED" if schema_failures else "PASS_NONCOMMERCIAL_SOURCE_QUALIFIED",
+        "source_acceptance": not bool(schema_failures),
         "production_approved": False,
-        "training_approved": False,
-        "rights_review_required": True,
+        "training_approved": not bool(schema_failures),
+        "rights_review_required": False,
+        "non_commercial_only": True,
+        "commercial_use_allowed": False,
+        "monetisation_prohibited": True,
+        "authorization_evidence": {
+            "status": "USER_CONFIRMED_NONCOMMERCIAL_AUTHORIZATION",
+            "uri": AUTHORIZATION_URI,
+            "sha256": authorization_sha256,
+            "rights_basis": "WRITTEN_PERMISSION",
+            "permitted_uses": [
+                "collection", "storage", "historical_import", "internal_analysis",
+                "model_training", "model_validation", "derived_research",
+            ],
+            "commercial_use_allowed": False,
+            "raw_redistribution_allowed": False,
+        },
         "read_only": True,
         "database_writes": 0,
         "prediction_code_access": False,
@@ -209,10 +229,10 @@ def audit_release(output_dir: str | Path) -> dict:
             "required_attribution": "openplay (Noah Bair), https://github.com/nlbair/openplay",
             "upstream_provenance_disclosed_by_maintainer": "Public match pages on WhoScored.com displaying Opta / Stats Perform data",
             "rights_note": (
-                "The release declares CC BY 4.0 and permits commercial reuse with attribution. "
-                "Because the maintainer identifies WhoScored / Opta as the upstream data origin, "
-                "VELTRIX must complete a documented upstream-rights review before production or "
-                "commercial model-training approval."
+                "The project owner confirms authorization covering OpenPlay and its underlying "
+                "WhoScored / Opta data for VELTRIX FOOTBALL use, subject to a strict non-commercial "
+                "condition. Monetisation and commercial use are prohibited. Preserve attribution "
+                "and provenance. The authorization record is hashed in authorization_evidence."
             ),
         },
         "assets": asset_evidence,
@@ -257,9 +277,10 @@ def main() -> int:
         f"player_match_rows={report['parquet_tables']['player_match_stats.parquet']['rows']}; "
         f"lineup_rows={report['parquet_tables']['lineups.parquet']['rows']}; "
         f"shot_rows={report['parquet_tables']['shots.parquet']['rows']}; "
-        f"rights_review_required=true"
+        f"non_commercial_only=true"
     )
-    print("PRODUCTION_APPROVED: false; TRAINING_APPROVED: false")
+    print("RIGHTS_REVIEW_REQUIRED: false; COMMERCIAL_USE_ALLOWED: false")
+    print("TRAINING_APPROVED_NONCOMMERCIAL: " + str(report["training_approved"]).lower())
     return 0
 
 
