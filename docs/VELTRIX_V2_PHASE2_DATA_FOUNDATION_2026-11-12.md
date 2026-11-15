@@ -91,7 +91,7 @@ The published event dataset is licensed CC BY 4.0 and is suitable for a later in
 ### 3.3 Explicitly excluded
 
 - Legacy Club-Football-Match-Data CSV: source rights unresolved/restrictive; quarantined.
-- OpenPlay: upstream WhoScored/Opta provenance and rights unresolved.
+- OpenPlay / WhoScored / Opta: upstream-rights quarantine superseded on 2026-11-15 by the project owner's explicit confirmation of authorization for non-commercial VELTRIX FOOTBALL use. Monetisation remains prohibited. See [authorization record](legal/openplay-whoscored-opta-authorization-2026-11-15.md). Isolated historical ingestion and non-commercial model research may proceed subject to PIT, coverage and provenance gates.
 - PitchAPI: upstream data provenance and model-training rights unresolved.
 - StrikerAPI: latest account check HTTP 402; no free credits; no paid credits authorised.
 - GOAL API: latest runner blocked by Cloudflare browser-signature HTTP 403; upstream sports-data rights remain unresolved.
