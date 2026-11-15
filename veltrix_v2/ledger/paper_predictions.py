@@ -42,6 +42,7 @@ class PaperPrediction:
     target_response_sha256: str | None = None
     target_capture_manifest_sha256: str | None = None
     market_probabilities: dict[str, dict[str, float]] | None = None
+    training_observations: tuple[dict[str, object], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -153,6 +154,31 @@ class ProspectivePaperLedger:
             draw=float(prediction.draw_probability),
             away=float(prediction.away_probability),
         )
+        if not isinstance(prediction.training_observations, (tuple, list)):
+            raise ValueError("PAPER_PREDICTION_TRAINING_EVIDENCE_INVALID")
+        training_observations = []
+        training_fixture_ids = []
+        for row in prediction.training_observations:
+            if not isinstance(row, Mapping):
+                raise ValueError("PAPER_PREDICTION_TRAINING_EVIDENCE_INVALID")
+            normalized = dict(row)
+            required = (
+                "fixture_id", "available_at", "recorded_at", "payload_sha256",
+                "availability_basis", "evidence_class", "rights_approval_id",
+            )
+            if not all(isinstance(normalized.get(key), str) and normalized[key].strip()
+                       for key in required):
+                raise ValueError("PAPER_PREDICTION_TRAINING_EVIDENCE_INCOMPLETE")
+            digest = normalized["payload_sha256"]
+            if len(digest) != 64 or any(ch not in "0123456789abcdef"
+                                        for ch in digest.casefold()):
+                raise ValueError("PAPER_PREDICTION_TRAINING_EVIDENCE_HASH_INVALID")
+            training_fixture_ids.append(normalized["fixture_id"])
+            training_observations.append(normalized)
+        if len(training_fixture_ids) != len(set(training_fixture_ids)):
+            raise ValueError("PAPER_PREDICTION_TRAINING_EVIDENCE_DUPLICATE")
+        if training_fixture_ids != sorted(training_fixture_ids):
+            raise ValueError("PAPER_PREDICTION_TRAINING_EVIDENCE_ORDER_INVALID")
         if any(e.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
                and e.fixture_id == prediction.fixture_id
                and e.model_version == prediction.model_version for e in self._events):
@@ -205,6 +231,7 @@ class ProspectivePaperLedger:
             "point_in_time_certifiable": prediction.point_in_time_certifiable,
             "evidence_class": prediction.evidence_class,
             "market_probabilities": market_probabilities,
+            "training_observations": training_observations,
         }
         if prediction.target_provider is not None:
             payload.update({
