@@ -27,7 +27,7 @@ def create_paper_ledger_schema(dsn):
         connection.execute(migration)
 
 
-def make_prediction(fixture_id, *, offset_seconds=1):
+def make_prediction(fixture_id, *, offset_seconds=1, training_observations=()):
     return PaperPrediction(
         fixture_id=fixture_id,
         competition_id="competition-1",
@@ -44,6 +44,7 @@ def make_prediction(fixture_id, *, offset_seconds=1):
         evidence_sha256="a" * 64,
         point_in_time_certifiable=False,
         evidence_class="PROSPECTIVE_OBSERVED_ONLY",
+        training_observations=training_observations,
     )
 
 
@@ -71,6 +72,28 @@ def test_append_and_reload_verifies_hash_chain(dsn):
         assert loaded.events[0] == first
         assert loaded.events[1] == second
         assert second.previous_event_sha256 == first.event_sha256
+        assert loaded.verify_chain()
+
+
+def test_training_observation_evidence_round_trips_through_postgres(dsn):
+    ledger_id = f"test-ledger-{uuid.uuid4()}"
+    evidence = ({
+        "fixture_id": "history-001",
+        "available_at": (NOW - timedelta(days=10)).isoformat(),
+        "recorded_at": (NOW - timedelta(days=9)).isoformat(),
+        "payload_sha256": "b" * 64,
+        "availability_basis": "collector_first_observed_v1",
+        "evidence_class": "PROSPECTIVE_OBSERVED_ONLY",
+        "rights_approval_id": "approval-test",
+    },)
+    with psycopg.connect(dsn) as connection:
+        store = make_store(connection, ledger_id)
+        prediction = store.append_prediction(make_prediction(
+            "fixture-evidence-roundtrip", training_observations=evidence
+        ))
+        loaded = store.load()
+        assert loaded.events[0] == prediction
+        assert loaded.events[0].payload["training_observations"] == list(evidence)
         assert loaded.verify_chain()
 
 
