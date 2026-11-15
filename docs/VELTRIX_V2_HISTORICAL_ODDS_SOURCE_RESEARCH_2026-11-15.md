@@ -37,7 +37,7 @@ Qualification boundary:
 - The last valid pre-kickoff snapshot can be used as a timestamped close proxy only if the quote is genuinely pre-kickoff, its quote-level last_update is fresh enough, and the rule is fixed before evaluation. Do not silently label a stale price as a close.
 - Bookmaker and market coverage must be measured per fixture; the league's existence in the API catalogue is not evidence of 98% coverage.
 
-Next technical action: run a fresh quota preflight against the already configured key, then use only the 1-credit coverage-discovery endpoints to build a fixture × bookmaker × market coverage matrix. Do not request paid odds snapshots until the discovery matrix, quota headroom and per-market cost are reviewed. No API request was made during this research.
+Next technical action: run a fresh quota preflight against the already configured key, then use only the 1-credit coverage-discovery endpoints to build a fixture × bookmaker × market coverage matrix. Do not request paid odds snapshots until the discovery matrix, quota headroom and per-market cost are reviewed. Coverage discovery and entitlement probes were executed; no historical price response was successfully retrieved or stored.
 
 ### B. Odds-API.io — priority 2, exact closing-line API but league coverage unverified
 
@@ -155,7 +155,7 @@ Disposition: does not qualify for bookmaker-specific closing odds. Any use as a 
 - Bookmaker-specific close coverage: NOT CERTIFIED.
 - CLV: NOT CERTIFIED.
 - PIT walk-forward: NOT MET.
-- No new historical-odds API requests or paid captures were made in this research.
+- Historical event/market discovery was executed; the paid price endpoint was rejected and no prices were captured.
 - Value betting remains LOCKED.
 
 
@@ -196,3 +196,18 @@ The technical discovery result is retained here only as source-research context.
 ## 7. Approved-league continuation
 
 Continue The Odds API historical price research only within the five approved sport keys. The next pilot target is a canonical Spain La Liga fixture (Atletico Madrid vs Barcelona, 2026-11-08 20:00 UTC; canonical fixture ID 1426), subject to exact historical event identity and quote timestamp checks. Any historical odds response must be stored only in the isolated staging database under the existing approval; do not upload raw price responses to GitHub artifacts or commit them to the repository.
+
+
+## 8. Historical price endpoint entitlement failure — 2026-11-15
+
+The approved Spain La Liga pilot reached the historical event and market discovery endpoints, confirming the target event and the requested `h2h_3_way` market. The subsequent historical event-odds price request was rejected with HTTP 401 and the provider message: **“Historical odds are only available on paid usage plans.”** The official error catalogue identifies this as the paid-plan restriction (`HISTORICAL_UNAVAILABLE_ON_FREE_USAGE_PLAN`).
+
+- The first two price-pilot runs used the header-only key form and received HTTP 401. A corrected run used the documented `apiKey` query parameter and received the explicit paid-plan restriction.
+- No historical odds price response was returned. No raw odds prices were persisted.
+- The final no-credit account check at 2026-11-15 20:50:40 UTC reported 226 credits used / 274 remaining and confirmed `soccer_spain_la_liga` is in the account sport catalogue.
+- Credit reconciliation from the initial 295-remaining checkpoint: 5 Brazil metadata-discovery credits, 6 approved La Liga event/market discovery credits, and 10 credits consumed by the rejected paid historical price request = 21 total; 274 remain. The 401 response did not produce a price payload.
+- Staging readback after the pilot: 0 matching provider_responses, 0 matching source_observations, 0 normalized odds_quote_observations.
+- The existing source approval is valid for five European competitions, but the account lacks paid historical-price entitlement. The pilot script now fails closed with `BLOCKED_PAID_HISTORICAL_PLAN_REQUIRED`; it will not call the paid endpoint again until entitlement is separately confirmed.
+- The Brazil Série B discovery was metadata-only and outside the current approval scope. It remains excluded from Veltrix data and model use.
+
+Disposition: The Odds API remains approved for the five European competitions for permitted data uses, but historical closing-price capture is BLOCKED by account-plan entitlement. Historical closing odds remain NOT QUALIFIED; CLV remains NOT CERTIFIED; value betting remains LOCKED.
