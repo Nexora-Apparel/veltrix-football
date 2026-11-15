@@ -88,7 +88,7 @@ def _rights_bytes():
         "provider_id": "5dollarfootballapi",
         "permitted_scope": "historical-results-and-fixtures",
         "status": "APPROVED",
-        "allowed_actions": ["PREDICTION_PUBLICATION"],
+        "allowed_actions": ["MODEL_TRAINING", "PUBLIC_DISPLAY"],
         "terms_version": "2026-11",
         "terms": {
             "status": "ACCEPTED",
@@ -122,6 +122,7 @@ def test_provider_rights_evaluator_checks_provider_scope_terms_entitlement_and_q
 @pytest.mark.parametrize("mutation", [
     lambda data: data["allowed_actions"].clear(),
     lambda data: data["entitlement"].update(status="EXPIRED"),
+    lambda data: data["entitlement"].update(expires_at="2020-01-01T00:00:00Z"),
     lambda data: data["entitlement"]["quota"].update(remaining=0),
     lambda data: data["terms"].update(status="NOT_ACCEPTED"),
     lambda data: (data.pop("terms_version"), data["terms"].pop("version")),
@@ -323,3 +324,13 @@ def test_pre_attestation_verifier_rejects_report_manifest_hash_mismatch():
     )
     assert ok is False
     assert code == "REPORT_BOUND_MANIFEST_INVALID"
+
+
+def test_provider_rights_evaluator_accepts_recent_active_nonexpiring_entitlement():
+    raw = json.loads(_rights_bytes())
+    raw["entitlement"].pop("expires_at")
+    payload = json.dumps(raw, sort_keys=True, separators=(",", ":")).encode()
+    record = _rights_record()
+    record["rights_evidence_sha256"] = hashlib.sha256(payload).hexdigest()
+    record["rights_evaluated_at"] = raw["evaluated_at"]
+    assert build_provider_rights_evaluator(lambda uri: payload)(record) is True
