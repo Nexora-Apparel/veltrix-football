@@ -38,4 +38,5 @@ jobs:
         env:
           THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
           VELTRIX_STAGING_DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+          PYTHONPATH: ${{ github.workspace }}
         run: python scripts/phase4_odds_account_probe.py --execute --persist-staging
