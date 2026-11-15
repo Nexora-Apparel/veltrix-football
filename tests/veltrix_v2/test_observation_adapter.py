@@ -139,7 +139,7 @@ def openplay_source_observation():
             "match_id": "123456",
             "competition_code": "eng",
             "season": "2425",
-            "match_date": "2025-05-10",
+            "match_date": "2025-05-10T00:00:00",
             "home_team_id": "1001",
             "away_team_id": "1002",
             "home_score_90": 2,
@@ -162,10 +162,15 @@ def test_openplay_match_snapshot_converts_with_documented_capture_time():
     from veltrix_v2.data.observation_adapter import openplay_match_snapshot_to_observation
 
     row = openplay_source_observation()
-    result = openplay_match_snapshot_to_observation(row)
+    result = openplay_match_snapshot_to_observation(
+        row, team_crosswalk={"1001":"canonical-home","1002":"canonical-away"},
+        competition_crosswalk={"eng":"canonical-premier-league"},
+    )
     assert result is not None
     assert result.fixture_id == "openplay-data-v0.1.0:123456"
-    assert result.competition_id == "openplay-data-v0.1.0:eng"
+    assert result.competition_id == "canonical-premier-league"
+    assert result.home_team_id == "canonical-home"
+    assert result.away_team_id == "canonical-away"
     assert result.kickoff_at is None
     assert result.kickoff_date.isoformat() == "2025-05-10"
     assert result.available_at == row["available_at"]
@@ -180,7 +185,11 @@ def test_openplay_snapshot_is_eligible_only_after_actual_veltrix_recording_time(
     from veltrix_v2.data.observation_adapter import openplay_match_snapshot_to_observation
     from veltrix_v2.models.poisson import observation_eligible_as_of
 
-    result = openplay_match_snapshot_to_observation(openplay_source_observation())
+    result = openplay_match_snapshot_to_observation(
+        openplay_source_observation(),
+        team_crosswalk={"1001":"canonical-home","1002":"canonical-away"},
+        competition_crosswalk={"eng":"canonical-premier-league"},
+    )
     assert result is not None
     assert observation_eligible_as_of(
         result, cutoff_at=datetime(2026, 11, 16, 6, 0, tzinfo=UTC)
@@ -203,4 +212,7 @@ def test_openplay_snapshot_fails_closed_when_temporal_or_rights_evidence_is_inva
 
     row = openplay_source_observation()
     mutation(row)
-    assert openplay_match_snapshot_to_observation(row) is None
+    assert openplay_match_snapshot_to_observation(
+        row, team_crosswalk={"1001":"canonical-home","1002":"canonical-away"},
+        competition_crosswalk={"eng":"canonical-premier-league"},
+    ) is None
