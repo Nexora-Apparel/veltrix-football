@@ -222,3 +222,56 @@ A deeper row-level check of the 738 CSV team rows found two exceptions in the N�
 
 - The Odds API is not an eligible replacement source for Brazil Série B under its current five-European-league approval scope. Metadata-only discovery results were not persisted or admitted; the two missing canonical fixtures remain unresolved, with no replacement mappings.
 - Reviewer-backed crosswalk acceptance remains pending; the 369 verified candidates have not been marked resolved or written to the crosswalk table.
+
+## 8. Brazil Série B 2026 — independent identity and score reconciliation
+
+**Audit result:** PASS WITH TWO UNMATCHED CANONICAL FIXTURES AND ONE SOURCE TEAM-STAT SCORE CONFLICT. All identity candidates remain reviewer-pending; none has been marked RESOLVED.
+
+Reconciliation workflow [#43761387345](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43761387345) passed at code head a55dc20a385a82e6886946850f1aec3b4971ebe5. The sanitized provenance-preserving 369-match JSON report is artifact [#14180247939](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43761387345/artifacts/14180247939), ZIP digest sha256:33f0b1f78f3dd0cf4993b9957e99f562386f8d4c6f56123ad6490dc1dd29cd47.
+
+### Source and staging provenance
+
+- Pinned repository/commit: aimidas1/aimidas1@29baca362a34ce5dcd3924b07ec9c7d5139d83fc
+- File: advanced stats/Brazil Serie B 2026.csv
+- Git blob SHA-1: b6bdb94c053d2149e6232fb100e1f158e46e4533
+- Raw file SHA-256: 55b0c00629abd2d4ff3c31659ada950b67ffc2752609284b32c15c99f71152ab
+- 192,284 bytes; 738 source rows; 369 match labels; 20 distinct source teams; source dates 2026-03-21 through 2026-11-08.
+- Staging source observation ID 432397; provider response ID 1238; response SHA-256 matches the pinned raw-file SHA-256. The observation's separate metadata-payload digest is 21d05be37e65f8e0856045c50819863e111bad3d06e8589757e678eedc59766c.
+- Rights approval: approval-aimidas-football-data-noncommercial-2026-11-15. Source remains non-PIT.
+
+### Team identity result
+
+All 20 source team names map one-to-one to 20 unique canonical 5DollarFootballAPI team registry IDs. Ten mappings use exact names and ten use explicit alias pairs (accent removal or source/canonical naming differences). There are no team-ID collisions or ambiguous team identities. The full source-to-canonical mapping and provider team IDs are in the report artifact. These candidates remain REVIEW_REQUIRED, not accepted crosswalks.
+
+### Match and score result
+
+- 738/738 source rows retained with line numbers, stable source row IDs and SHA-256 row fingerprints.
+- 369/369 source match groups contain exactly two team rows.
+- 369/369 match labels have one unique, correctly oriented canonical fixture candidate.
+- 369/369 match-label final scores agree independently with canonical fixture results.
+- 333 source dates equal the canonical UTC kickoff date; 36 differ by one calendar day. The source field is date-only, so this offset is recorded rather than silently normalized.
+- No duplicate source match groups, ambiguous fixture candidates or canonical score mismatches.
+- No crosswalk rows or normalized fixture rows were written; no database mutation occurred.
+
+**One source-data integrity discrepancy:** source match label Náutico 0-3 CRB (2026-11-07) agrees with canonical fixture ID 1811, provider fixture ID 4070869087, whose result is 0-3. However, the two source team rows report CRB Goals=2, Goals Conceded=0 and Náutico Goals=0, Goals Conceded=2. Both team rows are quarantined from advanced-stat use:
+- line 8, source row SHA-256 78d9492295da1b8dfa9ef735b786f63412089a37640b1f01aa3d57395707abc6
+- line 9, source row SHA-256 ce5bf78a5090a5bef9997ae65c3b5a8e864e117218ed0404e59384b57a62bfb4
+
+The match identity and Match-label score comparison remain valid; the contradictory team-stat rows are not admitted. This is two quarantined team rows in one match, not two canonical score disagreements.
+
+### Two canonical fixtures absent from the source file
+
+1. Canonical fixture ID 1927, provider fixture ID 3538579905: Náutico 1-0 Botafogo SP, 2026-09-03 23:00 UTC. This date falls inside the source file's 2026-03-21–2026-11-08 date range, but no corresponding source match row exists. Exact discrepancy: **within-range match-row omission**. Root cause beyond the source file's omission is not evidenced.
+2. Canonical fixture ID 1807, provider fixture ID 1878457839: Londrina 2-1 Náutico, 2026-11-11 22:00 UTC. This kickoff is after the source file's latest date, 2026-11-08. Exact discrepancy: **source file ends before this fixture**.
+
+Both remain UNRESOLVED_NO_REPLACEMENT_MAPPING. No synthetic, date-shifted or replacement source rows were created.
+
+### Reviewer and admission disposition
+
+- 369 candidate mappings remain NOT_RESOLVED; reviewer acceptance is pending.
+- The two unmatched canonical fixtures remain unresolved.
+- The two inconsistent team-stat rows remain quarantined.
+- No normalized results, advanced-stat features or model-training rows were created.
+- All source observations remain non-PIT; no historical walk-forward admission.
+- AI Midas average odds are not bookmaker-specific timestamped closing odds and do not qualify for CLV.
+- Value betting remains **LOCKED**.
