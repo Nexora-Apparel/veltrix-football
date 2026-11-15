@@ -10,12 +10,18 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
+import sys
 import tempfile
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Mapping
 from urllib.parse import urlparse
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 EXPECTED_DATABASE = "veltrix_football_staging"
 EXPECTED_HOST = "ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech"
@@ -65,6 +71,16 @@ def canonical_json(value: Mapping[str, Any]) -> bytes:
 
 def iso(value: datetime | None) -> str | None:
     return value.astimezone(timezone.utc).isoformat() if value is not None else None
+
+
+def json_safe(value: Any) -> Any:
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, Mapping):
+        return {str(key): json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(item) for item in value]
+    return value
 
 
 def parse_aware(value: Any, code: str) -> datetime:
@@ -406,7 +422,7 @@ def build_feature_rows_from_assets(
             ).fetchall()
         }
         if xg_models != {OPENPLAY_XG_MODEL}:
-            raise RuntimeError("OPENPLAY_XG_MODEL_SET_MISMATCH")
+            raise RuntimeError("OPENPLAY_XG_MODEL_SET_MISMATCH:" + ",".join(sorted(str(value) for value in xg_models)))
         matches_cursor = db.cursor()
         matches_cursor.execute("""
             SELECT * FROM read_parquet(?)
@@ -516,7 +532,7 @@ def build_feature_rows_from_assets(
                             "available_at": iso(feature.available_at),
                             "recorded_at": iso(feature.recorded_at),
                             "eligibility_at": iso(eligibility_at),
-                            "xg_model": feature.xg_model, "metrics": feature.metrics,
+                            "xg_model": feature.xg_model, "metrics": json_safe(feature.metrics),
                             "rights_approval_id": feature.rights_approval_id,
                             "commercial_use_allowed": False, "monetisation_prohibited": True,
                             "attribution_text": approval["attribution_text"],
