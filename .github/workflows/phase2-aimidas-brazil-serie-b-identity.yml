@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   reconcile:
-    if: github.ref == 'refs/heads/integration/v2-report-bundle-wiring-20261114'
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/integration/v2-report-bundle-wiring-20261114'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
