@@ -291,3 +291,20 @@ This is deliberate. The release's static historical contents and commit metadata
 - Cross-provider identity crosswalks: **OUTSTANDING**.
 - Historical odds entitlement and 98% timestamp coverage: **OUTSTANDING**.
 - Stage 2 overall: **OPEN**. No legacy prediction logic is reintroduced and no prediction, publication, value-betting, Telegram or scheduling gate is changed.
+
+
+### Independent CI read-back acceptance — run #43715432543
+
+The complete OpenPlay acquisition/import/audit workflow passed on exact commit `79e6ab4035c5fcf6ba33b073d08187059ca38502`:
+
+- Release hash/schema qualification: PASS.
+- Non-commercial rights-contract tests: PASS (6 tests).
+- Guarded staging import: PASS.
+- Independent read-only staging audit: `PASS_INDEPENDENT_STAGING_READBACK`.
+- Raw assets: 15/15; bytes: 74,460,817.
+- Linked source observations: 15/15.
+- Parquet rows represented: 2,975,394.
+- Manifest SHA-256: `1a733d1c0c84ea93366cd5db7e52967517be8e7a11c3b1394b3abb882bed72ef`.
+- The independent audit re-hashed every stored BYTEA payload and verified its source-observation link, rights approval, non-PIT timestamp fields and completed manifest event.
+
+The workflow is repeatable and idempotent. The second successful import reused the same manifest/assets rather than creating duplicate records.
