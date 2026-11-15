@@ -86,3 +86,19 @@ This runbook is subordinate to the personal-use and separated-control policy in:
 - `docs/VELTRIX_V2_REPORT_TELEGRAM_RELEASE_CONTRACT_2026-11-14.md`
 
 No commercial monetisation or billing-document requirement may be reintroduced as a model-quality, certification or publication gate. Provider terms, endpoint entitlement, quota and the bounded one-request/3-credit safety guard remain applicable.
+
+
+## Historical odds are a separate, higher-cost operation
+
+This runbook's one-request / three-credit guard applies only to the **live** event-odds endpoint. It does not authorize or budget a historical snapshot request.
+
+The provider's official historical-data documentation states:
+- Historical odds snapshots are available only on paid usage plans; historical coverage discovery is available on all plans.
+- Historical coverage discovery endpoints each cost 1 credit per request.
+- The historical odds endpoint costs 10 credits per region per market. The historical event-odds endpoint costs 10 credits per region per market per event.
+- A one-event, one-UK-region request for h2h, totals, and btts therefore has a documented maximum endpoint cost of **30 credits**, before any separately billed coverage-discovery requests.
+- Historical responses include a snapshot timestamp and market-level last_update; both must be retained and checked against the prediction cutoff.
+
+Official source: https://the-odds-api.com/historical-odds-data/ (accessed 2026-11-15).
+
+No historical request is authorized by the three-credit live-probe cap. Historical collection requires a fresh quota preflight, confirmed paid-plan historical endpoint entitlement, a separate immutable credit reservation sized to the exact request, and an explicit operator-run workflow. Until then, the historical odds capture path remains disabled.
