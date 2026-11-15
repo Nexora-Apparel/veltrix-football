@@ -336,3 +336,14 @@ At the time of this ledger:
 - Brazil metadata discovery trail: Londrina–Náutico was absent from the 2026-11-11 21:50:36 snapshot (1 credit); Ponte Preta–Operário PR was found in the 2026-11-12 21:50:36 snapshot with 16 providers, 1X2 three-way listed for 16, totals for 13, BTTS for 3; the 16 includes two exchanges. Total discovery credits used including a parser retry: 5. Latest account quota evidence: 210 used / 290 remaining. No price endpoint calls or database writes.
 - Continue historical price pilot only within the five approved European competitions. Candidate fixture: Atletico Madrid vs Barcelona, 2026-11-08 20:00 UTC, canonical fixture ID 1426, Spain La Liga. Require exact event identity and pre-kickoff quote timestamps. Store raw response only in staging; never upload raw price data to public artifacts.
 - Value betting remains LOCKED; historical closing odds and CLV remain NOT CERTIFIED.
+
+
+### The Odds API historical price entitlement result — 2026-11-15
+
+- Current approved source scope remains five European competitions only: EPL, La Liga, Bundesliga, Serie A and Ligue 1. Brazil Série B is not authorized under the current approval.
+- The approved La Liga sample reached historical event and market discovery, but the historical event-odds endpoint returned HTTP 401 with the provider message that historical odds are only available on paid usage plans. The official error catalogue maps this to the paid-plan restriction. No odds prices were returned or stored.
+- Final no-credit quota probe at 2026-11-15 20:50:40 UTC: 226 used / 274 remaining; approved La Liga sport key present.
+- Credit reconciliation from the 295-remaining checkpoint: 5 Brazil metadata-discovery credits (outside source scope, not admitted), 6 La Liga event/market discovery credits, 10 credits consumed by the rejected paid historical-price request; total 21 credits used, 274 remaining.
+- Read-only staging verification: 0 pilot provider_responses, 0 pilot source_observations, 0 normalized odds_quote_observations. No production writes, predictions, or Telegram messages.
+- The capture script is now fail-closed until paid historical-price entitlement is confirmed. Do not retry the price endpoint or spend more credits under the current account.
+- Historical closing odds: NOT QUALIFIED. CLV: NOT CERTIFIED. PIT walk-forward: NOT MET. Value betting: LOCKED.
