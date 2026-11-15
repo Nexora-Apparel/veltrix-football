@@ -435,8 +435,12 @@ def run_capture(api_key: str, staging_dsn: str) -> dict:
         raise RuntimeError("ODDS_API_HISTORICAL_ODDS_TEAM_IDENTITY_MISMATCH")
 
     summary = _market_summary(odds_data, kickoff, HOME_TEAM, AWAY_TEAM)
-    if MARKET not in summary["market_keys"] or summary["bookmaker_count"] == 0:
-        raise RuntimeError("ODDS_API_HISTORICAL_THREE_WAY_PRICE_DATA_MISSING")
+    if (
+        MARKET not in summary["market_keys"]
+        or summary["bookmaker_count"] == 0
+        or summary["complete_three_way_sportsbooks"] == 0
+    ):
+        raise RuntimeError("ODDS_API_HISTORICAL_NO_COMPLETE_BOOKMAKER_1X2")
     quality = (
         "QUARANTINED_POST_KICKOFF_QUOTE_TIMESTAMPS"
         if summary["post_kickoff_quote_count"] else
