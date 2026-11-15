@@ -420,3 +420,36 @@ Blocking evidence:
 6. Actual Telegram delivery, schedule execution, duplicate/recovery behaviour against production infrastructure and website/report/Telegram byte parity remain unverified.
 
 Public predictions, value betting, the 06:00 WAT schedule, Telegram broadcast and production deployment remain disabled. No production database migration/write, provider request for an Odds API event market, Telegram send or Vercel deployment was performed during this acceptance audit.
+
+
+## Remediation reconciliation — 2026-11-15
+
+This section supersedes stale blocker statements above where later evidence is more specific. It does not authorize publication.
+
+### Rights and provider entitlement corrections
+
+- The 5Dollar approval record `approval-5dollar-community-fixture-result-benchmarking-2026-11-14` is present in the rehearsal database and includes `BENCHMARKING` for the seven explicitly scoped Community competition IDs. Its linked amendment defines that purpose as prospective paper-result settlement and model evaluation, based on the reviewed October 2026 Terms and project-owner confirmation. This is not a provider-issued authorization letter and does not make historical result rows PIT-certifiable. Attribution remains required; raw feed redistribution remains prohibited.
+- The Odds API owner authorization and Terms scope are recorded for five soccer competitions and bounded markets. This is not account entitlement or credit evidence. The available provider responses are catalogue-only; no event odds market quote has been captured. Event-odds dispatch remains blocked until account plan, current quota, hard caps, and request reservation evidence are verified.
+- GOAL API and StrikerAPI remain blocked until their monthly credit reset and a fresh authorization decision. No calls or retries are permitted before then.
+
+### Staging migration correction
+
+The Neon rehearsal branch `veltrix-0011-migration-rehearsal-2026-11-15` reports migrations `0001`–`0011` applied. This does not establish that the separate operational staging branch has the same migration state. The earlier migration blocker is therefore **unresolved for the operational target** until that exact branch/database identity is checked and its migration table is read back. Do not run migrations against production.
+
+### Evidence and model blockers remain genuine
+
+- The 4,509-row rehearsal snapshot includes 2,496 imported legacy fixture rows and 2,013 fixture-result rows; none is marked PIT-certifiable and none has a verified source publication timestamp. These rows must not be retroactively promoted.
+- The 25 prospective shadow predictions are first-observed evidence, but there are no settlements. The one-session capture does not meet the 300-settlement/90-date gate.
+- There are no timestamped Odds API event-market quote rows. The 98% quote-coverage and bookmaker benchmark tests cannot yet be evaluated.
+- The corrected personal-use policy check in `fivedollar_engine.py` uses `commercial=False`; the test approval fixture sets `commercial_use_allowed=False`. This only removes an incorrect commercial-permission prerequisite; all explicit source, purpose, scope, status and time-validity checks remain.
+
+### Runtime and surface remediation boundary
+
+- The code provides a deployment-native trusted verifier factory and environment-driven runtime loader. The production runtime is not configured with the required bundle URL and verifier factory, and the command-data branch has no verified portable bundle or certification manifest. Thus runtime fail-closed behaviour is correct; do not insert a placeholder or unsigned manifest to make the website render.
+- The V2 Telegram workflow is manual-only and hard-locked with `if: false`; no cron is present. The legacy daily-fixture workflow is also hard-paused. No schedule was re-enabled because the previous operator instruction stopped scheduled operation.
+- Cross-surface adapter parity is covered by CI using a controlled test verifier and stub Telegram transport. It is not a live end-to-end delivery acceptance. Actual delivery requires the trusted manifest, runtime configuration, exact destination/database allowlist and a separately authorized controlled send.
+- No production credentials were changed, no deployment variables were guessed, no schedule was enabled, no provider event-odds calls were made and no Telegram messages were sent.
+
+### Current decision
+
+**NO-GO remains correct.** The 5Dollar paper-settlement rights scope is no longer a blocker for prospective paper settlement within the approved seven-competition scope. The unresolved blockers are point-in-time historical provenance, prospective settlement accrual, bookmaker quote acquisition and benchmark evidence, operational staging migration verification, trusted production runtime configuration, and live surface acceptance. Keep all public and value-bet gates locked.
