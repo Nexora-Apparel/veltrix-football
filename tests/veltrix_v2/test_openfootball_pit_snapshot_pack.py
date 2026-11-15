@@ -51,8 +51,8 @@ def test_pack_records_immutable_snapshot_and_actual_retrieval_time(tmp_path):
     assert rows[0]["source_id"] == "openfootball-cc0-archive"
     assert rows[0]["source_commit_timestamp"] == "2025-01-06T10:00:00+00:00"
     assert rows[0]["recorded_at"] == IMPORTED.isoformat()
-    assert rows[0]["point_in_time_certifiable"] is True
-    assert rows[0]["source_timestamp_basis"] == "archival_snapshot_timestamp"
+    assert rows[0]["point_in_time_certifiable"] is False
+    assert rows[0]["source_timestamp_basis"] == "unverified_repository_commit_timestamp"
     assert len(rows[0]["archive_proof_id"]) == 64
     assert manifest["database_written"] is False
     assert "not_yet_eligible_count" in manifest["snapshots"][0]
