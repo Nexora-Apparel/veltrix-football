@@ -117,7 +117,10 @@ def _training_evidence(
         elif evidence_class == "PROSPECTIVE_OBSERVED_ONLY":
             if (
                 row.point_in_time_certifiable is not False
-                or row.availability_basis != "collector_first_observed_v1"
+                or row.availability_basis not in {
+                    "collector_first_observed_v1",
+                    "provider_finished_status_conservative_4d",
+                }
             ):
                 continue
             if not _valid_hash(row.evidence_manifest_sha256):
