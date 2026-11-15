@@ -20,6 +20,9 @@ from veltrix_v2.models.engine import PredictionTarget
 
 def historical_fixture_to_observation(
     fixture: HistoricalFixture,
+    *,
+    team_crosswalk: Mapping[str, str] | None = None,
+    competition_crosswalk: Mapping[str, str] | None = None,
 ) -> MatchObservation | None:
     """Convert a settled, timestamped fixture; return None for unsettled rows."""
     if not isinstance(fixture, HistoricalFixture):
@@ -30,11 +33,26 @@ def historical_fixture_to_observation(
         return None
     if fixture.available_at_utc is None or fixture.available_at_utc > fixture.retrieved_at_utc:
         return None
+    if (team_crosswalk is None) != (competition_crosswalk is None):
+        raise ValueError("HISTORICAL_FIXTURE_CROSSWALK_PAIR_REQUIRED")
+    if team_crosswalk is None:
+        competition_id = f"{fixture.source_id}:{fixture.provider_competition_id}"
+        home_team_id = f"{fixture.source_id}:{fixture.provider_home_team_id}"
+        away_team_id = f"{fixture.source_id}:{fixture.provider_away_team_id}"
+    else:
+        competition_id = competition_crosswalk.get(str(fixture.provider_competition_id))
+        home_team_id = team_crosswalk.get(str(fixture.provider_home_team_id))
+        away_team_id = team_crosswalk.get(str(fixture.provider_away_team_id))
+        if not all(isinstance(value, str) and value.strip()
+                   for value in (competition_id, home_team_id, away_team_id)):
+            return None
+        if home_team_id == away_team_id:
+            return None
     return MatchObservation(
         fixture_id=f"{fixture.source_id}:{fixture.provider_fixture_id}",
-        competition_id=f"{fixture.source_id}:{fixture.provider_competition_id}",
-        home_team_id=f"{fixture.source_id}:{fixture.provider_home_team_id}",
-        away_team_id=f"{fixture.source_id}:{fixture.provider_away_team_id}",
+        competition_id=competition_id,
+        home_team_id=home_team_id,
+        away_team_id=away_team_id,
         kickoff_at=fixture.kickoff_at_utc,
         available_at=fixture.available_at_utc,
         recorded_at=fixture.retrieved_at_utc,
@@ -51,7 +69,12 @@ def historical_fixture_to_observation(
     )
 
 
-def historical_fixture_to_target(fixture: HistoricalFixture) -> PredictionTarget | None:
+def historical_fixture_to_target(
+    fixture: HistoricalFixture,
+    *,
+    team_crosswalk: Mapping[str, str] | None = None,
+    competition_crosswalk: Mapping[str, str] | None = None,
+) -> PredictionTarget | None:
     """Convert a known future scheduled provider fixture into a prediction target."""
     if not isinstance(fixture, HistoricalFixture):
         raise TypeError("HISTORICAL_FIXTURE_REQUIRED")
@@ -59,11 +82,26 @@ def historical_fixture_to_target(fixture: HistoricalFixture) -> PredictionTarget
         return None
     if fixture.kickoff_at_utc <= fixture.retrieved_at_utc:
         return None
+    if (team_crosswalk is None) != (competition_crosswalk is None):
+        raise ValueError("HISTORICAL_FIXTURE_CROSSWALK_PAIR_REQUIRED")
+    if team_crosswalk is None:
+        competition_id = f"{fixture.source_id}:{fixture.provider_competition_id}"
+        home_team_id = f"{fixture.source_id}:{fixture.provider_home_team_id}"
+        away_team_id = f"{fixture.source_id}:{fixture.provider_away_team_id}"
+    else:
+        competition_id = competition_crosswalk.get(str(fixture.provider_competition_id))
+        home_team_id = team_crosswalk.get(str(fixture.provider_home_team_id))
+        away_team_id = team_crosswalk.get(str(fixture.provider_away_team_id))
+        if not all(isinstance(value, str) and value.strip()
+                   for value in (competition_id, home_team_id, away_team_id)):
+            return None
+        if home_team_id == away_team_id:
+            return None
     return PredictionTarget(
         fixture_id=f"{fixture.source_id}:{fixture.provider_fixture_id}",
-        competition_id=f"{fixture.source_id}:{fixture.provider_competition_id}",
-        home_team_id=f"{fixture.source_id}:{fixture.provider_home_team_id}",
-        away_team_id=f"{fixture.source_id}:{fixture.provider_away_team_id}",
+        competition_id=competition_id,
+        home_team_id=home_team_id,
+        away_team_id=away_team_id,
         kickoff_at=fixture.kickoff_at_utc,
         provider=fixture.provider,
         source_id=fixture.source_id,
