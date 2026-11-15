@@ -336,3 +336,40 @@ The scope is deliberately prospective. An observation cannot enter a cutoff befo
 Workflow run [#43716382187](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43716382187) passed the release qualification, guarded import and independent read-back. It persisted 26,547 timestamped match-result snapshots under capture manifest ID `93`, manifest SHA-256 `0075d4c2b28dd12d2f0aa7dbc80a69637827da64ed3e7b3d418c31e5b218a184`.
 
 **Important boundary:** this supports prospective use after the VELTRIX import; it does not support historical backtests whose prediction cutoffs predate 2026-11-15. The other OpenPlay Parquet assets (player-match statistics, lineups, shots, formations and cards) remain stored as immutable raw assets. Their row-level feature adapters and joins to the documented match-page capture timestamp are still outstanding. Do not claim those feature families are already PIT-admitted.
+
+## 13. OpenPlay row-level feature bundle acceptance — 2026-11-15
+
+The remaining OpenPlay row-level extraction gate has now passed in the isolated staging workflow.
+
+- Qualification run: [43723395022](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43723395022).
+- Builder commit: `1f56456f893717e26375ab99f999b8e66b533306`.
+- PR head after the associated regression-test commit: `cdad8632c0d77afb831744bb0c6a880284ffa98f`.
+- Release: `data-v0.1.0`, pinned commit `ac0bd9aff52016066433ebebf818bec4278fcf54`.
+- Staging import and independent read-back: PASS.
+- Row-level feature bundle: 20,178 rows.
+- JSONL SHA-256: `9ed328dd7c9ae235c47252e32bde0bb06d2a030ec38d151eeda7de264408bdc1`.
+- Workflow artifact digest: `sha256:5e101a56f8f68b9b6bc6f9982bc3e282aa76e5f2c96a6b4fd91c31d412a2e3cc`.
+- Team/competition crosswalks: 89 teams and 5 competitions.
+- Feature-quality exclusions: 46 known-gap/data-issue matches; 16,389 matches excluded for unresolved identity mappings.
+- Duplicate natural-key quarantine remains explicit: 644 formation rows and 2 player-match-stat rows.
+- Bundle generation made zero database writes.
+- The artifact contains derived JSONL and non-raw audit evidence only; raw Parquet assets remain in staging.
+
+### Invalid possession metric exclusion
+
+Independent inspection found source `possession_pct` values outside the documented percentage/share range, including negative values. The adapter no longer exposes this field to model features. Each affected feature row records:
+
+`excluded_source_metrics.possession_pct = SOURCE_VALUES_VIOLATE_DOCUMENTED_PERCENTAGE_RANGE`
+
+No rescaling or inferred correction is performed. The final artifact was independently checked: 20,178/20,178 rows omit `team.possession_pct` and carry the explicit exclusion marker. The JSONL SHA-256 recomputes exactly to the manifest digest.
+
+### Current OpenPlay disposition
+
+- Rights, release integrity, staging persistence and independent read-back: PASS.
+- Row-level team/player/lineup/shot/card/formation feature extraction: PASS for the accepted mapped subset.
+- Feature provenance, hashes and strict post-import cutoff eligibility: PASS.
+- Historical pre-import PIT eligibility: NOT ALLOWED.
+- Baseline Poisson probabilities: unchanged; OpenPlay remains a verified evaluation sidecar, not yet a model input.
+- Feature-aware challenger training and chronological evaluation: OUTSTANDING.
+
+This acceptance supersedes earlier statements in this document that the OpenPlay row-level feature adapter or staging bundle was still outstanding. It does not close Stage 2 overall.
