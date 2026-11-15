@@ -682,3 +682,33 @@ This is the authoritative handoff for the next VELTRIX FOOTBALL 2.0 session. Pre
 
 ### Non-negotiable controls
 No paid upgrade, PR merge, production write/deploy, public prediction publication, Telegram delivery, schedule activation or value-bet unlock without explicit authorization. Keep the 389 accepted AI Midas mappings, two source-absent fixtures and two contradictory quarantined team-stat rows unchanged.
+
+
+## New-session verification and staging read-only audit — 2026-11-15 23:50 WAT
+
+### Repository and exact-head CI
+- Re-fetched PR #120 and this ledger from the integration branch. Actual PR HEAD is `e18f8526e42389a6b4876e1735e3fb7175e5f33f`; PR remains OPEN / DRAFT / UNMERGED. GitHub reports mergeable=true, which is not release authorization.
+- Branch comparison against `main` at `0ac4fe22d72b899bf873c470408bd7dbf44ce800`: 799 ahead / 0 behind; merge base equals current main. No integration or merge was performed.
+- Exact-HEAD Actions runs on `e18f8526`: Phase 5 Shadow Regression #43771450002 SUCCESS (shadow-regression, PostgreSQL 16 and PostgreSQL 18 jobs); Phase 2 Data Foundation #43771450107 SUCCESS (foundation, PostgreSQL 16/18 reservation integration, AI Midas Brazil Série B identity audit); Historical Model Audit #43771449995 SUCCESS; Certification Evidence Integrity #43771449998 SUCCESS; Historical Model Audit Tests #43771449995 SUCCESS. Daily Fixture Predictions #43771450007 was SKIPPED as intended. Combined legacy commit-status API returned no status entries; required GitHub Actions check-runs above are the CI evidence.
+- AI Midas Brazil Série B identity reconciliation run #43771450044 SUCCESS: exact pinned-source reconciliation workflow completed all 369 match reconciliation steps read-only. Preserve the accepted mappings and existing quarantines; do not rewrite them.
+
+### Operational Neon staging read-only recheck
+- Target unchanged: project `withered-sky-75161174`, branch `br-silent-violet-bc5de88s`, database `veltrix_football_staging`, role `neondb_owner`.
+- Current counts: 2,496 canonical fixtures, all FINISHED; 34,582 source observations; 0 feature snapshots; 0 feature snapshot links; 0 feature eligibility events; 0 `odds_quote_observations`; 25 paper-ledger events.
+- Latest persisted 5Dollar entitlement remains `community / ACTIVE`, checked `2026-11-12T22:51:54.745232Z`. No Ultra observation exists. This is stale and does not establish live entitlement on 15 November; the Ultra-only history endpoint remains BLOCKED.
+- No upcoming canonical fixture rows exist in this staging target. No new V2 prospective forecast can be admitted until upcoming fixtures are reconciled and PIT feature snapshots/links/eligibility evidence are built.
+- Read-only queries only. No provider request, quota spend, database write, odds capture, forecast, settlement or production operation occurred.
+
+### Entitlement probe safety finding
+- Inspected `scripts/probe_fivedollar_account.py` at this branch. It calls `GET /v1/status`, then continues into league/fixture/odds sampling and attempts one `/fixtures/{id}/odds/history?market=btts` request without first gating that request on a confirmed Ultra plan. Do NOT execute this multi-purpose script as the next entitlement check; it is not a safe status-only preflight for the current Ultra-only requirement.
+- The integration branch has no dedicated status-only workflow in the inspected Phase 5 capture/settlement workflow files. The connected GitHub integration exposes no workflow-dispatch action. The safe next implementation is a dedicated status-only, no-credit runner that persists the raw status response/hash, checked_at, plan, limits and quota headers, and performs no league, fixture, odds or history calls. Until that runner can execute with the protected key, entitlement remains BLOCKED / NOT RE-VERIFIED.
+
+### Workstream state reaffirmed
+1. Historical bookmaker closing-odds qualification: BLOCKED; no accepted seven-competition bookmaker-specific close archive. Opening observations remain opening-only.
+2. 5Dollar Ultra entitlement: BLOCKED; last persisted entitlement is stale Community; do not call the history endpoint until fresh status proves Ultra.
+3. Prospective timestamped odds: no quote observations in the dedicated quote table; keep source timestamps distinct from retrieval timestamps.
+4. New eligible V2 forecasts: none; feature/eligibility tables empty and no upcoming canonical fixtures in this staging target. Do not reuse legacy Poisson events.
+5. Verified settlements: paper ledger has 25 events; 0 eligible settlements at the latest prior audit. Settle only genuinely FINISHED targets with full exact-identity and post-commit evidence.
+6. Market certification: NOT_CERTIFIED. Preserve all agreed thresholds and keep value betting locked.
+
+**Controls unchanged:** no paid upgrade, PR merge, production write/deploy, publication, Telegram delivery, schedule activation or value-betting unlock.
