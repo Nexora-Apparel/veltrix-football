@@ -277,3 +277,20 @@ The last persisted provider response reports 16 requests remaining against the 3
 | **Total** | **763** | **675** | **88** |
 
 Counts are grouped by canonical fixture competition through the active crosswalk. No competition is omitted; all 88 remaining fixtures are still in the frozen capture universe.
+
+
+### Final 90-day opening-odds acquisition — 2026-11-15 18:07 UTC
+
+<badge>COMPLETE — OPENING QUOTE COVERAGE</badge>
+
+- Final manifest 139 captured the 13 residual fixtures; all 13 requests returned HTTP 200 and persisted 13 source observations. Zero retries.
+- Manifests 109–139: 31 controlled batches; 30 × 25 plus the final 13 = **763/763** requests, responses and raw observations.
+- Independent final reconciliation: 763 distinct provider fixture IDs; 763 unique payload hashes; 763 PIT-certifiable records; 763 exact rights approvals; 763 active resolved canonical fixture crosswalks; 763 valid Bet365 1X2 opening quotes with opening timestamps before kickoff and available by retrieval.
+- Competition totals exactly reconcile to the frozen universe: Brazil Serie A 115/115; Brazil Serie B 151/151; England Premier League 100/100; France Ligue 1 90/90; Germany Bundesliga I 81/81; Italy Serie A 110/110; Spain La Liga 116/116.
+- Opening-quote coverage is **100% (763/763)** and exceeds the 98% coverage gate. Latest stored quota evidence after manifest 139: 208/300 remaining.
+- Latest completed capture run #43744662625; manifest 139; artifact #14173509833. Capture job and aggregate-only artifact upload succeeded.
+- CI on the capture head passed Phase 2 Data Foundation, PostgreSQL 16/18 acceptance, Phase 5 Shadow Regression, Certification Evidence Integrity and Historical Model Audit. Daily Fixture Predictions was skipped as intended.
+
+**Important boundary:** this completes the 90-day timestamped *opening-odds* acquisition only. It does not establish historical closing prices, line movement or CLV. The 5Dollar history endpoint remains Ultra-only; The Odds API account evidence remains catalogue-only; alternative vendors remain unverified. No acceptable historical/closing-odds evidence source has been qualified.
+
+**Final Stage 2 exit decision remains NO-GO — OPEN / NOT COMPLETE / NOT RELEASE-READY.** The opening-odds coverage gate is now PASS. Historical/closing odds and CLV remain BLOCKED/NOT MET, and the market-specific model certification thresholds (walk-forward sample counts, prospective settled selections/dates, positive ROI and confidence bound, and bookmaker benchmark superiority) remain unmet. Stage 3, production deployment, prediction publication, Telegram delivery, schedule activation and value betting remain disabled.
