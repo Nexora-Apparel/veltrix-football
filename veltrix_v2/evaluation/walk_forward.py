@@ -45,6 +45,7 @@ class FixtureEvaluation:
     competition_id: str
     kickoff_at: datetime
     cutoff_at: datetime
+    recorded_at: datetime
     actual_home_goals: int
     actual_away_goals: int
     actual_1x2: str
@@ -285,6 +286,7 @@ def walk_forward_evaluate(
         scored.append(FixtureEvaluation(
             fixture_id=target.fixture_id, competition_id=target.competition_id,
             kickoff_at=target.kickoff_at, cutoff_at=cutoff,
+            recorded_at=target.recorded_at,
             actual_home_goals=target.home_goals, actual_away_goals=target.away_goals,
             actual_1x2=("HOME" if actual == 0 else "DRAW" if actual == 1 else "AWAY"),
             model_home_win=prediction.home_win, model_draw=prediction.draw,
@@ -329,27 +331,35 @@ def walk_forward_evaluate(
         split = max(50, int(len(subset) * 0.6))
         outputs: dict[str, BinaryMetrics] = {}
         if split < len(subset):
-            calibration_rows, test_rows = subset[:split], subset[split:]
+            calibration_pool, test_rows = subset[:split], subset[split:]
             for market, probability_attr, outcome_fn in (
                 ("btts", "model_btts_yes", lambda row: int(row.actual_home_goals > 0 and row.actual_away_goals > 0)),
                 ("over_2_5", "model_over_2_5", lambda row: int(row.actual_home_goals + row.actual_away_goals >= 3)),
             ):
-                try:
-                    calibrator = fit_binary_platt(
-                        [getattr(row, probability_attr) for row in calibration_rows],
-                        [outcome_fn(row) for row in calibration_rows],
+                probabilities, outcomes, fit_counts = [], [], []
+                for target_row in test_rows:
+                    fit_rows = [row for row in calibration_pool
+                                if row.kickoff_at < target_row.cutoff_at
+                                and row.recorded_at <= target_row.cutoff_at]
+                    if len(fit_rows) < 50:
+                        continue
+                    try:
+                        calibrator = fit_binary_platt(
+                            [getattr(row, probability_attr) for row in fit_rows],
+                            [outcome_fn(row) for row in fit_rows],
+                        )
+                    except (TypeError, ValueError):
+                        continue
+                    probabilities.append(
+                        apply_binary_platt(getattr(target_row, probability_attr), calibrator)
                     )
-                except (TypeError, ValueError):
-                    continue
-                probabilities = [
-                    apply_binary_platt(getattr(row, probability_attr), calibrator)
-                    for row in test_rows
-                ]
-                outcomes = [outcome_fn(row) for row in test_rows]
-                outputs[market] = _binary_metrics(probabilities, outcomes)
-                key = f"{competition}:{market}"
-                calibration_fit_samples[key] = len(calibration_rows)
-                calibration_test_samples[key] = len(test_rows)
+                    outcomes.append(outcome_fn(target_row))
+                    fit_counts.append(len(fit_rows))
+                if probabilities:
+                    outputs[market] = _binary_metrics(probabilities, outcomes)
+                    key = f"{competition}:{market}"
+                    calibration_fit_samples[key] = min(fit_counts)
+                    calibration_test_samples[key] = len(probabilities)
         competition_calibration[competition] = outputs
 
     return WalkForwardReport(
