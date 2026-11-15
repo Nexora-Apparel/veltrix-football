@@ -329,7 +329,7 @@ jobs:
 
 
   odds-api-no-credit-preflight:
-    if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'run-veltrix-odds-api-brazil-discovery' && github.event.pull_request.head.ref == 'integration/v2-report-bundle-wiring-20261114'
+    if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'run-veltrix-odds-api-quota-check' && github.event.pull_request.head.ref == 'integration/v2-report-bundle-wiring-20261114'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -345,18 +345,6 @@ jobs:
           python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
       - name: Verify Brazil Serie B sport entitlement and current quota without odds credits
         run: python -m scripts.veltrix_v2.probe_odds_api_no_credit
-      - name: Test capped historical discovery contract
-        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_odds_api_brazil_serie_b_history.py
-      - name: Discover one historical Brazil Serie B event and its bookmaker markets (maximum two credits)
-        run: python -m scripts.veltrix_v2.probe_odds_api_brazil_serie_b_history --snapshot-at 2026-11-12T21:55:00Z --kickoff 2026-11-12T22:00:00Z --home "Ponte Preta" --away "Operário PR" --region eu --output /tmp/odds-api-brazil-serie-b-history-discovery.json
-      - name: Upload sanitized historical coverage discovery
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: veltrix-odds-api-brazil-serie-b-history-discovery
-          path: /tmp/odds-api-brazil-serie-b-history-discovery.json
-          if-no-files-found: warn
-          retention-days: 30
 
 
   odds-api-approved-league-price-pilot:
