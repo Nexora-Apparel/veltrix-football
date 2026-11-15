@@ -105,6 +105,9 @@ def _parse_openplay_utc(value: Any) -> datetime | None:
 
 def openplay_match_snapshot_to_observation(
     source_observation: Mapping[str, Any],
+    *,
+    team_crosswalk: Mapping[str, str],
+    competition_crosswalk: Mapping[str, str],
 ) -> MatchObservation | None:
     """Adapt a hash-bound OpenPlay page snapshot for cutoffs after VELTRIX recorded it.
 
@@ -138,7 +141,17 @@ def openplay_match_snapshot_to_observation(
     recorded_at = _parse_openplay_utc(source_observation.get("recorded_at"))
     retrieved_at = _parse_openplay_utc(source_observation.get("retrieved_at"))
     try:
-        match_date = date.fromisoformat(str(payload.get("match_date")))
+        raw_match_date = payload.get("match_date")
+        if isinstance(raw_match_date, datetime):
+            match_date = raw_match_date.date()
+        elif isinstance(raw_match_date, date):
+            match_date = raw_match_date
+        else:
+            raw_match_date = str(raw_match_date)
+            try:
+                match_date = date.fromisoformat(raw_match_date)
+            except ValueError:
+                match_date = datetime.fromisoformat(raw_match_date.replace("Z", "+00:00")).date()
         home_goals = int(payload.get("home_score_90"))
         away_goals = int(payload.get("away_score_90"))
     except (TypeError, ValueError):
@@ -164,6 +177,14 @@ def openplay_match_snapshot_to_observation(
     response_id = source_observation.get("provider_response_id")
     if not all((match_id, comp, home_id, away_id, payload.get("season"), payload.get("xg_model"))):
         return None
+    canonical_competition = competition_crosswalk.get(comp)
+    canonical_home = team_crosswalk.get(home_id)
+    canonical_away = team_crosswalk.get(away_id)
+    if not all(isinstance(value, str) and value.strip()
+               for value in (canonical_competition, canonical_home, canonical_away)):
+        return None
+    if canonical_home == canonical_away:
+        return None
     if not all(isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value)
                for value in (payload_hash, manifest_hash, response_hash)):
         return None
@@ -172,9 +193,9 @@ def openplay_match_snapshot_to_observation(
 
     return MatchObservation(
         fixture_id=f"{OPENPLAY_SOURCE_ID}:{match_id}",
-        competition_id=f"{OPENPLAY_SOURCE_ID}:{comp}",
-        home_team_id=f"{OPENPLAY_SOURCE_ID}:{home_id}",
-        away_team_id=f"{OPENPLAY_SOURCE_ID}:{away_id}",
+        competition_id=canonical_competition,
+        home_team_id=canonical_home,
+        away_team_id=canonical_away,
         kickoff_at=None,
         available_at=available_at,
         recorded_at=recorded_at,
