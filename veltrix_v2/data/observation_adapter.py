@@ -212,3 +212,98 @@ def openplay_match_snapshot_to_observation(
         capture_evidence_sha256=response_hash,
         provider_competition_id=comp,
     )
+
+
+def load_openplay_match_observations(connection) -> tuple[MatchObservation, ...]:
+    """Load only rights-approved, resolved-identity OpenPlay result snapshots.
+
+    This is a read-only staging loader. PIT eligibility is still evaluated
+    separately for every prediction cutoff by the chronological evaluator.
+    """
+    if connection is None:
+        raise ValueError("OPENPLAY_DATABASE_CONNECTION_REQUIRED")
+    cursor = connection.cursor()
+    try:
+        cursor.execute("""
+            SELECT s.provider,s.source_id,s.entity_type,s.provider_entity_id,
+                   s.payload_sha256,s.retrieved_at,s.payload,s.available_at,
+                   s.availability_basis,s.rights_approval_id,s.provider_response_id,
+                   s.point_in_time_certifiable,s.source_published_at,s.recorded_at,
+                   s.source_timestamp_basis,
+                   hc.canonical_entity_key AS canonical_home_team,
+                   ac.canonical_entity_key AS canonical_away_team,
+                   cc.canonical_entity_key AS canonical_competition
+            FROM source_observations s
+            JOIN entity_crosswalk_versions hc
+              ON hc.entity_type='TEAM' AND hc.provider=s.provider
+             AND hc.source_id=s.source_id
+             AND hc.provider_entity_id=s.payload->>'home_team_id'
+             AND hc.mapping_status='RESOLVED'
+             AND hc.mapping_method='EXACT_NAME_AND_COMPETITION_OVERLAP'
+            JOIN entity_crosswalk_versions ac
+              ON ac.entity_type='TEAM' AND ac.provider=s.provider
+             AND ac.source_id=s.source_id
+             AND ac.provider_entity_id=s.payload->>'away_team_id'
+             AND ac.mapping_status='RESOLVED'
+             AND ac.mapping_method='EXACT_NAME_AND_COMPETITION_OVERLAP'
+            JOIN entity_crosswalk_versions cc
+              ON cc.entity_type='COMPETITION' AND cc.provider=s.provider
+             AND cc.source_id=s.source_id
+             AND cc.provider_entity_id=s.payload->>'competition_code'
+             AND cc.mapping_status='RESOLVED'
+             AND cc.mapping_method='EXPLICIT_REGION_NAME_ALIAS'
+            JOIN source_approvals a
+              ON a.approval_id=s.rights_approval_id
+             AND a.status='APPROVED'
+             AND a.commercial_use_allowed=FALSE
+             AND a.permitted_uses @> '["model_training"]'::jsonb
+            WHERE s.provider=%s AND s.source_id=%s
+              AND s.entity_type='match_result_snapshot'
+              AND s.point_in_time_certifiable IS TRUE
+              AND s.source_timestamp_basis='documented_guarantee'
+              AND s.availability_basis='openplay_page_saved_at_utc_v1'
+            ORDER BY s.id
+        """, (OPENPLAY_PROVIDER, OPENPLAY_SOURCE_ID))
+        rows = cursor.fetchall()
+    finally:
+        cursor.close()
+
+    observations: list[MatchObservation] = []
+    for row in rows:
+        (
+            provider, source_id, entity_type, provider_entity_id, payload_sha256,
+            retrieved_at, payload, available_at, availability_basis, rights_approval_id,
+            provider_response_id, point_in_time_certifiable, source_published_at,
+            recorded_at, source_timestamp_basis, canonical_home_team,
+            canonical_away_team, canonical_competition,
+        ) = row
+        if not isinstance(payload, Mapping):
+            continue
+        home_source_id = str(payload.get("home_team_id") or "")
+        away_source_id = str(payload.get("away_team_id") or "")
+        competition_source_id = str(payload.get("competition_code") or "")
+        observation = openplay_match_snapshot_to_observation(
+            {
+                "provider": provider, "source_id": source_id,
+                "entity_type": entity_type, "provider_entity_id": provider_entity_id,
+                "payload_sha256": payload_sha256, "retrieved_at": retrieved_at,
+                "recorded_at": recorded_at, "available_at": available_at,
+                "source_published_at": source_published_at,
+                "availability_basis": availability_basis,
+                "source_timestamp_basis": source_timestamp_basis,
+                "rights_approval_id": rights_approval_id,
+                "provider_response_id": provider_response_id,
+                "point_in_time_certifiable": point_in_time_certifiable,
+                "payload": payload,
+            },
+            team_crosswalk={
+                home_source_id: str(canonical_home_team),
+                away_source_id: str(canonical_away_team),
+            },
+            competition_crosswalk={
+                competition_source_id: str(canonical_competition),
+            },
+        )
+        if observation is not None:
+            observations.append(observation)
+    return tuple(observations)
