@@ -14,7 +14,15 @@ ROLES = ("walk_forward_rows", "coverage_audit", "prospective_ledger", "odds_snap
 def _write_bundle(tmp_path, walk, paper, odds, settlements, source_responses=None):
     payloads = {
         "walk_forward_rows": {"rows": walk},
-        "coverage_audit": {"rights_status": "APPROVED_FOR_INTENDED_USE", "commercial_use_eligible": True, "approved_source_ids": ["source-a"], "rows": []},
+        "coverage_audit": {
+            "rights_status": "APPROVED_FOR_INTENDED_USE",
+            "project_use_mode": "NON_COMMERCIAL_ONLY",
+            "noncommercial_use_eligible": True,
+            "commercial_use_eligible": False,
+            "raw_redistribution_allowed": False,
+            "approved_source_ids": ["source-a"],
+            "rows": [],
+        },
         "prospective_ledger": {"rows": paper},
         "odds_snapshots": {"rows": odds},
         "settlement_records": {"rows": settlements},
@@ -151,6 +159,27 @@ def test_raw_certification_rejects_unapproved_rights(tmp_path):
     with pytest.raises(EvidenceIntegrityError, match="approved rights"):
         recompute_raw_certification(manifest)
 
+
+
+@pytest.mark.parametrize("field,value", [
+    ("commercial_use_eligible", True),
+    ("noncommercial_use_eligible", False),
+    ("project_use_mode", "COMMERCIAL"),
+    ("raw_redistribution_allowed", True),
+])
+def test_raw_certification_rejects_rights_that_violate_noncommercial_policy(tmp_path, field, value):
+    manifest = _write_bundle(tmp_path, [], [], [], [])
+    path = tmp_path / "coverage_audit.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload[field] = value
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
+    for artifact in manifest_payload["artifacts"]:
+        if artifact["role"] == "coverage_audit":
+            artifact["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    manifest.write_text(json.dumps(manifest_payload), encoding="utf-8")
+    with pytest.raises(EvidenceIntegrityError, match="non-commercial"):
+        recompute_raw_certification(manifest)
 
 
 def test_raw_certification_rejects_altered_provider_response_bytes(tmp_path):
