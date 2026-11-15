@@ -87,7 +87,7 @@ For each source match, the audit:
 7. Requires exactly one canonical fixture candidate.
 8. Independently compares canonical home and away result scores to the source match-label score.
 
-All 369 matches passed all checks. The fixture IDs are distinct; no source match maps to a reused canonical fixture. 736/738 team rows agree with the score orientation in their parent match label. Two rows in the Náutico 0–3 CRB match do not agree and are individually quarantined from statistics/features; they do not invalidate the exact match-label-to-canonical fixture identity.
+All 369 match-level fixture-identity and canonical score checks passed. The fixture IDs are distinct; no source match maps to a reused canonical fixture. 736/738 team rows agree with the score orientation in their parent match label. Two rows in the Náutico 0–3 CRB match do not agree and are individually quarantined from statistics/features; they do not invalidate the exact match-label-to-canonical fixture identity.
 
 
 ### 4.1 Team-stat row discrepancy — quarantine
@@ -158,9 +158,37 @@ Dedicated implementation:
 
 - `scripts/veltrix_v2/reconcile_aimidas_brazil_serie_b_2026.py`
 - `tests/veltrix_v2/test_aimidas_brazil_serie_b_2026.py`
-- `.github/workflows/phase2-aimidas-brazil-serie-b-identity.yml`
+- `.github/workflows/veltrix-v2-foundation.yml`
 
-The workflow fetches the pinned source snapshot, independently verifies file pins and CSV inventory, performs a read-only staging transaction, checks the staging raw bytes against the source snapshot, calculates all row fingerprints and uploads only the sanitized audit JSON. The workflow result and artifact hash are appended to this report after completion.
+The workflow fetches the pinned source snapshot, independently verifies file pins and CSV inventory, performs a read-only staging transaction, checks the staging raw bytes against the source snapshot, calculates all row fingerprints and uploads only the sanitized audit JSON. The workflow result and artifact hash are recorded below.
+
+
+
+### Row-level quarantine identifiers
+
+The two quarantined rows retain the following stable source IDs and canonical-row SHA-256 fingerprints:
+
+| CSV line | Source row ID | Canonical row SHA-256 |
+|---:|---|---|
+| 8 (CRB) | aimidas:29baca362a34ce5dcd3924b07ec9c7d5139d83fc:advanced stats/Brazil Serie B 2026.csv:8:78d9492295da1b8d | 78d9492295da1b8dfa9ef735b786f63412089a37640b1f01aa3d57395707abc6 |
+| 9 (Náutico) | aimidas:29baca362a34ce5dcd3924b07ec9c7d5139d83fc:advanced stats/Brazil Serie B 2026.csv:9:ce5bf78a5090a5be | ce5bf78a5090a5bef9997ae65c3b5a8e864e117218ed0404e59384b57a62bfb4 |
+
+The shared source match-key SHA-256 is 2ead50b10c190f2c4db326f25a0b15cf73a0e129c89c9a15d1cb58f19466af82.
+
+### Completed workflow verification
+
+- Workflow: VELTRIX 2.0 Phase 2 Data Foundation Tests
+- Run: [#43758559130](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43758559130)
+- Audit job: aimidas-brazil-serie-b-identity — SUCCESS
+- Run head: a36198f2d5b128ed96ce5ef140d38254c637b542
+- Focused tests: 21 passed
+- Reconciliation output: 20 teams verified; 369 fixture identities verified; 369 canonical score agreements; 2 absent canonical fixtures; 2 quarantined team-stat rows; 0 database mutations; 0 crosswalk writes.
+- Sanitized artifact: [artifact #14178319188](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43758559130/artifacts/14178319188)
+- Artifact ZIP SHA-256: 4b8c0ed7489cf82dd48c34ca1ba55f884ae5fe652fb2190c919139721a764500
+- Artifact ZIP size: 110,951 bytes; embedded JSON manifest: 713,060 bytes.
+- The artifact contains 738 unique source row IDs and 738 unique row SHA-256 fingerprints, 369 unique match-key hashes and 369 candidate fixture links. It excludes the raw CSV body.
+
+The run's audit job and focused tests passed. PR #120 remains draft/open/unmerged; this audit success is not a merge or release approval.
 
 ## 10. Side effects
 
