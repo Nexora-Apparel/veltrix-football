@@ -7,6 +7,8 @@ inside each chronological training fold.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
+import heapq
 import math
 from typing import Iterable
 
@@ -101,60 +103,88 @@ class DixonColesTrainingRateRow:
 def build_dixon_coles_rate_history(
     observations: Iterable[object], *, competition_id: str, as_of,
 ) -> tuple[DixonColesTrainingRateRow, ...]:
-    """Precompute each historical match's strictly pre-kickoff Poisson rates once.
+    """Precompute rolling PIT Poisson rates in one chronological pass.
 
-    These immutable rows can be reused across later target cutoffs in the same
-    competition. A target fold still filters each result by its own available
-    and recorded clocks before fitting rho.
+    Earlier fixtures enter the active statistics only once both their
+    availability and recording clocks are at or before each historical
+    kickoff. This is O(n log n), avoids repeated full-fold model fits, and
+    preserves the exact conservative target-cutoff rule.
     """
-    from datetime import timedelta
     from veltrix_v2.models.poisson import (
-        MatchObservation, observation_eligible_as_of, predict_match,
+        MatchObservation, observation_eligible_as_of,
     )
     source = list(observations)
     if any(not isinstance(row, MatchObservation) for row in source):
         raise ValueError("DIXON_COLES_OBSERVATION_TYPE_INVALID")
-    source.sort(key=lambda row: row.kickoff_at or row.available_at)
+    counts: dict[str, int] = {}
+    for row in source:
+        counts[row.fixture_id] = counts.get(row.fixture_id, 0) + 1
+    source = [row for row in source
+              if counts.get(row.fixture_id) == 1
+              and row.competition_id == competition_id
+              and row.point_in_time_certifiable is True
+              and row.kickoff_at is not None
+              and observation_eligible_as_of(row, cutoff_at=as_of,
+                                             competition_id=competition_id)]
+    source.sort(key=lambda row: (row.kickoff_at, row.fixture_id))
+
+    # Heap entries are ready_at, sequence, observation. The sequence avoids
+    # comparing dataclass objects when two source clocks are identical.
+    pending = []
+    sequence = 0
+    active_count = 0
+    league_home_sum = league_away_sum = 0.0
+    home_stats: dict[str, list[float]] = {}
+    away_stats: dict[str, list[float]] = {}
     rate_rows: list[DixonColesTrainingRateRow] = []
-    for historical in source:
-        if historical.competition_id != competition_id or historical.kickoff_at is None:
-            continue
-        if historical.point_in_time_certifiable is not True:
-            continue
-        if not observation_eligible_as_of(
-            historical, cutoff_at=as_of, competition_id=competition_id
-        ):
-            continue
-        historical_cutoff = historical.kickoff_at - timedelta(seconds=1)
-        prior = [
-            row for row in source
-            if row.fixture_id != historical.fixture_id
-            and row.competition_id == competition_id
-            and row.point_in_time_certifiable is True
-            and observation_eligible_as_of(
-                row, cutoff_at=historical_cutoff, competition_id=competition_id
-            )
-        ]
-        try:
-            baseline = predict_match(
-                prior, competition_id=competition_id,
-                home_team_id=historical.home_team_id,
-                away_team_id=historical.away_team_id,
-                kickoff_at=historical.kickoff_at,
-                cutoff_at=historical_cutoff,
-            )
-        except (TypeError, ValueError):
-            continue
-        rate_rows.append(DixonColesTrainingRateRow(
-            fixture_id=historical.fixture_id,
-            kickoff_at=historical.kickoff_at,
-            available_at=historical.available_at,
-            recorded_at=historical.recorded_at,
-            expected_home_goals=baseline.expected_home_goals,
-            expected_away_goals=baseline.expected_away_goals,
-            home_goals=historical.home_goals,
-            away_goals=historical.away_goals,
-        ))
+
+    def add_active(row):
+        nonlocal active_count, league_home_sum, league_away_sum
+        active_count += 1
+        league_home_sum += row.home_goals
+        league_away_sum += row.away_goals
+        hs = home_stats.setdefault(row.home_team_id, [0.0, 0.0, 0.0])
+        hs[0] += row.home_goals
+        hs[1] += row.away_goals
+        hs[2] += 1
+        aw = away_stats.setdefault(row.away_team_id, [0.0, 0.0, 0.0])
+        aw[0] += row.away_goals
+        aw[1] += row.home_goals
+        aw[2] += 1
+
+    for index, historical in enumerate(source):
+        cutoff = historical.kickoff_at - timedelta(seconds=1)
+        while pending and pending[0][0] <= cutoff:
+            _, _, ready_row = heapq.heappop(pending)
+            add_active(ready_row)
+
+        home = home_stats.get(historical.home_team_id)
+        away = away_stats.get(historical.away_team_id)
+        if active_count and home and away and home[2] > 0 and away[2] > 0:
+            league_home = league_home_sum / active_count
+            league_away = league_away_sum / active_count
+            if league_home > 0 and league_away > 0:
+                home_attack = (home[0] + 5.0 * league_home) / (home[2] + 5.0)
+                home_defence = (home[1] + 5.0 * league_away) / (home[2] + 5.0)
+                away_attack = (away[0] + 5.0 * league_away) / (away[2] + 5.0)
+                away_defence = (away[1] + 5.0 * league_home) / (away[2] + 5.0)
+                home_rate = min(max(home_attack * away_defence / league_home, 0.05), 5.0)
+                away_rate = min(max(away_attack * home_defence / league_away, 0.05), 5.0)
+                rate_rows.append(DixonColesTrainingRateRow(
+                    fixture_id=historical.fixture_id,
+                    kickoff_at=historical.kickoff_at,
+                    available_at=historical.available_at,
+                    recorded_at=historical.recorded_at,
+                    expected_home_goals=home_rate,
+                    expected_away_goals=away_rate,
+                    home_goals=historical.home_goals,
+                    away_goals=historical.away_goals,
+                ))
+
+        ready_at = max(historical.available_at, historical.recorded_at)
+        heapq.heappush(pending, (ready_at, sequence, historical))
+        sequence += 1
+
     return tuple(rate_rows)
 
 
