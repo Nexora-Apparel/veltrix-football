@@ -328,7 +328,7 @@ jobs:
 
 
   odds-api-no-credit-preflight:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'integration/v2-report-bundle-wiring-20261114'
+    if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'run-veltrix-odds-api-brazil-discovery' && github.event.pull_request.head.ref == 'integration/v2-report-bundle-wiring-20261114'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -354,5 +354,38 @@ jobs:
         with:
           name: veltrix-odds-api-brazil-serie-b-history-discovery
           path: /tmp/odds-api-brazil-serie-b-history-discovery.json
+          if-no-files-found: warn
+          retention-days: 30
+
+
+  odds-api-approved-league-price-pilot:
+    if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'run-veltrix-odds-api-approved-league-price-pilot' && github.event.pull_request.head.ref == 'integration/v2-report-bundle-wiring-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+      VELTRIX_STAGING_DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install historical odds capture dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+          python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
+      - name: Compile and test approved-league historical odds capture
+        run: |
+          python -m compileall -q scripts/veltrix_v2/capture_odds_api_historical_price_pilot.py
+          python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_odds_api_historical_price_pilot.py
+      - name: Capture one approved La Liga historical 1X2 sample (maximum 12 credits; staging only)
+        run: python -m scripts.veltrix_v2.capture_odds_api_historical_price_pilot --output /tmp/veltrix-odds-api-historical-price-pilot.json
+      - name: Upload sanitized capture manifest (no odds prices)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-odds-api-approved-la-liga-price-pilot
+          path: /tmp/veltrix-odds-api-historical-price-pilot.json
           if-no-files-found: warn
           retention-days: 30
