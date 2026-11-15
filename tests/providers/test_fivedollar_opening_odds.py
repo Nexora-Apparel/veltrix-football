@@ -115,3 +115,40 @@ def test_fixture_identity_and_timezones_are_required():
             _body(), expected_fixture_id="481163241",
             retrieved_at=RETRIEVED, kickoff_at=datetime(2026, 11, 14, 18),
         )
+
+def test_capture_target_scope_uses_provider_competition_ids(monkeypatch):
+    from types import SimpleNamespace
+
+    from scripts import phase2_capture_fivedollar_opening_odds as capture
+
+    scope = "3118717965,3405541143,3614399544,4160026622,4212821298,522514093,686337048"
+    monkeypatch.setattr(
+        capture, "_load_approval",
+        lambda connection, at: SimpleNamespace(competition_scope=scope),
+    )
+
+    class Cursor:
+        description = ()
+
+        def execute(self, sql, params):
+            self.sql = sql
+            self.params = params
+
+        def fetchall(self):
+            return []
+
+    class Connection:
+        def __init__(self):
+            self.cursor_instance = Cursor()
+
+        def cursor(self):
+            return self.cursor_instance
+
+    connection = Connection()
+    capture._load_targets(
+        connection, lookback_days=90, limit=25, now=RETRIEVED,
+    )
+    sql = connection.cursor_instance.sql
+    assert "c.provider_competition_id::text = ANY(%s::text[])" in sql
+    assert "f.competition_id::text = ANY(%s::text[])" not in sql
+    assert connection.cursor_instance.params[7] == scope.split(",")
