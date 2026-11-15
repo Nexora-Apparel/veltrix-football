@@ -379,3 +379,14 @@ At the time of this ledger:
 - Only entity_crosswalk_versions was written in staging. No normalized fixture/results, advanced-stat features, odds, predictions or production rows were written. No deployment, publication, Telegram or schedule changes.
 - The reviewer ID is automated, not a human signature. If a named human sign-off is later required by governance, it must be recorded separately.
 - All AI Midas observations remain non-PIT and model-ineligible; closing odds/CLV remain uncertified. **Value betting remains LOCKED.**
+
+
+### Odds-API.io historical closing-line coverage refinement — 2026-11-15
+
+- Official docs now provide stronger technical evidence than the initial screening: bulk /v3/historical/closing-lines is a paid endpoint with up to 10 leagues, 366 days, 30 bookmakers and 100 settled events per page; per-event /v3/historical/odds is available on every plan but requires an API key. New free keys are paused.
+- The historical guide's example includes a bookmaker-specific ML 1X2 price with an updatedAt timestamp before kickoff and final score. Public settled coverage lists 331 EPL, 349 LaLiga, 349 Serie A, 272 Bundesliga and 263 Ligue 1 matches, with median 98–105 bookmakers per match; Brazil Série A has 339 matches since 28 Jan 2026. These five European leagues alone show 1,564 settled events, but exact fixture overlap with Veltrix's 763-fixture universe still requires a canonical coverage audit.
+- Brazil Série B is not listed in the published historical coverage table. The 2,159 football league count does not prove Série B coverage; treat it as UNVERIFIED until a provider catalogue/API response confirms its league slug and actual settled prices.
+- Solo plan starts at £49/month for two bookmakers; new free keys are paused. Bulk closing lines is paid. A candidate plan would need Bet365 plus a second benchmark book, but bookmaker availability per league must be confirmed first.
+- Terms permit statistical analysis, data modelling and application development; raw odds resale/redistribution needs written consent. The homepage advertises website/app display, including paid products, but obtain written confirmation for the exact Veltrix public display/derived-output use before onboarding.
+- Odds-API.io is now the strongest technical candidate for historical bookmaker-specific closes across the five approved European leagues, but it is NOT yet a Veltrix-authorized source. No key, subscription, payment or data ingestion occurred. A provider-specific rights approval and budget decision are still required.
+- The Odds API remains blocked for historical endpoints on the current key (HTTP 401 paid-plan-only) and its existing rights scope remains five European competitions. No successful historical price response or CLV observation exists. Value betting remains LOCKED.
