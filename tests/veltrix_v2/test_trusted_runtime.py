@@ -67,6 +67,7 @@ def _rights_record():
         "provider_id": "5dollarfootballapi",
         "provider_scope": "historical-results-and-fixtures",
         "rights_evidence_uri": "https://evidence.example/rights.json",
+        "rights_evaluated_at": None,
     }
 
 
@@ -74,6 +75,7 @@ def _rights_bytes():
     now = datetime.now(timezone.utc)
     payload = {
         "schema": "VELTRIX_PROVIDER_RIGHTS_EVIDENCE_V1",
+        "evaluated_at": now.isoformat(),
         "approval_id": "approval-5dollar-2026-11",
         "provider_id": "5dollarfootballapi",
         "permitted_scope": "historical-results-and-fixtures",
@@ -99,6 +101,7 @@ def test_provider_rights_evaluator_checks_provider_scope_terms_entitlement_and_q
     raw = _rights_bytes()
     record = _rights_record()
     record["rights_evidence_sha256"] = hashlib.sha256(raw).hexdigest()
+    record["rights_evaluated_at"] = json.loads(raw)["evaluated_at"]
     evaluator = build_provider_rights_evaluator(lambda uri: raw)
     assert evaluator(record) is True
 
@@ -120,6 +123,7 @@ def test_provider_rights_evaluator_denies_missing_or_invalid_permission(mutation
     payload = json.dumps(raw, sort_keys=True, separators=(",", ":")).encode()
     record = _rights_record()
     record["rights_evidence_sha256"] = hashlib.sha256(payload).hexdigest()
+    record["rights_evaluated_at"] = json.loads(payload)["evaluated_at"]
     assert build_provider_rights_evaluator(lambda uri: payload)(record) is False
 
 
