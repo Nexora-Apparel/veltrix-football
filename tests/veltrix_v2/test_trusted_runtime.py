@@ -207,3 +207,31 @@ def test_application_runtime_does_not_construct_trusted_factory_without_credenti
             ),
             "VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS": "raw.githubusercontent.com",
         })
+
+
+def test_attestation_verifier_fetches_and_verifies_candidate_bundle_for_exact_subject(monkeypatch):
+    session = Mock()
+    session.get.side_effect = [
+        Response(payload={"attestations": [
+            {"bundle_url": "https://signed-artifacts.blob.core.windows.net/bundle/subject.json?sig=opaque"},
+        ]}),
+        Response(content=b'{"sigstore":"bundle"}'),
+    ]
+    verified = []
+    def fake_verify(**kwargs):
+        verified.append(kwargs)
+        return True
+    monkeypatch.setattr(
+        "veltrix_v2.reporting.trusted_runtime._verify_sigstore_bundle", fake_verify
+    )
+    manifest = b"report-bound-certification-manifest"
+    digest = hashlib.sha256(manifest).hexdigest()
+    assert build_github_attestation_verifier(
+        token="read-only-attestations-token", session=session
+    )(manifest, digest) is True
+    assert verified[0]["artifact_sha256"] == digest
+    assert verified[0]["bundle_bytes"] == b'{"sigstore":"bundle"}'
+    assert verified[0]["workflow_identity"].endswith(
+        ".github/workflows/report-certification-attestation.yml@refs/heads/main"
+    )
+    assert session.get.call_count == 2
