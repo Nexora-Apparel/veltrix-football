@@ -822,3 +822,52 @@ Each market still requires at least 1,000 chronological walk-forward matches; at
 5. Revisit settlement only after one of the seven prospective forecast fixtures is genuinely FINISHED and exact provider settlement evidence is present.
 
 **No paid upgrade, no history endpoint call, no public publication, no Telegram send, no schedule activation, no production write and no value-bet unlock.**
+
+
+## Follow-up verification — 2026-11-16 00:52 WAT
+
+### Snapshot and forecast idempotency — verified
+- Code HEAD: 1b8a74fddbfbe66a25466c1826bf0d39469977c9.
+- Phase 4 integration run 43776383155 passed. It reused the seven stable feature snapshots (IDs 36–42), wrote zero new snapshots and zero new links, reused 70 links, and verified the result through a fresh database connection.
+- The forecast runner correctly detected all seven fixture/model pairs already recorded. It generated zero new forecasts, appended zero ledger events, reported seven already-forecasted fixtures, and verified the full paper-ledger chain through a fresh connection.
+- The previous summary's feature_links_written value was corrected; the latest artifact reports feature_links_written=0 and feature_links_reused=70.
+- This confirms the stable snapshot key and forecast no-op path. Current totals remain 42 immutable snapshots, 420 links, 42 ELIGIBLE events and seven distinct eligible target fixtures. No further snapshot duplication occurred in this verification run.
+
+### CI at the code HEAD
+- Phase 4 feature admission and V2 forecast no-op integration: SUCCESS, run 43776383155.
+- Phase 5 Shadow Regression push run: SUCCESS, run 43776383140; PostgreSQL 16 and PostgreSQL 18 integration jobs both passed; status-only probe contract tests passed.
+- Phase 2 PostgreSQL 16/18 foundation acceptance: SUCCESS.
+- Phase 2 data foundation tests: SUCCESS.
+- AI Midas Brazil Série B identity reconciliation: SUCCESS.
+- Historical Model Audit Tests: SUCCESS.
+- Certification Evidence Integrity: SUCCESS.
+- Daily Fixture Predictions: SKIPPED as intended.
+- The PR-event Phase 5 regression run was still pending at the time of this entry; the successful push run at the exact code HEAD is the positive regression evidence. Continue checking PR checks before any merge.
+- PR #120 remains OPEN, DRAFT and UNMERGED. PR head at this checkpoint: 353630461f730dc0cea1d0d1960e6179cffb1ac9 (documentation-only commits after code HEAD 1b8a74fddbfbe66a25466c1826bf0d39469977c9).
+
+### Additional OpenPlay identity coverage audit — candidates not promoted
+The 18 excluded upcoming fixtures were split into 12 with no OpenPlay history mapped for either side and six with one side mapped (five rows) but the opposing side unavailable. A read-only scan found possible source-name aliases in the OpenPlay match archive:
+- Bayern -> canonical Bayern Munich
+- FC Koln -> canonical Cologne
+- Deportivo Alaves -> canonical CD Alaves
+- Hoffenheim -> canonical TSG Hoffenheim
+- Leverkusen -> canonical Bayer Leverkusen
+- Borussia M.Gladbach -> canonical Borussia M'gladbach
+- Nottingham Forest -> canonical Nottm Forest
+
+These are not admitted crosswalks. The current feature-bundle contract accepts only the exact-name-and-competition-overlap mapping method backed by the approved teams.parquet asset. The candidates above are alias/abbreviation forms found in match_result_snapshot observations, not current exact approved team-registry mappings. Do not relabel them as exact mappings or use them in forecasts until a curated alias policy, source evidence contract and reviewer method are implemented and validated.
+
+Further unresolved identities:
+- Deportivo A Coruna has two canonical team IDs (3081 and 2866); keep ambiguous and unmapped.
+- Elversberg, Coventry and RB Leipzig have no corresponding OpenPlay match-row team identity in the current archive scan.
+- Brazil Série A target teams have no eligible same-competition OpenPlay history in this bundle. Do not substitute FIFA Club World Cup rows or unrelated competitions as if they were domestic league history.
+
+### Provider and settlement controls remain unchanged
+- 5Dollar current entitlement remains Community / ACTIVE, not Ultra. One status-only call was persisted; zero odds-history calls; no upgrade.
+- The Odds API historical endpoint is paid-only and costs 10 credits per region per market (and per event for event-history requests). No paid upgrade or historical call.
+- The Odds API's 295 remaining live credits from the previous no-cost sports probe are not a historical entitlement. Its billing-period boundaries and monthly allowance remain unverified; no live quote credit reservation or quote capture.
+- Existing timestamped 5Dollar opening observations: 788. They are not closing quotes and do not qualify for CLV. The Odds API dedicated quote table remains empty.
+- All 25 target fixtures are still future/scheduled; no genuine prospective target has finished. Settlement count remains zero.
+- AI Midas remains authorised for historical statistics/additional odds, but the 14 archive assets have unknown source timestamp basis and remain non-PIT-certified. The seven V2 forecasts do not use AI Midas.
+
+**No new forecast events, no provider odds calls, no settlement, no paid upgrade, no publication, no Telegram send, no schedule activation and no value-bet unlock in this follow-up.**
