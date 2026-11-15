@@ -32,6 +32,11 @@ on:
       - "requirements.txt"
       - ".github/workflows/telegram-delivery-recovery.yml"
       - "docs/VELTRIX_V2_ODDS_API_ONE_EVENT_MARKET_PROBE_RUNBOOK_2026-11-15.md"
+      - "db/migrations/0011_odds_quote_observations.sql"
+      - "veltrix_v2/providers/odds_api_v4/evidence.py"
+      - "tests/providers/odds_api_v4/test_evidence.py"
+      - "scripts/db_acceptance.py"
+      - "tests/veltrix_v2/test_full_migration_chain_postgres.py"
       - ".github/workflows/phase5-shadow-regression.yml"
       - ".github/workflows/vercel-preview-runtime-publication-smoke.yml"
   pull_request:
@@ -167,4 +172,5 @@ jobs:
           tests/providers/odds_api_v4/test_quota_evidence_postgres.py
           tests/providers/odds_api_v4/test_capture_state_postgres.py
           tests/providers/odds_api_v4/test_capture_request_postgres.py
+          tests/veltrix_v2/test_full_migration_chain_postgres.py
           tests/veltrix_v2/test_paper_ledger_postgres.py
