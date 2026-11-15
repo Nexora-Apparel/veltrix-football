@@ -245,7 +245,7 @@ def import_bundle(database_url: str, input_dir: str | Path) -> dict:
                 "all_raw_asset_hashes_verified":True,
                 "point_in_time_certifiable":False,
                 "commercial_use_allowed":False,
-            })),manifest_id,manifest_hash)
+            }),manifest_id,manifest_hash))
         conn.commit()
 
     return {
