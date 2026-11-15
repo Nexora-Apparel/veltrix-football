@@ -298,6 +298,10 @@ def _evidence_blockers(evidence: Mapping[str, Any], *, market: str) -> list[str]
             blockers.append("BOOKMAKER_EVIDENCE_HASH_INVALID")
     if not isinstance(evidence.get("rights_approval_id"), str) or not evidence["rights_approval_id"].strip():
         blockers.append("RIGHTS_APPROVAL_ID_MISSING")
+    if not isinstance(evidence.get("provider_id"), str) or not evidence["provider_id"].strip():
+        blockers.append("PROVIDER_ID_MISSING")
+    if not isinstance(evidence.get("provider_scope"), str) or not evidence["provider_scope"].strip():
+        blockers.append("PROVIDER_SCOPE_MISSING")
     rights_time = _parse_aware(evidence.get("rights_evaluated_at"))
     if rights_time is None:
         blockers.append("RIGHTS_EVALUATED_AT_INVALID")
@@ -460,6 +464,8 @@ def _record_for_market(
         "revision_history_complete": evidence.get("revision_history_complete") is True,
         "prospective_evidence": bool(market_selections),
         "rights_approval_id": evidence.get("rights_approval_id"),
+        "provider_id": evidence.get("provider_id"),
+        "provider_scope": evidence.get("provider_scope"),
         "rights_evaluated_at": rights_time.isoformat().replace("+00:00", "Z") if rights_time else None,
         "evidence_uri": evidence.get("evidence_uri"),
         "evidence_sha256": evidence.get("evidence_sha256"),
