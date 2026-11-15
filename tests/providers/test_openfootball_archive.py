@@ -39,7 +39,7 @@ def test_parse_archive_preserves_date_precision_and_source_provenance():
     assert len(result.content_sha256) == 64
 
 
-def test_date_only_result_is_eligible_only_after_conservative_date_boundary():
+def test_date_only_unverified_result_is_never_historically_pit_eligible():
     boundary = datetime(2025, 8, 24, 0, 0, tzinfo=UTC)
     observation = MatchObservation(
         fixture_id="date-only", competition_id="NGA_NPFL",
@@ -50,7 +50,9 @@ def test_date_only_result_is_eligible_only_after_conservative_date_boundary():
     )
     before = datetime(2025, 8, 23, 23, 59, tzinfo=UTC)
     assert not observation_eligible_as_of(observation, cutoff_at=before)
-    assert observation_eligible_as_of(observation, cutoff_at=boundary)
+    # A conservative date boundary does not create source publication or
+    # provenance evidence. The archive row remains non-PIT for backtesting.
+    assert not observation_eligible_as_of(observation, cutoff_at=boundary)
 
 
 def test_fixture_without_score_is_not_fabricated_as_result():
