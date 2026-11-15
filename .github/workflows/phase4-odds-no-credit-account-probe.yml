@@ -1,0 +1,41 @@
+name: VELTRIX Odds API No-Credit Account Probe
+
+on:
+  push:
+    branches: [integration/v2-report-bundle-wiring-20261114]
+    paths:
+      - '.github/workflows/phase4-odds-no-credit-account-probe.yml'
+      - 'scripts/phase4_odds_account_probe.py'
+      - 'veltrix_v2/providers/odds_api_v4/transport_contract.py'
+      - 'veltrix_v2/data/postgres.py'
+      - 'veltrix_v2/data/temporal_eligibility.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-odds-no-credit-account-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Refresh The Odds API quota and competition scope without spending credits
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install database driver
+        run: python -m pip install "psycopg[binary]>=3.2,<4"
+
+      - name: Execute quota-free sports catalogue probe and persist evidence
+        env:
+          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+          VELTRIX_STAGING_DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+        run: python scripts/phase4_odds_account_probe.py --execute --persist-staging
