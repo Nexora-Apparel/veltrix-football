@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from veltrix_v2.models.poisson import MatchObservation
 from veltrix_v2.models.dixon_coles import predict_dixon_coles_match
 from veltrix_v2.evaluation.model_challengers import evaluate_model_challengers
+from veltrix_v2.evaluation.walk_forward import walk_forward_evaluate
 
 UTC = timezone.utc
 
@@ -60,3 +61,15 @@ def test_challenger_evaluation_includes_dixon_coles_and_per_competition_calibrat
     assert report.calibration_fit_samples.get("comp-1:poisson", 0) >= 50
     assert report.calibration_test_samples.get("comp-1:poisson", 0) > 0
     assert "poisson_temperature" in report.calibration_metrics["comp-1"]
+
+
+def test_walk_forward_fits_platt_only_on_earlier_competition_rows():
+    rows = pit_history(100)
+    report = walk_forward_evaluate(
+        rows, evaluation_as_of=rows[-1].kickoff_at + timedelta(days=2),
+    )
+    assert report.eligible_scored_fixtures > 0
+    assert report.calibration_fit_samples.get("comp-1:btts", 0) >= 50
+    assert report.calibration_test_samples.get("comp-1:btts", 0) > 0
+    assert "btts" in report.competition_calibration["comp-1"]
+    assert "over_2_5" in report.competition_calibration["comp-1"]
