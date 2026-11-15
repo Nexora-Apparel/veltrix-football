@@ -1,5 +1,5 @@
-# Controlled continuation: manifests 109–136 reconciled at 25/25 each.
-# This push schedules the next single bounded batch after a fresh quota preflight.
+# Audit checkpoint: manifests 109–136 reconciled at 25/25 each; manifest 136 aggregate artifact uploaded.
+# This push schedules one next bounded batch only after its fresh quota preflight and rights recheck.
 # workflow_dispatch remains unavailable until this workflow is on the default branch.
 name: VELTRIX Phase 2 — Manual 5Dollar Opening Odds Capture
 
