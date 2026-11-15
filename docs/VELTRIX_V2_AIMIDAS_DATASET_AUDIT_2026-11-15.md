@@ -1,7 +1,7 @@
 # VELTRIX FOOTBALL 2.0 — AI Midas dataset inventory and temporal audit
 
 **Audit date:** 2026-11-15  
-**Classification:** PARTIAL — source authorized; inventory and immutable snapshot verified; staging database ingestion and model admission not performed  
+**Classification:** PARTIAL — source authorized; inventory, immutable snapshot and staging file-level evidence import verified; normalized feature admission and model admission not performed  
 **Source repository:** https://github.com/aimidas1/aimidas1  
 **Pinned source commit:** `29baca362a34ce5dcd3924b07ec9c7d5139d83fc`  
 **Repository pushed at:** `2026-11-11T00:00:10Z`  
@@ -157,6 +157,18 @@ This is a verified identity crosswalk result, not a PIT admission. Keep the sour
 - The public artifact now contains **only** `manifest.json` and `verification.json`; the 11.6 MB raw snapshots remain ephemeral on the runner and are not uploaded. Artifact [#14176976339](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752435643/artifacts/14176976339), ZIP SHA-256 `54ce4e05d6fd84f410c6723c181030ecde4376a10003ed6523ff9b536591b595`.
 - A subsequent idempotency regression run [#43752821538](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752821538) passed after the prior raw artifact had already been deleted; it retained only metadata artifact [#14176614669](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752821538/artifacts/14176614669), ZIP SHA-256 `02377544a7c9f361b441e641fcad37bc575e3dd16a43092355d3e3dd2123718a`.
 - Workflow output confirms `database_written=false`, `production_written=false`, `model_admitted=false`, `predictions_changed=false`, `point_in_time_certifiable=false`. The metadata artifact is not a Neon import or PIT evidence.
+
+
+### Staging-only raw evidence import — 2026-11-15
+
+- Implemented `scripts/veltrix_v2/import_aimidas_staging.py` and the independent-process readback runner `scripts/veltrix_v2/audit_aimidas_staging_import.py`.
+- Registered the source-specific approval in the isolated staging `source_approvals` and `source_approval_status_events` tables using the project-owner authorization evidence. Approval remains non-commercial, attribution-required and raw-redistribution-prohibited.
+- Workflow [#43753939202](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43753939202) passed on commit `27ecf03ff3530b52ff91f8e0b3120af0fabc6551`: focused tests passed; 14/14 pinned files fetched; independent snapshot verification passed; staging import passed; separate-process post-commit readback passed.
+- Staging readback confirms **14 immutable `provider_responses` records / 11,599,486 raw bytes** and **14 linked file-level `source_observations`**: 6 historical-match CSVs, 7 season-match CSVs and 1 Brazil Série B advanced-statistics CSV. The 14 source response hashes are distinct.
+- All 14 observations have `point_in_time_certifiable=false`, null source-publication/effective timestamps and `source_timestamp_basis=unknown`. No row-level kickoff timestamp was fabricated.
+- Capture-manifest completion evidence records 14 files, 14 responses, 14 observations and the exact raw-byte count. The first execution's capture manifest is preserved; a corrected retry used a distinct manifest key and did not duplicate provider-response or source-observation rows.
+- Sanitized artifact [#14177201895](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43753939202/artifacts/14177201895), ZIP SHA-256 `8f609bc5c7ae2b8fdcf7f879c3257228188af32d9a7efb34d7b469f60b382d68`. It contains metadata/report files only; raw source CSVs were not uploaded as artifacts.
+- No normalized fixture/result rows, fixture crosswalks, odds quote observations, model features or predictions were written. Production was untouched; model admission remains false.
 
 ### Remaining bounded actions
 
