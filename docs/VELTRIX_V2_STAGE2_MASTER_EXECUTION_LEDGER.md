@@ -433,3 +433,10 @@ At the time of this ledger:
 - Exact-head CI is expected to rerun after these commits; do not claim success until checks for the final PR HEAD complete.
 
 **Next:** retrieve the final exact-head CI results, especially certification evidence integrity, PostgreSQL 16/18 acceptance, Phase 5 shadow regression and AI Midas identity audit. Continue provider rights qualification and prospective odds/settlement capture only through an approved source; value betting stays LOCKED.
+
+
+### Certification CI failure analysis and correction — 2026-11-15
+
+- The first CI run after the non-commercial rights-gate change failed in the certification-evidence job: run [#43766606827](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43766606827). Result: 107 passed, 2 failed. Both failures were test-contract drift, not verifier logic: (1) the unapproved-rights test expected the phrase `approved rights`, while the new error text inserted `non-commercial` between those words; (2) the certificate-builder test fixture still declared `commercial_use_eligible=true` and omitted the new non-commercial fields.
+- Corrected the failure message to preserve the stable `approved rights` phrase and updated the builder test fixture to the required non-commercial schema. Commits: `2a63dd57792e7fa74094bdb7b71114a369c00f42`, `e30df7d9013838c1323011038aedea442f35d8c3`.
+- The new exact-head CI run for `e30df7d9013838c1323011038aedea442f35d8c3` is now running (certification evidence run [#43766778468](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43766778468); Phase 2, shadow regression, historical model audit and AI Midas checks also triggered). Do not treat it as passed until all required jobs complete.
