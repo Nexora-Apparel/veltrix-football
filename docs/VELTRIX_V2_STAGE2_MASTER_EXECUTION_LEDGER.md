@@ -5,7 +5,7 @@
 **Repository:** `Nexora-Apparel/veltrix-football`  
 **Working branch:** `integration/v2-report-bundle-wiring-20261114`  
 **PR:** [#120](https://github.com/Nexora-Apparel/veltrix-football/pull/120) — draft, open, unmerged  
-**Last inspected PR head:** `70b1a8ef1742975464f74dfefcf8dac265d46d86` — exact-head CI checks passed; PR remains draft/open/unmerged.  
+**Last inspected PR head before this ledger revision:** `ebbe4e72902bd0f1231f0dbd7f838355880215da` — AI Midas authorization and dataset-audit documents committed; exact-head CI for these documentation changes pending.  
 **Purpose:** Single operational index preventing completed work from being skipped, duplicated or rebuilt unnecessarily.
 
 > This ledger is the navigation and state register, not a replacement for detailed contracts, code, test reports or immutable workflow artifacts. Detailed documents remain authoritative for their specific technical scope. Every status must be backed by a path, commit, workflow run, artifact, test result or explicit blocker.
@@ -31,7 +31,7 @@
 
 | Workstream | Current classification | Existing implementation/evidence | Remaining action |
 |---|---|---|---|
-| AI Midas authorization and source registration | VERIFIED — USER-CONFIRMED NON-COMMERCIAL AUTHORIZATION; TECHNICAL QUALIFICATION PENDING | User confirmation recorded 2026-11-15; intended role: historical match/team statistics and supplementary pre-match odds, including Brazil Serie B where dataset coverage exists | Add source-specific dataset provenance, coverage, timestamp and field-completeness audit before ingestion; average pre-match odds are not bookmaker-specific closing quotes and cannot certify CLV. |
+| AI Midas authorization and dataset audit | PARTIAL — AUTHORIZATION + REPOSITORY INVENTORY VERIFIED; NO INGESTION OR MODEL ADMISSION | `docs/legal/aimidas-noncommercial-authorization-2026-11-15.md`; `docs/VELTRIX_V2_AIMIDAS_DATASET_AUDIT_2026-11-15.md`; pinned source commit `29baca362a34ce5dcd3924b07ec9c7d5139d83fc`; 19,605 historical match rows across Brazil Série A + five European leagues; Brazil Série B 2026 advanced file: 738 team rows / 369 matches | Build pinned no-key snapshot artifact and identity crosswalk; keep all rows non-PIT until proven; average odds are not timestamped bookmaker closing quotes. |
 | OpenPlay rights and immutable raw staging | VERIFIED for approved non-commercial scope and staging capture | `docs/legal/openplay-whoscored-opta-authorization-2026-11-15.md`; `docs/VELTRIX_V2_OPENPLAY_STAGING_FEATURE_PIPELINE_2026-11-15.md`; pinned `data-v0.1.0`; approval `approval-openplay-whoscored-opta-noncommercial-2026-11-15` | No rebuild. Preserve rights limits; only reopen for a concrete issue. |
 | OpenPlay feature bundle | VERIFIED as staging sidecar, not as a trained model input | Workflow [#43723395022](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43723395022); builder commit `1f56456f893717e26375ab99f999b8e66b533306`; bundle JSONL SHA-256 `9ed328dd7c9ae235c47252e32bde0bb06d2a030ec38d151eeda7de264408bdc1`; artifact SHA-256 `5e101a56f8f68b9b6bc6f9982bc3e282aa76e5f2c96a6b4fd91c31d412a2e3cc` | Keep as sidecar. Do not claim model training or PIT eligibility. |
 | OpenPlay invalid possession metric | VERIFIED exclusion | All 20,178 rows carry `SOURCE_VALUES_VIOLATE_DOCUMENTED_PERCENTAGE_RANGE`; no `team.possession_pct` remains | No action unless regression. |
@@ -50,12 +50,12 @@
 
 ## 3. Non-commercial rights constraints
 
-The user confirms non-commercial authorization for OpenPlay/WhoScored/Opta and selected project sources, conditioned on no monetisation. Apply the exact scope and restrictions recorded in the legal documents; do not infer blanket rights beyond the recorded source/use scope.
+The user confirms non-commercial authorization for OpenPlay/WhoScored/Opta, AI Midas and selected project sources, conditioned on no monetisation. Apply the exact scope and restrictions recorded in the legal documents; do not infer blanket rights beyond the recorded source/use scope.
 
 - Monetisation prohibited.
 - Raw redistribution prohibited unless a source's explicit licence independently permits it.
 - Preserve attribution, provenance and rights approval IDs.
-- OpenPlay/WhoScored/Opta data and derived outputs must not be monetised.
+- OpenPlay/WhoScored/Opta and AI Midas data and derived outputs must not be monetised.
 - CC0 repositories have their own licence scope; verify licence metadata at collection time.
 - A licence/authorization does not prove historical publication time or PIT eligibility.
 
@@ -65,15 +65,20 @@ Authoritative rights documents:
 - `docs/legal/openfootball-cc0-scope-review-2026-11-15.md`
 - `docs/legal/football-data-cc0-supplemental-rights-review-2026-11-15.md`
 - `docs/legal/5dollar-terms-review-2026-11-12.md`
+- `docs/legal/aimidas-noncommercial-authorization-2026-11-15.md`
+- `docs/VELTRIX_V2_AIMIDAS_DATASET_AUDIT_2026-11-15.md`
 - `docs/VELTRIX_V2_STAGE2_NONCOMMERCIAL_ODDS_ACQUISITION_2026-11-15.md`
 
-### AI Midas — user-confirmed source authorization (2026-11-15)
+### AI Midas — authorization and repository audit (2026-11-15)
 
-- The project owner confirmed that AI Midas is authorized for VELTRIX FOOTBALL 2.0 project work. Apply the project-wide non-commercial restriction: no monetisation, resale, sublicensing or raw-feed redistribution.
-- Intended research role: historical match/team statistics and supplementary pre-match odds; investigate Brazil Serie B coverage and other target competitions from the actual published files.
-- This is a rights/authorization decision, not a technical qualification. Before ingestion, record the exact repository/release/file URLs, upstream provenance, licence/attribution metadata, retrieval commit/date, hashes, competition/season coverage, field completeness and timestamp semantics.
-- Average pre-match odds must remain labelled as averages. They are not bookmaker-specific closing quotes and do not satisfy timestamped closing-odds, bookmaker-benchmark or CLV gates without separate evidence.
-- No AI Midas data import, database write, model admission or prediction change is implied by this authorization entry.
+- User-confirmed authorization is formalized as `approval-aimidas-football-data-noncommercial-2026-11-15`; see `docs/legal/aimidas-noncommercial-authorization-2026-11-15.md`.
+- Inventory and temporal audit: `docs/VELTRIX_V2_AIMIDAS_DATASET_AUDIT_2026-11-15.md`. Pinned repository commit: `29baca362a34ce5dcd3924b07ec9c7d5139d83fc`.
+- Six historical datasets cover Brazil Série A plus EPL, Ligue 1, Bundesliga I, Italy Serie A and La Liga: 19,605 rows, 2016–2024/25. The 1X2 average-odds fields are numerically complete in 19,454/19,605 rows (99.23% aggregate), but have no bookmaker identity or quote timestamp.
+- Brazil Série B coverage is only the 2026 advanced-statistics CSV: 738 team rows / 369 distinct matches / 20 teams, 2026-03-21 through 2026-11-08. No 2016–2025 Brazil Série B historical match archive or standard match/odds CSV was found.
+- The public files can be fetched without an API key. The AI Midas `sync_stats.py` pushes to the source owner's mirror and is not a Veltrix collector; preserve its upstream lineage to `griffisben/Post_Match_App/Stat_Files`.
+- Repository metadata for AI Midas and the identified upstream repository reports no declared SPDX licence. Keep the user-confirmed authorization record, attribution and upstream lineage; no raw redistribution.
+- All source rows remain retrospective/non-PIT unless independently proven otherwise. `pre_match_*` fields have no row-level availability evidence; actual xG/PPDA/possession and other match statistics are post-match. Do not use same-match post-match fields as prediction inputs.
+- No AI Midas import, database write, model admission, prediction change or production operation has been performed. Average odds do not qualify as closing odds, CLV or the 98% timestamped-odds gate.
 
 ## 4. Known manual/external dependencies
 
@@ -82,6 +87,7 @@ Authoritative rights documents:
 | 5Dollar Community API key | USER CONFIRMED ADDED | Treat as configured; never request it again unless the workflow reports missing/invalid secret. Never print or retrieve secret value. |
 | GitHub workflow dispatch from default branch | RESOLVED FOR BOUNDED RUN — WITHOUT MERGE | The opening-odds workflow was safely triggered by a path-filtered push on the integration branch; no merge or default-branch exposure was needed. Run #43727509783 passed. | Keep workflow manual/push-triggered only; no schedule. Use explicit bounded manual dispatch for subsequent batches. |
 | 5Dollar provider quota/plan | NOT YET RE-VERIFIED | Workflow must inspect status/quota first and stop if the account profile or remaining quota differs from the approved bounded probe. |
+| AI Midas public dataset access | AVAILABLE — NO API KEY REQUIRED | Read pinned public raw GitHub files from repository commit `29baca362a34ce5dcd3924b07ec9c7d5139d83fc`; do not run the source owner's `.env`-based sync/push script. |
 | Historical odds entitlement | NOT VERIFIED | No historical endpoint calls until entitlement and cost caps are evidenced. |
 
 ## 5. Execution queue — fixed order
@@ -114,6 +120,8 @@ Append one entry per meaningful operation. Never replace an earlier entry.
 ### AI Midas authorization decision — 2026-11-15
 
 | 2026-11-15 | User-confirmed authorization | AI Midas source authorization recorded | AUTHORIZED for non-commercial VELTRIX project work; technical dataset qualification remains pending | This ledger entry; project-wide non-commercial policy in `docs/legal/veltrix-all-source-noncommercial-authorization-2026-11-15.md` | Audit exact dataset provenance, seven-competition coverage, statistics and odds timestamp semantics before ingestion |
+
+| 2026-11-15 | User-confirmed authorization; pinned AI Midas repository audit | AI Midas authorization, inventory and temporal qualification | PASS — authorization documented; inventory verified; PARTIAL technical qualification; 19,605 historical rows across six competitions; Brazil Série B 2026 advanced stats 369 matches; no PIT or closing-odds certification | `docs/legal/aimidas-noncommercial-authorization-2026-11-15.md`; `docs/VELTRIX_V2_AIMIDAS_DATASET_AUDIT_2026-11-15.md`; source commit `29baca362a34ce5dcd3924b07ec9c7d5139d83fc` | Build a pinned no-key snapshot artifact and exact fixture/team crosswalk; no database/model admission yet |
 
 ## 7. Per-session update template
 
