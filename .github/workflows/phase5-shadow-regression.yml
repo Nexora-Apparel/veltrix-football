@@ -37,6 +37,7 @@ on:
       - "tests/providers/odds_api_v4/test_evidence.py"
       - "veltrix_v2/providers/odds_api_v4/postgres_store.py"
       - "tests/providers/odds_api_v4/test_postgres_store.py"
+      - "tests/providers/odds_api_v4/test_postgres_store_postgres.py"
       - "tests/providers/odds_api_v4/test_parser.py"
       - "docs/VELTRIX_V2_ODDS_QUOTE_EVIDENCE_CONTRACT_2026-11-15.md"
       - "scripts/db_acceptance.py"
@@ -176,5 +177,6 @@ jobs:
           tests/providers/odds_api_v4/test_quota_evidence_postgres.py
           tests/providers/odds_api_v4/test_capture_state_postgres.py
           tests/providers/odds_api_v4/test_capture_request_postgres.py
+          tests/providers/odds_api_v4/test_postgres_store_postgres.py
           tests/veltrix_v2/test_full_migration_chain_postgres.py
           tests/veltrix_v2/test_paper_ledger_postgres.py
