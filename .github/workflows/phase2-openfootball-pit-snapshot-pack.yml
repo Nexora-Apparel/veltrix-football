@@ -48,7 +48,7 @@ jobs:
       - name: Compile collector and run isolated tests
         run: |
           python -m compileall -q scripts/veltrix_v2/collect_openfootball_pit_snapshots.py scripts/veltrix_v2/verify_openfootball_pit_snapshot_pack.py
-          pytest -q tests/veltrix_v2/test_openfootball_pit_snapshot_pack.py tests/providers/test_openfootball_archive.py
+          python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_openfootball_pit_snapshot_pack.py tests/providers/test_openfootball_archive.py
 
       - name: Collect rights-scoped immutable source snapshots
         id: collect
