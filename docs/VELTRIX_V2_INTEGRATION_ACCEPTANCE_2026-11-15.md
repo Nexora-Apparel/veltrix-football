@@ -92,3 +92,36 @@ PR #120 remains draft and unmerged. Legacy prediction/publication/sender/schedul
 3. Run bounded capture and require non-zero new events only when eligible unique targets actually exist; verify the committed ledger from a fresh connection.
 4. After target kickoffs, run bounded settlement and verify exact result identity, rights, raw response/manifest hashes and post-commit event hashes.
 5. Continue model data qualification and prospective accrual. Do not activate publication until each independent certification and delivery gate passes.
+
+
+## Follow-up exact-head CI and remaining model work (2026-11-15)
+
+The acceptance record above was first written against the earlier integration checkpoint. The branch has since advanced to `3bff26061f9e28c35b6e55769f283c46d2a2ed6a`. Exact-head check-runs for that commit were re-queried after completion:
+
+- Foundation — success
+- PostgreSQL 16 integration — success
+- PostgreSQL 18 integration — success
+- Certification evidence — success
+- Audit tests — success
+- Reservation PostgreSQL 16 — success
+- Reservation PostgreSQL 18 — success
+- PostgreSQL 16 acceptance — success
+- PostgreSQL 18 acceptance — success
+- Shadow regression — success
+- Daily predictions — skipped intentionally (legacy scheduled publication remains disabled)
+
+No failed or pending check remained on this exact head. This establishes CI completion for the integration branch; it does not establish data, model, market, or production certification.
+
+### Two remaining model qualification workstreams
+
+1. **Dixon-Coles challenger qualification.** The score-grid implementation currently accepts a configurable `dixon_coles_rho` and applies low-score tau adjustments, but the candidate is not yet independently estimated, tuned inside training folds, and reported as a distinct challenger against the independent Poisson baseline on identical per-competition chronological folds. A fixed caller-supplied rho is not a trained/qualified Dixon-Coles model. Next: estimate rho using training-only observations inside each fold, constrain tau positivity, freeze the fitted parameter at each prediction cutoff, report per-competition and aggregate Brier/log-loss plus date-clustered paired confidence intervals, and reject promotion unless the independent holdout supports it.
+
+2. **Probability calibration/reliability qualification.** Current reliability code supplies calibration bins and date-clustered paired loss intervals; it is diagnostic, not a fitted calibration layer. Next: implement leakage-safe calibration candidates (multiclass temperature/vector scaling for 1X2 and separate binary calibration for BTTS/O2.5), fit only on an earlier chronological calibration window, evaluate on a later untouched window, compare raw versus calibrated probabilities, preserve probability simplex/monotonicity, and report calibration error, Brier, log loss, confidence intervals, sample counts and date/competition strata. Do not calibrate from the evaluation fold or from non-PIT records.
+
+Both workstreams remain **NOT QUALIFIED**. They cannot be honestly completed using the current historical import: 0/2,496 observations are point-in-time certifiable. No synthetic training data or retrospective publication timestamps are permitted.
+
+### Cohort and certification state
+
+The latest successful 5Dollar capture still recorded 25 duplicate target identities and zero new ledger admissions. A genuinely new cohort must be proven from provider response evidence and checked against the complete ledger before another bounded capture; rerunning the same 25 identities is not a new cohort. The 25 already-observed fixtures must be settled only after kickoff and independently verified final results. Market certification remains blocked until the previously stated thresholds are met independently for each market, including 1,000 chronological walk-forward matches, 300 prospective settled selections, 90 distinct dates, 98% timestamped odds coverage, positive net ROI with positive date-clustered 95% lower bound, and 1X2 improvement over the de-vigged bookmaker on both Brier and log loss.
+
+**Updated decision:** integration CI PASS; fresh-cohort admission OPEN; prospective settlement OPEN; Dixon-Coles qualification OPEN; probability calibration qualification OPEN; independent market certification NOT ACHIEVED; production release NO-GO.
