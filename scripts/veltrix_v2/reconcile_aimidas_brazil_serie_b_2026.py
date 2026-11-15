@@ -79,6 +79,14 @@ def canonical_team_name(source_name: str) -> str:
     return TEAM_ALIASES.get(source_name, source_name)
 
 
+def classify_missing_fixture_date(fixture_date: date, source_date_min: date, source_date_max: date) -> str:
+    if fixture_date > source_date_max:
+        return "AFTER_SOURCE_FILE_LAST_DATE"
+    if source_date_min <= fixture_date <= source_date_max:
+        return "WITHIN_SOURCE_DATE_RANGE_BUT_MATCH_ROW_ABSENT"
+    return "BEFORE_SOURCE_FILE_FIRST_DATE"
+
+
 def read_source_rows(input_dir: Path) -> tuple[list[dict], dict, bytes]:
     manifest = json.loads((input_dir / "manifest.json").read_text(encoding="utf-8"))
     if manifest.get("source_repository") != REPOSITORY or manifest.get("source_commit_sha") != SOURCE_COMMIT:
@@ -168,6 +176,8 @@ def read_canonical_registry(database_url: str, source_raw: bytes, source_record:
              retrieved_at, pit, response_id, request_id, response_hash, raw_body, fetched_at) = evidence[0]
             if bytes(raw_body) != source_raw or sha256(bytes(raw_body)) != response_hash.strip():
                 raise RuntimeError("AIMIDAS_SERIE_B_STAGING_RAW_BYTES_MISMATCH")
+            if payload_hash.strip() != sha256(source_raw):
+                raise RuntimeError("AIMIDAS_SERIE_B_STAGING_PAYLOAD_HASH_MISMATCH")
             if source_id != SOURCE_ID or rights_id != APPROVAL_ID or pit is not False:
                 raise RuntimeError("AIMIDAS_SERIE_B_STAGING_RIGHTS_OR_PIT_MISMATCH")
             if payload.get("git_blob_sha1") != source_record.get("git_blob_sha1"):
@@ -369,12 +379,7 @@ def reconcile(rows: list[dict], registry: dict, source_record: dict, *,
             for home_id, away_id, source_date in mapped_pairs
         )
         if not represented:
-            if fixture_date > source_date_max:
-                absence_reason = "AFTER_SOURCE_FILE_LAST_DATE"
-            elif source_date_min <= fixture_date <= source_date_max:
-                absence_reason = "WITHIN_SOURCE_DATE_RANGE_BUT_MATCH_ROW_ABSENT"
-            else:
-                absence_reason = "BEFORE_SOURCE_FILE_FIRST_DATE"
+            absence_reason = classify_missing_fixture_date(fixture_date, source_date_min, source_date_max)
             missing.append({
                 "canonical_fixture_id": fixture["fixture_id"],
                 "canonical_provider_fixture_id": fixture["provider_fixture_id"],
