@@ -28,6 +28,10 @@ def test_v2_telegram_bundle_dispatcher_remains_locked_without_schedule():
     assert "v2-telegram-delivery:" in source
     assert "if: false" in source
     assert "scripts/veltrix_v2/dispatch_public_telegram_bundle.py" in source
+    assert "public-data/v2_report_bundle.json" in source
+    dispatcher = (ROOT / "scripts" / "veltrix_v2" / "dispatch_public_telegram_bundle.py").read_text(encoding="utf-8")
+    assert 'Path("command-data/public-data/v2_report_bundle.json")' in dispatcher
+    assert 'parts[2] != "bundles"' not in dispatcher
     assert "send_telegram_report.py" not in source
     assert "daily_predictions.json" not in source
     assert "schedule:" not in source
