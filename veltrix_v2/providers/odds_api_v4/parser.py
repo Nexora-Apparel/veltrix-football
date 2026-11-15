@@ -71,7 +71,7 @@ def _decimal(value: Any) -> Decimal | None:
         number = Decimal(str(value))
     except (InvalidOperation, ValueError):
         return None
-    return number if number.is_finite() and number > 0 else None
+    return number if number.is_finite() and Decimal("1") < number < Decimal("10000") else None
 
 
 def _point(value: Any) -> Decimal | None:
