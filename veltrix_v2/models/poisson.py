@@ -166,6 +166,7 @@ def observation_prospectively_observed_as_of(
         return False
     if match.availability_basis not in {
         "collector_first_observed_v1",
+        "archive_first_observed_at_import_v1",
         "provider_finished_status_conservative_4d",
     }:
         return False
