@@ -18,11 +18,6 @@ on:
         required: true
         default: "25"
         type: string
-      persist_staging:
-        description: "Persist raw capture evidence to the allowlisted Neon staging database"
-        required: true
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -65,7 +60,7 @@ jobs:
             --upcoming-days "${{ inputs.upcoming_days }}" \
             --max-fixtures "${{ inputs.max_fixtures }}" \
             --out artifacts/5dollar-shadow \
-            ${{ inputs.persist_staging && '--persist-staging' || '' }}
+            --persist-staging
 
       - name: Upload aggregate-only audit summary
         if: always()
