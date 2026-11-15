@@ -112,7 +112,7 @@ def build_fivedollar_forecast_batch(
             continue
 
         decisions = [
-            evaluate_source_use(approval, purpose, at_utc=cutoff_at, commercial=True)
+            evaluate_source_use(approval, purpose, at_utc=cutoff_at, commercial=False)
             for purpose in purposes
         ]
         if any(not decision.allowed for decision in decisions):
