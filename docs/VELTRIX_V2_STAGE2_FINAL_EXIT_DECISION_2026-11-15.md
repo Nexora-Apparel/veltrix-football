@@ -199,3 +199,16 @@ Counts are grouped by canonical fixture competition through the active crosswalk
 **Important boundary:** this completes the 90-day timestamped *opening-odds* acquisition only. It does not establish historical closing prices, line movement or CLV. The 5Dollar history endpoint remains Ultra-only; The Odds API account evidence remains catalogue-only; alternative vendors remain unverified. No acceptable historical/closing-odds evidence source has been qualified.
 
 **Final Stage 2 exit decision remains NO-GO — OPEN / NOT COMPLETE / NOT RELEASE-READY.** The opening-odds coverage gate is now PASS. Historical/closing odds and CLV remain BLOCKED/NOT MET, and the market-specific model certification thresholds (walk-forward sample counts, prospective settled selections/dates, positive ROI and confidence bound, and bookmaker benchmark superiority) remain unmet. Stage 3, production deployment, prediction publication, Telegram delivery, schedule activation and value betting remain disabled.
+
+
+### Final CI reconciliation — 2026-11-15
+
+All required CI checks on final documentation head `4b358ea148200f5fbd60bdcbec3bebfa6e2cc39e` completed successfully:
+- Phase 2 Data Foundation Tests — PASS (including PostgreSQL 16/18 reservation persistence and complete foundation suite).
+- PostgreSQL 16/18 Historical Data Foundation Acceptance — PASS.
+- Phase 5 Shadow Regression — PASS (PostgreSQL 16/18 integration and shadow regression).
+- Certification Evidence Integrity — PASS.
+- Historical Model Audit Tests — PASS.
+- Daily Fixture Predictions — SKIPPED as designed; no publication workflow was run.
+
+PR #120 remains draft/open/unmerged. These CI passes do not override the Stage 2 NO-GO decision: opening-odds coverage is complete, but closing-odds/CLV evidence and market-specific model certification gates remain unmet.
