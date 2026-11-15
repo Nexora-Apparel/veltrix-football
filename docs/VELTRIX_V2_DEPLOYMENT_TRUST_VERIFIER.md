@@ -19,7 +19,7 @@ The verifier loads:
 
 from the repository's `main` branch. The manifest must have schema `VELTRIX_V2_CERTIFICATION_MANIFEST_V1`, status `CERTIFIED`, the exact report ID and exact canonical report SHA-256, and non-empty certification records. The attestation subject digest is the SHA-256 of the exact manifest bytes. The manifest's certification records are then checked against the report's published fixtures and markets.
 
-The dedicated workflow `.github/workflows/report-certification-attestation.yml` is dispatchable only on `main`. It validates the report identity and manifest binding before creating a GitHub artifact attestation for that exact manifest. It never creates a manifest or fabricates a certification.
+The dedicated workflow `.github/workflows/report-certification-attestation.yml` is dispatchable only on `main`. Before signing, it runs `scripts/veltrix_v2/verify_pre_attestation_report.py`, which checks the report-bound manifest, every market gate, all evidence hashes, provider-rights approval, terms and active entitlement. Only after that complete preflight passes does it create a GitHub artifact attestation for the exact manifest bytes. The pre-attestation verifier's local digest callback is used only to validate the bytes being signed; deployed consumers never use that callback and require the independently verifiable Sigstore attestation. It never creates a manifest or fabricates a certification.
 
 ## Provider-rights evidence schema
 
@@ -32,7 +32,7 @@ Every certification record carries `provider_id` and `provider_scope`, in additi
 
 The evidence hash must match the exact retrieved bytes. The rights evaluation timestamp must exactly match the certification record. Entitlement and rights checks must be no more than 24 hours old, terms checks no more than 365 days old, timestamps must be timezone-aware, and quota remaining must be a positive integer. The approval ID, provider identity and scope must exactly match the certification record.
 
-Evidence URLs must use HTTPS, an exact configured hostname, no credentials, query string, fragment, nonstandard port or redirect. Bodies are size-limited. This prevents arbitrary URL retrieval and hash substitution.
+Evidence URLs must use HTTPS, an exact configured hostname, no credentials, query string, fragment, nonstandard port or redirect. The initial production allowlist supports repository-pinned raw GitHub paths under `raw.githubusercontent.com/Nexora-Apparel/veltrix-football/main/`; move evidence into that immutable repository path or add a separately reviewed exact host adapter before using another object store. Bodies are size-limited. This prevents arbitrary URL retrieval and hash substitution.
 
 ## Canonical bundle generation
 
