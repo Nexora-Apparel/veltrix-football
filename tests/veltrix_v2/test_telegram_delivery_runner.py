@@ -6,7 +6,7 @@ from scripts.veltrix_v2.dispatch_public_telegram_bundle import run_dispatch
 
 
 def _environment(tmp_path, **overrides):
-    bundle = tmp_path / "command-data" / "public-data" / "bundles" / "test.bundle.json"
+    bundle = tmp_path / "command-data" / "public-data" / "v2_report_bundle.json"
     bundle.parent.mkdir(parents=True)
     bundle.write_bytes(b"portable bundle")
     env = {
