@@ -90,7 +90,7 @@ The current OpenFootball and supplemental FootballData parsers also set `point_i
 
 ### Current Stage 2 decision
 
-**Stage 2 remains OPEN.** The OpenFootball base pack is an immutable, rights-cleared retrospective archive, not a demonstrated historical PIT feed. The supplemental FootballData pack requires its own latest artifact verification. No independently attested pre-match feature snapshots or timestamped historical bookmaker quotes have been demonstrated. The 5Dollar historical result rows remain non-PIT. No historical odds endpoint request has been made.
+**Stage 2 remains OPEN.** The OpenFootball base pack is an immutable, rights-cleared retrospective archive, not a demonstrated historical PIT feed. The supplemental FootballData pack requires its own latest artifact verification. No independently attested pre-match feature snapshots or timestamped historical bookmaker quotes have been demonstrated. The 5Dollar historical result rows remain non-PIT. The provider also exposes genuine timestamped odds ticks, but the user account previously verified as Free cannot access the full tick-history endpoint; it requires Ultra. The separate odds_quote rights approval is also absent. No historical odds endpoint request has been made.
 
 The latest exact-head CI on commit `9bd078cd741248feb50aadcaf337b37f32dc5db5` reports Phase 2 foundation, Phase 5 shadow regression, historical model audit, certification evidence integrity and PostgreSQL 16/18 acceptance all successful; the daily fixture workflow is intentionally skipped. These are software/integration checks, not evidence that the source archives are PIT or that Stage 2 has passed.
 
@@ -139,3 +139,50 @@ The corrected code head `593b3fcd28ba1e0129e781652cb036daff9ca214` passed the fo
 The latest PR head is `bc0a5f053b7e6a10e6b6d9f9e9d0bcaa30f4fbba`; this is a documentation-only commit after the tested code head above. No exact-head code test is claimed for the documentation-only commit.
 
 **Final Stage 2 disposition for this execution window: NOT COMPLETE.** The timestamp misclassification has been corrected and the focused regression/integration checks passed. The actual Stage 2 exit gates remain unmet: a genuinely PIT-qualified historical source, independently verified source availability timestamps, confirmed supplemental artifact evidence, guarded staging import, and exact cross-provider identity resolution are still outstanding. No production data, schedules, Telegram or publication settings were changed.
+
+
+## 10. 5DollarFootballAPI historical odds source qualification — 2026-11-15
+
+### Provider evidence
+
+Official provider documentation reviewed:
+- Terms: https://5dollarfootballapi.com/terms (October 2026).
+- API overview and history depth: https://5dollarfootballapi.com/docs.
+- Odds movement history: https://5dollarfootballapi.com/docs/odds-history.
+- Fixture and opening/closing odds: https://5dollarfootballapi.com/docs/fixture.
+
+The October 2026 Terms permit using the data in models and internal tools, caching/storing responses and displaying data in user-facing products, while prohibiting redistribution of raw data as a competing feed. Free/Community/Education public-facing products require the documented attribution. This is an appropriate rights basis for an internal historical research collector, subject to a source-specific approval record.
+
+The provider documents:
+- GET /v1/fixtures/{id}/odds/history?market=1x2 returns the full pre-match and in-play price tick history, oldest first.
+- Each tick includes recorded_at in UTC, prices, line and score state. These timestamps are the source observation times and are suitable for point-in-time odds reconstruction after raw-response verification.
+- The same endpoint supports goalline, btts and other markets, with bookmaker/market-specific coverage.
+- The full tick-history endpoint requires Ultra; Free and Pro receive HTTP 403 insufficient_plan.
+- Free plan history is limited to the last three months; Pro to twelve months; Ultra reaches back to 2014 for supported competitions. Competition-specific coverage is not uniform.
+
+### Current access and rights gate
+
+The user's 5Dollar account was previously verified as Free. Therefore the full tick-history endpoint is not currently available. Do not attempt it, retry it, or label opening/closing summary prices as full timestamped tick history.
+
+The existing database approval approval-5dollar-community-fixture-result-2026-11 is scoped to fixture_result; it does not explicitly approve odds_quote. The terms review supports model training and evaluation, but the persisted rights model requires an explicit data-type and purpose scope. Do not infer odds rights from the fixture-result approval.
+
+### Acquisition design
+
+Once the account has Ultra access and an explicit staging approval for odds_quote:
+1. Enumerate finished fixtures only within the account's permitted competition/season scope and pin the query time window.
+2. Fetch one 1x2 history response per fixture initially; request totals and BTTS only after their coverage and request cost are separately budgeted.
+3. Persist raw response bytes, SHA-256, request manifest, retrieval timestamp, response status, allowlisted rate-limit headers and exact fixture/provider IDs.
+4. Preserve every tick's recorded_at as source_published_at; never replace it with retrieval time.
+5. Keep retrieval/recording time separate from source tick time.
+6. Exclude in-play ticks from pre-match features; only use ticks whose source timestamp is strictly before the fixture kickoff and whose tick state is explicitly pre-match.
+7. Preserve suspended/withdrawn rows and null prices as evidence, but never turn them into prices.
+8. Deduplicate by provider fixture, bookmaker, market, selection/line and source tick timestamp; conflicting duplicate identities fail closed.
+9. Reconcile raw hashes, row counts, timestamp coverage and per-competition coverage independently before staging import.
+
+The 5Dollar results endpoint still does not provide the exact first-publication timestamp or a complete historical revision stream for final scores. Result rows remain outcome labels only; do not use them as historical pre-match form inputs under a fabricated publication timestamp. The separate OpenFootball/FootballData archives remain retrospective labels until a verified source-publication proof path is integrated.
+
+### Stage 2 disposition
+
+**BLOCKED — PLAN AND RIGHTS SCOPE**
+
+No subscription change, paid request, API call or database rights mutation was performed. The next implementation task is a dry-run-first, rate-budgeted 5Dollar odds-history collector with strict recorded_at parsing and staging-only persistence. The first live acquisition must remain blocked until both the account's Ultra entitlement and a separate odds_quote approval are confirmed.

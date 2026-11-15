@@ -51,6 +51,10 @@ def test_internal_form_and_strength_features_have_explicit_derived_status():
     assert football_data.capability(DataDomain.TEAM_FORM).state is CapabilityState.EXPLORATORY_ONLY
     assert football_data.capability(DataDomain.REST_DAYS).state is CapabilityState.UNAVAILABLE
     assert profile.capability(DataDomain.TEAM_STRENGTH).state is CapabilityState.DERIVED
+    for domain in (DataDomain.ODDS_1X2, DataDomain.ODDS_TOTALS, DataDomain.ODDS_BTTS):
+        assert profile.capability(domain).state is CapabilityState.CONDITIONAL
+        assert profile in providers_for(domain, include_conditional=True)
+        assert profile not in dispatchable_providers_for(domain, include_conditional=True)
 
 def test_statsbomb_is_historical_research_only_xg_and_lineup_candidate():
     profile = next(p for p in PROVIDER_REGISTRY if p.provider == "StatsBomb Open Data")
