@@ -17,9 +17,9 @@ import unicodedata
 from veltrix_v2.models.poisson import MatchObservation
 
 
-_DATE_LINE = re.compile(r"^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})$")
+_DATE_LINE = re.compile(r"^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+([A-Za-z]{3})\s+(\d{1,2})(?:\s+(\d{4}))?$")
 _MATCHDAY_LINE = re.compile(r"(?:Matchday|Round)\s+(\d+)", re.IGNORECASE)
-_SCORE_LINE = re.compile(r"\s+(\d+)\s*-\s*(\d+)(?:\s+\[([^\]]+)\])?\s*$")
+_SCORE_LINE = re.compile(r"\s+(\d+)\s*-\s*(\d+)(?:\s+\(\s*\d+\s*-\s*\d+\s*\))?(?:\s+\[([^\]]+)\])?\s*$")
 _MONTHS = {name: number for number, name in enumerate(
     ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), 1
 )}
@@ -119,7 +119,7 @@ def parse_archive(
                     if current_date.month >= 10 and month_number <= 3 and month_number < current_date.month:
                         inferred_year += 1
                 else:
-                    season_year = re.search(r"\\b(20\\d{2})\\b", season_title)
+                    season_year = re.search(r"\b(20\d{2})\b", season_title)
                     inferred_year = int(season_year.group(1)) if season_year else None
                 current_date = date(inferred_year, month_number, int(day_text)) if inferred_year else None
             except (KeyError, ValueError):
