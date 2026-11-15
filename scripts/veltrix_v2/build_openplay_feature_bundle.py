@@ -199,7 +199,7 @@ def _load_match_snapshots(
             break
         for row in batch:
             (observation_id,match_id,payload,payload_hash,published_at,available_at,
-             recorded_at,timestamp_basis,pit,rights_id,response_id) = row
+             recorded_at,timestamp_basis,pit,rights_id,response_id,timestamp_raw,effective_at) = row
             key = str(match_id)
             if key in result:
                 raise RuntimeError("OPENPLAY_DUPLICATE_MATCH_SNAPSHOT:" + key)
