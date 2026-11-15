@@ -159,6 +159,10 @@ def predict_batch(
                 cutoff_at=cutoff_at,
                 recency_half_life_days=recency_half_life_days,
                 dixon_coles_rho=dixon_coles_rho,
+                # Prospective forecasts may use only collector-first-observed
+                # rows known by this cutoff. Historical evaluators keep the
+                # default strict PIT-only path.
+                allow_prospective_observed=True,
             )
         except InsufficientHistoryError:
             skipped_no_history += 1
