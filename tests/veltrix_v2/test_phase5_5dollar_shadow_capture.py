@@ -29,7 +29,7 @@ def approval_row():
         "data_type": "fixture_result",
         "status": "APPROVED",
         "permitted_uses": ["CACHE", "COLLECTION", "MODEL_TRAINING", "BENCHMARKING", "STORAGE"],
-        "commercial_use_allowed": True,
+        "commercial_use_allowed": False,
         "terms_url": "https://5dollarfootballapi.com/terms",
         "terms_version": "October 2026",
         "evidence_uri": "https://example.test/approval",
