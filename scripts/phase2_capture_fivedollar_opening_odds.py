@@ -58,6 +58,52 @@ def _header_int(headers: dict[str, str], *names: str) -> int | None:
     return None
 
 
+def _validate_quota_preflight(
+    raw_body: bytes, headers: dict[str, str], *, planned_requests: int,
+    checked_at: datetime,
+) -> dict:
+    if isinstance(planned_requests, bool) or not 0 <= planned_requests <= MAX_FIXTURES:
+        raise ValueError("FIVEDOLLAR_QUOTA_PREFLIGHT_REQUEST_PLAN_INVALID")
+    try:
+        payload = json.loads(raw_body)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise RuntimeError("FIVEDOLLAR_QUOTA_PREFLIGHT_RESPONSE_INVALID") from None
+    if not isinstance(payload, dict) or payload.get("success") != 1:
+        raise RuntimeError("FIVEDOLLAR_QUOTA_PREFLIGHT_RESPONSE_INVALID")
+    data = payload.get("data")
+    if not isinstance(data, dict):
+        raise RuntimeError("FIVEDOLLAR_QUOTA_PREFLIGHT_STATUS_SCHEMA_INVALID")
+    plan = str(data.get("plan") or "").casefold()
+    limits = data.get("limits") if isinstance(data.get("limits"), dict) else {}
+    try:
+        hourly_limit = int(limits.get("rate_limit"))
+        burst_per_minute = int(limits.get("burst_per_minute"))
+    except (TypeError, ValueError):
+        raise RuntimeError("FIVEDOLLAR_QUOTA_PREFLIGHT_PROFILE_INVALID") from None
+    if plan != "community":
+        raise RuntimeError("FIVEDOLLAR_QUOTA_PREFLIGHT_PLAN_MISMATCH")
+    if hourly_limit != 300 or burst_per_minute != 20:
+        raise RuntimeError("FIVEDOLLAR_QUOTA_PREFLIGHT_PROFILE_MISMATCH")
+    quota_limit = _header_int(headers, "x-ratelimit-limit")
+    quota_remaining = _header_int(headers, "x-ratelimit-remaining")
+    quota_reset = _header_int(headers, "x-ratelimit-reset")
+    if quota_limit != 300 or quota_remaining is None:
+        raise RuntimeError("FIVEDOLLAR_QUOTA_PREFLIGHT_HEADERS_INCOMPLETE")
+    if quota_remaining < planned_requests + 1:
+        raise RuntimeError("FIVEDOLLAR_QUOTA_PREFLIGHT_INSUFFICIENT_HEADROOM")
+    return {
+        "checked_at": checked_at.astimezone(timezone.utc).isoformat(),
+        "plan": plan,
+        "rate_limit_hour": hourly_limit,
+        "burst_per_minute": burst_per_minute,
+        "quota_limit": quota_limit,
+        "quota_remaining": quota_remaining,
+        "quota_reset": quota_reset,
+        "requests_planned": planned_requests,
+        "response_sha256": _sha(raw_body),
+    }
+
+
 def _load_approval(connection, at: datetime) -> SourceApproval:
     with connection.cursor() as cur:
         cur.execute("""
@@ -175,6 +221,37 @@ def _validate_fixture_identity(raw_body: bytes, target: dict) -> None:
         raise ValueError("FIVEDOLLAR_ODDS_KICKOFF_TIMEZONE_UNTRUSTED")
     if abs((kickoff.astimezone(timezone.utc) - target["kickoff_at"].astimezone(timezone.utc)).total_seconds()) > 60:
         raise ValueError("FIVEDOLLAR_ODDS_KICKOFF_MISMATCH")
+
+
+def _request_status(api_key: str):
+    requested_at = datetime.now(timezone.utc)
+    request = Request(
+        f"{API_BASE}/status",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Accept": "application/json",
+            "User-Agent": USER_AGENT,
+        },
+    )
+    try:
+        with urlopen(request, timeout=20) as response:
+            raw = response.read()
+            headers = {str(k): str(v) for k, v in response.headers.items()}
+            status = int(getattr(response, "status", getattr(response, "code", 200)))
+    except HTTPError as exc:
+        if exc.code == 401:
+            raise PermissionError("FIVEDOLLAR_API_KEY_REJECTED") from None
+        if exc.code == 403:
+            raise PermissionError("FIVEDOLLAR_STATUS_ENDPOINT_NOT_ENTITLED") from None
+        if exc.code == 429:
+            raise RuntimeError("FIVEDOLLAR_STATUS_PREFLIGHT_RATE_LIMITED_NO_RETRY") from None
+        raise RuntimeError(f"FIVEDOLLAR_STATUS_PREFLIGHT_HTTP_{exc.code}_NO_RETRY") from None
+    except URLError:
+        raise RuntimeError("FIVEDOLLAR_STATUS_PREFLIGHT_NETWORK_ERROR_NO_RETRY") from None
+    retrieved_at = datetime.now(timezone.utc)
+    if status != 200 or not raw:
+        raise RuntimeError("FIVEDOLLAR_STATUS_PREFLIGHT_RESPONSE_INVALID")
+    return raw, headers, requested_at, retrieved_at, status, time.monotonic()
 
 
 def _request_fixture(api_key: str, fixture_id: str, *, last_started: float | None):
@@ -335,6 +412,14 @@ def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
             raise PermissionError("OPENING_ODDS_STAGING_TARGET_MISMATCH")
         approval = _load_approval(connection, now)
         targets = _load_targets(connection, lookback_days=lookback_days, limit=max_fixtures, now=now)
+        quota_preflight = None
+        last_started = None
+        if targets:
+            preflight_raw, preflight_headers, _, preflight_at, _, last_started = _request_status(api_key)
+            quota_preflight = _validate_quota_preflight(
+                preflight_raw, preflight_headers,
+                planned_requests=len(targets), checked_at=preflight_at,
+            )
         target_manifest = [
             {"provider_fixture_id":str(t["provider_fixture_id"]),
              "canonical_fixture_id":str(t["id"]),
@@ -347,6 +432,9 @@ def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
             "market":"1x2","bookmaker":"bet365","lookback_days":lookback_days,
             "max_fixtures":max_fixtures,"requested_at":now.isoformat(),
             "commercial_use_allowed":False,"targets":target_manifest,
+            "quota_preflight":quota_preflight,
+            "fixture_requests_planned":len(targets),
+            "provider_requests_planned":len(targets) + int(quota_preflight is not None),
         }
         manifest_sha = _sha(_json(manifest_body).encode())
         manifest_key = f"5dollar-opening-odds:{os.getenv('GITHUB_RUN_ID','manual')}:{manifest_sha}"
@@ -370,7 +458,6 @@ def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
         connection.commit()
 
         results = []
-        last_started = None
         for index,target in enumerate(targets):
             with connection.cursor() as cur:
                 current_approval = _load_approval(connection, datetime.now(timezone.utc))
@@ -407,6 +494,8 @@ def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
             "status":"OPENING_ODDS_CAPTURE_COMPLETE",
             "provider":PROVIDER,"source_id":SOURCE_ID,
             "requests_used":len(results),"request_cap":max_fixtures,
+            "provider_requests_total":len(results) + int(quota_preflight is not None),
+            "quota_preflight":quota_preflight,
             "quotes_pit_eligible":sum(r["point_in_time_certifiable"] for r in results),
             "quotes_ineligible":sum(not r["point_in_time_certifiable"] for r in results),
             "observations_inserted":sum(r["observation_inserted"] for r in results),
