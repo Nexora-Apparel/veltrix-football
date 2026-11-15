@@ -212,3 +212,40 @@ All required CI checks on final documentation head `4b358ea148200f5fbd60bdcbec3b
 - Daily Fixture Predictions — SKIPPED as designed; no publication workflow was run.
 
 PR #120 remains draft/open/unmerged. These CI passes do not override the Stage 2 NO-GO decision: opening-odds coverage is complete, but closing-odds/CLV evidence and market-specific model certification gates remain unmet.
+
+
+### Historical/closing-odds source re-evaluation — 2026-11-15
+
+#### Best technical candidate: The Odds API (not yet entitled)
+
+The official historical endpoint documentation now confirms coverage dates for all seven required competitions, including both Brazil leagues. The 763-fixture universe spans kickoff dates 2026-08-17 through 2026-11-11, so all seven provider history start dates predate the universe:
+
+| Competition | Sport key | Public historical coverage start |
+|---|---|---|
+| Brazil Serie A | `soccer_brazil_campeonato` | 2020-07-28 |
+| Brazil Serie B | `soccer_brazil_serie_b` | 2022-06-30 |
+| England Premier League | `soccer_epl` | 2020-06-06 |
+| France Ligue 1 | `soccer_france_ligue_one` | 2020-07-16 |
+| Germany Bundesliga I | `soccer_germany_bundesliga` | 2020-06-06 |
+| Italy Serie A | `soccer_italy_serie_a` | 2020-06-06 |
+| Spain La Liga | `soccer_spain_la_liga` | 2020-06-06 |
+
+Official docs: https://the-odds-api.com/historical-odds-data/ (featured-market 1X2/h2h snapshots; 10-minute snapshots initially and 5-minute snapshots since September 2022; nearest snapshot at or before requested timestamp; 10 credits per region per market). Historical odds are paid-plan-only. Official pricing: https://the-odds-api.com/ (Free: 500 credits/month, no historical odds; lowest paid START 20K: US$30/month, historical odds included).
+
+Account evidence is not sufficient to accept it:
+- The three persisted account responses are all quota-free `GET /v4/sports/?all=true` calls. Each shows `x-requests-used=205`, `x-requests-remaining=295`, `x-requests-last=0` (500 total credits). This is consistent with the published 500-credit Free tier, but the account probe intentionally records plan code as undisclosed.
+- There are still zero persisted historical-odds responses and zero event-odds responses. The existing no-credit probe only calls `/v4/sports/?all=true`; it does not test paid historical entitlement.
+- Existing source approval `approval-the-odds-api-v4-owner-authorized-2026-11-14` is APPROVED for collection, storage, benchmarking, model training and public display, with commercial use allowed and raw redistribution prohibited. Its current competition scope contains only EPL, La Liga, Bundesliga, Serie A and Ligue 1; Brazil Serie A and Serie B are not yet covered by that approval.
+- The provider's current terms permit storage, user-facing display, derived values and model training, including commercial use, but prohibit reselling/redistributing the raw feed: https://the-odds-api.com/terms-and-conditions.html (updated 31 Aug 2026).
+
+**Determination:** The Odds API is now the strongest technically compatible full-universe candidate, but it is **not an accepted historical/closing source yet**. Paid historical entitlement, actual h2h response coverage/bookmaker availability, and a rights approval covering both Brazil competitions remain unverified. No paid plan has been purchased or activated.
+
+#### OddsIntel Data — rejected for full-universe certification
+
+Official coverage/pricing: https://data.oddsintel.app/coverage and https://data.oddsintel.app/pricing. It advertises 1X2 consensus closing prices and CLV grading, with Starter history since 10 Oct 2026 (90-day cap), Pro history from the same first match date, and no earlier data. The VELTRIX 763-fixture universe begins 17 Aug 2026: **415 fixtures kick off before 10 Oct; only 348 fall on/after 10 Oct**. It therefore cannot supply closing evidence for the complete frozen universe or meet the 98% threshold.
+
+Additional limitations: it supplies consensus prices only (no bookmaker names or individual bookmaker quotes); takeable grading is marked unchecked; and its terms exclude betting operators and their affiliates and prohibit presenting CLV grading as a verified betting record. Starter is €49/month + VAT for internal business use; Pro is €149/month + VAT for displaying individual derived figures inside a product. Terms: https://data.oddsintel.app/terms.
+
+**Determination:** Not accepted for this Stage 2 full-universe requirement. It may be considered only for a future, separately scoped consensus-close benchmark after legal/use-case eligibility is established; it cannot backfill the 415 pre-10-Oct fixtures.
+
+SockOdds and Odds-API.io remain marketing-only candidates without VELTRIX entitlement, seven-competition response coverage, contract/rights approval or persisted evidence. No provider has yet supplied accepted historical/closing odds for the full 763-fixture universe.
