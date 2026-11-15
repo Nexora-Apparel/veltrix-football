@@ -308,3 +308,31 @@ The complete OpenPlay acquisition/import/audit workflow passed on exact commit `
 - The independent audit re-hashed every stored BYTEA payload and verified its source-observation link, rights approval, non-PIT timestamp fields and completed manifest event.
 
 The workflow is repeatable and idempotent. The second successful import reused the same manifest/assets rather than creating duplicate records.
+
+
+### OpenPlay page-save timestamps and prospective PIT eligibility — 2026-11-15
+
+The pinned OpenPlay data dictionary at the release tag commit `ac0bd9aff52016066433ebebf818bec4278fcf54` defines `matches.scraped_at` as **when the page was saved (UTC)**. The exact dictionary bytes are included in the qualification artifact and SHA-256 bound to the audit:
+
+- Evidence ID: `openplay-data-v0.1.0:DATA_DICTIONARY.md#matches.scraped_at`.
+- Dictionary SHA-256: `24a1037a948afa1759e3bc2babeb8b17b9e1e2dc3c8a8beea2e18f9b5b671279`.
+- 26,547/26,547 match rows have a non-null, parseable page-save timestamp.
+- 26,547/26,547 match IDs are unique.
+- 26,547/26,547 page-save timestamps are at least two days after the source match date and are not future timestamps at capture time.
+- Observed page-save range: `2026-10-29 20:44:32 UTC` to `2026-11-03 04:14:37 UTC`.
+
+The importer now creates one `match_result_snapshot` source observation per match, linked to the exact `matches.parquet` provider response and capture manifest. Each record preserves the raw `scraped_at` value, normalized UTC timestamp, documentation evidence ID/hash, payload hash, source rights approval, Parquet response hash and manifest hash.
+
+These match-page observations use:
+- `available_at = source_published_at = scraped_at` (the documented page-save timestamp);
+- `source_timestamp_basis = documented_guarantee`;
+- `point_in_time_certifiable = true` for cutoffs that occur after the actual VELTRIX `recorded_at`;
+- `recorded_at = retrieved_at =` the real VELTRIX import timestamp, never the historical scrape time.
+
+The scope is deliberately prospective. An observation cannot enter a cutoff before it was actually imported into VELTRIX. Independent Neon queries confirmed:
+- 26,547/26,547 observations eligible at cutoff `2026-11-16T06:00:00Z`;
+- 0 observations eligible at cutoff `2026-11-14T23:59:00Z`, before the VELTRIX import.
+
+Workflow run [#43716382187](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43716382187) passed the release qualification, guarded import and independent read-back. It persisted 26,547 timestamped match-result snapshots under capture manifest ID `93`, manifest SHA-256 `0075d4c2b28dd12d2f0aa7dbc80a69637827da64ed3e7b3d418c31e5b218a184`.
+
+**Important boundary:** this supports prospective use after the VELTRIX import; it does not support historical backtests whose prediction cutoffs predate 2026-11-15. The other OpenPlay Parquet assets (player-match statistics, lineups, shots, formations and cards) remain stored as immutable raw assets. Their row-level feature adapters and joins to the documented match-page capture timestamp are still outstanding. Do not claim those feature families are already PIT-admitted.
