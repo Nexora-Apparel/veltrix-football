@@ -482,3 +482,10 @@ At the time of this ledger:
 - The first fixture-only workflow run [#43767399295](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43767399295) stopped during dependency installation before tests, dry-run, API calls or database access.
 - Failure: workflow used `pip install -e .`, but this repository has no `setup.py` or `pyproject.toml`. No provider quota was consumed and no staging writes occurred.
 - Corrected the workflow to install the pinned project dependencies from `requirements.txt` plus psycopg, matching the existing Phase 2 capture workflow. The next push will retry the same 14-request maximum / 14-day fixture-only discovery with no model import or paper-ledger writes.
+
+
+### Fixtures-only Phase 5 regression test correction — 2026-11-15
+
+- The full Phase 2 foundation test run for commit `136aa8c27d72706c45e009e26be557e37609dab5` exposed two failures in `tests/veltrix_v2/test_phase5_5dollar_shadow_capture.py`. Those tests monkeypatched a module-level `capture.predict_batch`; the safe fixtures-only refactor intentionally removed the top-level model import and now imports `predict_batch` lazily only in the prediction branch.
+- Corrected the tests to patch `veltrix_v2.models.engine.predict_batch` at its actual lazy-import source. This preserves the production guarantee that fixture-only capture does not import or execute the model while keeping the non-fixtures-only orchestration tests deterministic.
+- This test-only correction does not touch the fixture-only workflow paths, so it will not trigger a duplicate provider capture run. The active fixture-only run [#43767443333](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43767443333) continues independently.

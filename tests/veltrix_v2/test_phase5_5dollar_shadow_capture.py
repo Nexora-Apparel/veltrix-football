@@ -310,7 +310,7 @@ def test_run_capture_orchestrates_mocked_pages_with_optional_staging_ledger(
         )
 
     monkeypatch.setattr(capture, "_capture_page", fake_capture_page)
-    monkeypatch.setattr(capture, "predict_batch", lambda *a, **k: forecast_report)
+    monkeypatch.setattr("veltrix_v2.models.engine.predict_batch", lambda *a, **k: forecast_report)
     monkeypatch.setattr(
         capture, "admit_prospective_observed_shadow_forecasts",
         lambda *a, **k: SimpleNamespace(admitted=[prediction], rejected=[]),
