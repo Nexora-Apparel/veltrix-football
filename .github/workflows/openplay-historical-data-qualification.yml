@@ -10,6 +10,7 @@ on:
       - 'scripts/veltrix_v2/audit_openplay_staging.py'
       - 'scripts/veltrix_v2/build_openplay_identity_crosswalk_candidates.py'
       - 'scripts/veltrix_v2/apply_openplay_exact_identity_crosswalk.py'
+      - 'scripts/veltrix_v2/audit_openplay_feature_rows.py'
       - 'tests/veltrix_v2/test_openplay_identity_crosswalk_candidates.py'
       - 'tests/veltrix_v2/test_openplay_exact_crosswalk_apply.py'
       - 'tests/veltrix_v2/test_openplay_staging_import.py'
@@ -63,6 +64,9 @@ jobs:
           DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
           VELTRIX_ENABLE_OPENPLAY_STAGING_IMPORT: "YES"
         run: python scripts/veltrix_v2/audit_openplay_staging.py --input-dir openplay-audit
+
+      - name: Audit row-level feature timestamp inheritance
+        run: python scripts/veltrix_v2/audit_openplay_feature_rows.py --input-dir openplay-audit --output openplay-audit/openplay-feature-temporal-audit.json
 
       - name: Build conservative OpenPlay identity crosswalk candidates
         env:
