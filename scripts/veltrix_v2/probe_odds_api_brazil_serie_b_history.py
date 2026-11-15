@@ -169,19 +169,34 @@ def discover(api_key: str, sports_fetcher=_fetch_sports, request_json=_request_j
     if markets_quota["x-requests-remaining"] != events_quota["x-requests-remaining"] - 1:
         raise RuntimeError("HISTORICAL_MARKETS_QUOTA_DELTA_UNEXPECTED")
     markets_data, markets_timestamp = _payload_data(markets_payload)
-    if not isinstance(markets_data, list):
-        raise RuntimeError("HISTORICAL_MARKETS_DATA_NOT_LIST")
+    if isinstance(markets_data, dict):
+        market_bookmakers = markets_data.get("bookmakers", [])
+    elif isinstance(markets_data, list):
+        market_bookmakers = markets_data
+    else:
+        raise RuntimeError("HISTORICAL_MARKETS_DATA_SHAPE_INVALID")
+    if not isinstance(market_bookmakers, list):
+        raise RuntimeError("HISTORICAL_MARKETS_BOOKMAKERS_NOT_LIST")
     bookmakers = []
-    for item in markets_data:
+    for item in market_bookmakers:
         if not isinstance(item, dict):
             continue
-        market_keys = item.get("markets", [])
-        if not isinstance(market_keys, list):
-            market_keys = []
+        market_items = item.get("markets", [])
+        if not isinstance(market_items, list):
+            market_items = []
+        markets = []
+        for market in market_items:
+            if isinstance(market, dict) and market.get("key"):
+                markets.append({
+                    "market_key": str(market["key"]),
+                    "last_update": market.get("last_update"),
+                })
+            elif isinstance(market, str):
+                markets.append({"market_key": market, "last_update": None})
         bookmakers.append({
             "bookmaker_key": item.get("key"),
             "bookmaker_title": item.get("title"),
-            "markets": sorted(str(value) for value in market_keys),
+            "markets": sorted(markets, key=lambda value: value["market_key"]),
         })
     return {
         **base,
@@ -197,7 +212,7 @@ def discover(api_key: str, sports_fetcher=_fetch_sports, request_json=_request_j
         "market_discovery_request_cost": markets_quota["x-requests-last"],
         "bookmakers": bookmakers,
         "bookmaker_count": len(bookmakers),
-        "market_keys": sorted({market for book in bookmakers for market in book["markets"]}),
+        "market_keys": sorted({market["market_key"] for book in bookmakers for market in book["markets"]}),
         "credits_spent": 2,
     }
 
