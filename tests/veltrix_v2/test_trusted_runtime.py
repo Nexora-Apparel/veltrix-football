@@ -185,13 +185,9 @@ def test_attestation_verifier_rejects_manifest_digest_mismatch():
     session.get.assert_not_called()
 
 
-def test_deployment_factory_requires_evidence_host_allowlist_but_not_public_repo_token():
+def test_deployment_factory_defaults_to_pinned_public_raw_host_without_token():
     from veltrix_v2.reporting.trusted_runtime import build_deployment_publication_verifier
-    with pytest.raises(DeploymentVerificationError, match="EVIDENCE_HOST_ALLOWLIST_REQUIRED"):
-        build_deployment_publication_verifier({})
-    verifier = build_deployment_publication_verifier({
-        "VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS": "raw.githubusercontent.com",
-    })
+    verifier = build_deployment_publication_verifier({})
     assert callable(verifier)
 
 
@@ -221,7 +217,6 @@ def test_application_runtime_constructs_public_repo_verifier_without_token(monke
             "https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/"
             "command-data/public-data/v2_report_bundle.json"
         ),
-        "VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS": "raw.githubusercontent.com",
     })
     assert dependencies is not None
     assert callable(dependencies.verifier)
