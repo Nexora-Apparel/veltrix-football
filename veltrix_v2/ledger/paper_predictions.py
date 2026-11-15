@@ -408,6 +408,16 @@ class ProspectivePaperLedger:
                     ):
                         raise ValueError("PAPER_LEDGER_TARGET_HASH_INVALID")
             elif event.event_type == "SETTLEMENT":
+                response_hash = event.payload.get("result_response_sha256")
+                manifest_hash = event.payload.get("result_capture_manifest_sha256")
+                if (response_hash is None) != (manifest_hash is None):
+                    raise ValueError("PAPER_LEDGER_SETTLEMENT_CAPTURE_EVIDENCE_PAIR_INVALID")
+                for digest in (response_hash, manifest_hash):
+                    if digest is not None and (
+                        not isinstance(digest, str) or len(digest) != 64
+                        or any(ch not in "0123456789abcdef" for ch in digest.casefold())
+                    ):
+                        raise ValueError("PAPER_LEDGER_SETTLEMENT_CAPTURE_EVIDENCE_HASH_INVALID")
                 key = (event.fixture_id, event.model_version)
                 prediction = predictions_by_key.get(key)
                 if prediction is None or key in settled_keys:
