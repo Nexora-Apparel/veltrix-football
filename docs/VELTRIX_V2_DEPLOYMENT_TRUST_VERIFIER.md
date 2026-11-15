@@ -25,12 +25,12 @@ The dedicated workflow `.github/workflows/report-certification-attestation.yml` 
 
 Every certification record carries `provider_id` and `provider_scope`, in addition to `rights_approval_id`, `rights_evidence_uri` and `rights_evidence_sha256`. The rights evidence object is JSON with schema `VELTRIX_PROVIDER_RIGHTS_EVIDENCE_V1` and must contain:
 
-- `approval_id`, `provider_id`, `permitted_scope`, `status: APPROVED`
+- `approval_id`, `provider_id`, `permitted_scope`, `status: APPROVED`, `evaluated_at`
 - `allowed_actions` containing `PREDICTION_PUBLICATION`
 - `terms_version` and `terms: {status: ACCEPTED, version, checked_at}`
 - `entitlement: {status: ACTIVE, checked_at, expires_at, quota: {remaining}}`
 
-The evidence hash must match the exact retrieved bytes. Entitlement checks must be no more than 24 hours old, terms checks no more than 365 days old, timestamps must be timezone-aware, and quota remaining must be a positive integer. The approval ID, provider identity and scope must exactly match the certification record.
+The evidence hash must match the exact retrieved bytes. The rights evaluation timestamp must exactly match the certification record. Entitlement and rights checks must be no more than 24 hours old, terms checks no more than 365 days old, timestamps must be timezone-aware, and quota remaining must be a positive integer. The approval ID, provider identity and scope must exactly match the certification record.
 
 Evidence URLs must use HTTPS, an exact configured hostname, no credentials, query string, fragment, nonstandard port or redirect. Bodies are size-limited. This prevents arbitrary URL retrieval and hash substitution.
 
