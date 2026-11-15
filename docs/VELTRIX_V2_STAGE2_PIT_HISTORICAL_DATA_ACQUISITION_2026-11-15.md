@@ -1,6 +1,6 @@
 # VELTRIX FOOTBALL 2.0 — Stage 2: Rights-approved PIT historical data acquisition
 
-Status: IN PROGRESS — the OpenFootball base pack has been captured and independently verified (5,182 unique result versions across 20 source paths, 49 snapshots, 375/500 requests, zero source failures). The supplemental CC0 FootballData Brazil Serie B collector and independent verifier are implemented and included in the same bounded workflow; the latest artifact verification result still needs confirmation. Staging persistence, exact rights-scope records, archive-proof model integration and cross-provider identity resolution remain outstanding.
+Status: IN PROGRESS — project-wide non-commercial source authorization is recorded; the pinned OpenPlay release (15 assets, 2,975,394 Parquet rows, 74,460,817 raw bytes) is qualified, imported into isolated Neon staging and independently read back. The OpenFootball archive pack is captured and hash-verified, but remains retrospective/date-only rather than proven historical PIT. Supplemental FootballData artifact verification, OpenFootball staging persistence, evidence-backed cross-provider identity resolution, genuinely PIT historical observations and historical odds access remain outstanding.
 
 ## 1. Acceptance boundary
 
@@ -13,6 +13,8 @@ A snapshot fetched today cannot be represented as if it had been captured on the
 The OpenFootball base pack covers six CC0-1.0 repositories and seven competition scopes: England Premier League, Spain La Liga, Germany Bundesliga, Italy Serie A, France Ligue 1, Brazil Serie A and Brazil Serie B. Three seasons are enumerated for the four European core leagues and France; Brazil Serie A uses 2024, 2025 and 2026 calendar-year files, while Brazil Serie B uses the available 2024 and 2025 files. The collector rechecks each repository's SPDX licence metadata at runtime.
 
 The detailed scope review is docs/legal/openfootball-cc0-scope-review-2026-11-15.md. It covers text fixture/result facts only. It does not cover logos, media, odds, xG, lineups or player-level data. Competition/team IDs remain source-scoped pending evidence-backed crosswalks.
+
+The project-wide non-commercial source authorization is recorded in [the authorization register](legal/veltrix-all-source-noncommercial-authorization-2026-11-15.md). The pinned OpenPlay `data-v0.1.0` release is separately approved in Neon staging under `approval-openplay-whoscored-opta-noncommercial-2026-11-15`; all 15 raw release assets are persisted as immutable provider responses with linked source-observation metadata. Monetisation is prohibited. This rights decision does not make static OpenPlay data historically PIT.
 
 Nigeria NPFL is separate and must not be mapped to another competition by name or country alone. The OpenFootball archive has only 57 Brazil Serie B 2025 results and no 2026 file. A supplemental CC0 FootballData archive is being captured separately: 2025 full-season JSON plus a 2026 partial snapshot dated 2026-07-08. The supplemental source's reported clock has no timezone, so kickoff_at remains null.
 
@@ -245,3 +247,47 @@ Still outstanding:
 6. Obtain a genuinely PIT result-feature source or keep historical form/strength features excluded from walk-forward evaluation.
 
 Stage 2 remains OPEN. The new 1X2 opening-quote path is a qualified acquisition candidate, not yet an acquired dataset.
+
+
+## 11. Project-wide non-commercial authorization and OpenPlay staging import — 2026-11-15
+
+The project owner has confirmed that all source permissions obtained for VELTRIX FOOTBALL permit project use on the condition that the data and outputs are not monetised. The global policy is recorded at `docs/legal/veltrix-all-source-noncommercial-authorization-2026-11-15.md`; the OpenPlay / WhoScored / Opta-specific record is `docs/legal/openplay-whoscored-opta-authorization-2026-11-15.md`.
+
+Both approval records are registered in Neon staging with `status=APPROVED`, `rights_basis=WRITTEN_PERMISSION` and `commercial_use_allowed=false`. The OpenPlay-specific approval also retains source attribution and prohibits standalone raw-feed redistribution. Rights-based quarantine is lifted for covered project sources. Endpoint entitlement, API limits, technical access, data quality and point-in-time evidence remain independent gates.
+
+### OpenPlay release qualification and persistence
+
+Workflow run [#43715142465](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43715142465) passed on commit `3dd2e77b5a00089833a7ba40e1da2551d5004b17`.
+
+- Pinned release: `data-v0.1.0`, tag commit `ac0bd9aff52016066433ebebf818bec4278fcf54`.
+- 10 Parquet tables and five supporting CSV/JSON files passed digest, schema and row-count checks.
+- 2,975,394 Parquet rows represented across the ten tables.
+- 15/15 exact raw release assets persisted to Neon `provider_responses`.
+- 15/15 linked dataset-asset `source_observations) verified.
+- 74,460,817 raw bytes stored; each asset SHA-256 was recomputed before insertion and read back.
+- Capture manifest ID: `87`.
+- Manifest SHA-256: `1a733d1c0c84ea93366cd5db7e52967517be8e7a11c3b1394b3abb882bed72ef`.
+- Independent Neon read-back confirmed 15 raw assets, 15 linked observations, a completed capture-manifest event and non-commercial approval.
+
+The OpenPlay assets are stored as immutable raw Parquet/CSV/JSON release files, linked by manifest and source-observation metadata. The importer does not claim every Parquet row is a separate normalized source_observation. The source bundle is available for DuckDB-based research/feature extraction from staging.
+
+### Temporal classification
+
+All 15 asset observations have:
+- `available_at = retrieved_at` (actual VELTRIX import-time availability);
+- `source_published_at = NULL`;
+- `source_timestamp_basis = unknown`;
+- `point_in_time_certifiable = false`.
+
+This is deliberate. The release's static historical contents and commit metadata do not prove when each underlying event/statistic first became available to a forecaster. The data is now rights-approved and persistently captured, but it is not admitted as historical pre-match PIT features until independent source-availability evidence exists.
+
+### Updated disposition
+
+- Rights gate for project-authorized sources: **PASS**.
+- OpenPlay release integrity and staging persistence: **PASS**.
+- Immutable source bytes and manifest/read-back: **PASS**.
+- OpenPlay row-level PIT certification: **NOT ESTABLISHED**.
+- Genuine historical PIT source acquisition: **OUTSTANDING**.
+- Cross-provider identity crosswalks: **OUTSTANDING**.
+- Historical odds entitlement and 98% timestamp coverage: **OUTSTANDING**.
+- Stage 2 overall: **OPEN**. No legacy prediction logic is reintroduced and no prediction, publication, value-betting, Telegram or scheduling gate is changed.
