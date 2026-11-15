@@ -126,3 +126,18 @@ The Odds API V4 documentation defines the market-level last_update as the time T
 
 The 2026-11-12 The Odds API probe occurred after the published Terms update of 2026-08-31. The Terms state that continued use after a change constitutes acceptance. If that probe used the same active account/key, it is evidence of acceptance under the public Terms; the repository still lacks an account-specific acceptance receipt. The current quota/budget remains unverified because the last credit snapshot is stale.
 
+
+### 5.4 AI Midas Football Data — user-authorized non-commercial source (2026-11-15)
+
+- Repository: https://github.com/aimidas1/aimidas1
+- Approval record: `docs/legal/aimidas-noncommercial-authorization-2026-11-15.md`; approval ID `approval-aimidas-football-data-noncommercial-2026-11-15`.
+- Pinned source revision: `29baca362a34ce5dcd3924b07ec9c7d5139d83fc`.
+- **Status: AUTHORIZED — SNAPSHOT AND DATASET AUDIT VERIFIED; STAGING IMPORT NOT EXECUTED.** User-confirmed project authorization is non-commercial. No monetisation, raw-feed redistribution or sublicensing.
+- Public CSV files can be retrieved without an AI Midas API key. Veltrix has a pinned collector, independent verifier and a dedicated GitHub Actions workflow; raw source files are not retained in public Actions artifacts. Only the manifest and verification summary are retained.
+- Inventory: 19,605 historical match rows across Brazil Série A and five European target competitions; 2,308 additional 2025/26 or 2026 match rows; Brazil Série B 2026 advanced stats contain 738 team rows representing 369 matches.
+- Read-only staging comparison: 20/20 Brazil Série B teams mapped; 369/369 AI Midas matches uniquely reconciled to canonical 5Dollar fixtures, with 369/369 score agreement. The canonical fixture universe contains 371 fixtures, so AI Midas covers 369/371 (99.46%); two canonical fixtures are absent from the source file.
+- Average 1X2 fields are not bookmaker-specific timestamped closing quotes. They do not qualify for CLV, the 98% timestamped-odds gate or bookmaker benchmark certification.
+- Source date values have no verified timezone or publication timestamp. `pre_match_*` fields are not PIT-certified; actual xG/PPDA/possession and advanced metrics are post-match. No historical walk-forward backfill or same-match post-match feature use.
+- Full inventory, field semantics, row counts, blob pins and coverage: `docs/VELTRIX_V2_AIMIDAS_DATASET_AUDIT_2026-11-15.md`.
+- Staging schema/import contract: `docs/VELTRIX_V2_AIMIDAS_STAGING_IMPORT_CONTRACT_2026-11-15.md`.
+- Operational decision: use for internal historical statistics research and future non-commercial model development only after a staging-only import with actual retrieval timestamps, strict leakage controls and reviewer-backed crosswalk records. Do not unlock value betting or production publication.
