@@ -133,6 +133,7 @@ class PostgresOddsQuoteStore:
                     valid_until=approval[9], evidence_sha256=approval[10].strip(),
                 )
 
+                admitted_quotes = []
                 for quote in parsed_capture.observations:
                     if quote.sport_key not in allowed_sports:
                         rejected += 1
@@ -147,6 +148,15 @@ class PostgresOddsQuoteStore:
                     if not admission.admitted or admission.observation_key is None:
                         rejected += 1
                         continue
+                    admitted_quotes.append((quote, admission.observation_key))
+
+                # A capture is one evidence unit: never persist a valid subset
+                # when any quote in the same response fails admission.
+                if rejected:
+                    conn.rollback()
+                    return QuoteWriteResult(0, 0, rejected)
+
+                for quote, observation_key in admitted_quotes:
                     cur.execute(
                         """INSERT INTO odds_quote_observations (
                                observation_key, provider, source_id, sport_key,
@@ -158,11 +168,11 @@ class PostgresOddsQuoteStore:
                                response_sha256, rights_approval_id, rights_evidence_sha256
                            ) VALUES (
                                %s,'the_odds_api','odds_api_v4',%s,%s,%s,%s,%s,%s,
-                               %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+                               %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
                            ) ON CONFLICT (observation_key) DO NOTHING
                            RETURNING odds_quote_observation_id""",
                         (
-                            admission.observation_key, quote.sport_key,
+                            observation_key, quote.sport_key,
                             quote.provider_event_id, context.fixture_id,
                             context.crosswalk_version_id, context.response_id,
                             context.capture_request_id, quote.bookmaker_key,
