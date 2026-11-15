@@ -119,6 +119,10 @@ def observation_eligible_as_of(match: MatchObservation, *, cutoff_at: datetime,
     """
     if not _aware(cutoff_at) or not _valid_observation(match):
         return False
+    # A timestamped row is not automatically PIT-certified: rights,
+    # first-observed provenance and availability evidence must be attested.
+    if match.point_in_time_certifiable is not True:
+        return False
     if competition_id is not None and match.competition_id != competition_id:
         return False
     if match.kickoff_at is not None:
