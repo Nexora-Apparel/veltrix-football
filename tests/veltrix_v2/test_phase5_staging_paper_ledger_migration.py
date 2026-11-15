@@ -10,7 +10,17 @@ def _manifest_versions():
     return [entry[0] for entry in migration.load_manifest()]
 
 
+def _install_phase5_manifest(monkeypatch):
+    # This one-off migration guard models the manifest as it existed when
+    # migrations 0005-0010 were staged. Later migrations must remain blocked.
+    full_manifest = migration.load_manifest()
+    phase5_manifest = [entry for entry in full_manifest if entry[0] <= migration.MIGRATION_VERSION]
+    assert phase5_manifest[-1][0] == migration.MIGRATION_VERSION
+    monkeypatch.setattr(migration, "load_manifest", lambda: phase5_manifest)
+
+
 def test_migration_script_defaults_to_dry_run_with_exact_pending_sequence(monkeypatch):
+    _install_phase5_manifest(monkeypatch)
     monkeypatch.setenv("DATABASE_URL", DSN)
     monkeypatch.setattr(migration, "validate_staging_dsn_target", lambda value: None)
     monkeypatch.setattr(migration, "_baseline", lambda value: {
@@ -39,6 +49,7 @@ def test_migration_script_defaults_to_dry_run_with_exact_pending_sequence(monkey
 
 
 def test_apply_requires_explicit_internal_guard(monkeypatch):
+    _install_phase5_manifest(monkeypatch)
     monkeypatch.setenv("DATABASE_URL", DSN)
     monkeypatch.delenv("VELTRIX_ENABLE_PHASE5_PAPER_LEDGER_MIGRATION", raising=False)
     monkeypatch.setattr(migration, "validate_staging_dsn_target", lambda value: None)
@@ -59,6 +70,13 @@ def test_apply_requires_explicit_internal_guard(monkeypatch):
     with pytest.raises(PermissionError, match="PAPER_LEDGER_MIGRATION_EXPLICIT_GUARD_REQUIRED"):
         migration.run(apply=True)
     assert calls == [True]
+
+
+def test_phase5_migration_guard_refuses_later_manifest_migrations(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", DSN)
+    monkeypatch.setattr(migration, "validate_staging_dsn_target", lambda value: None)
+    with pytest.raises(RuntimeError, match="PAPER_LEDGER_AND_DELIVERY_MIGRATIONS_NOT_LAST_IN_MANIFEST"):
+        migration.run(apply=False)
 
 
 def test_wrong_host_is_rejected_before_any_migration(monkeypatch):
