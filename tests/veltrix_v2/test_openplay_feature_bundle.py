@@ -38,6 +38,7 @@ def _row(**overrides):
             "team": {
                 "provider_entity_id": "100", "canonical_entity_id": "team-a",
                 "crosswalk_version_id": 20, "mapping_status": "RESOLVED",
+                "mapping_method": "EXACT_NAME_AND_COMPETITION_OVERLAP",
                 "evidence_observation_id": 108,
                 "valid_from": "2026-11-15T13:09:32.332000+00:00",
                 "recorded_at": "2026-11-15T13:09:32.332000+00:00",
@@ -46,6 +47,7 @@ def _row(**overrides):
             "opponent": {
                 "provider_entity_id": "200", "canonical_entity_id": "team-b",
                 "crosswalk_version_id": 21, "mapping_status": "RESOLVED",
+                "mapping_method": "EXACT_NAME_AND_COMPETITION_OVERLAP",
                 "evidence_observation_id": 108,
                 "valid_from": "2026-11-15T13:09:32.332000+00:00",
                 "recorded_at": "2026-11-15T13:09:32.332000+00:00",
@@ -54,6 +56,7 @@ def _row(**overrides):
             "competition": {
                 "provider_entity_id": "eng", "canonical_entity_id": "league-a",
                 "crosswalk_version_id": 22, "mapping_status": "RESOLVED",
+                "mapping_method": "EXPLICIT_REGION_NAME_ALIAS",
                 "evidence_observation_id": 109,
                 "valid_from": "2026-11-15T13:09:32.332000+00:00",
                 "recorded_at": "2026-11-15T13:09:32.332000+00:00",
@@ -128,6 +131,9 @@ def test_bundle_loader_rejects_row_hash_mismatch(tmp_path):
         "rights_approval_id": OPENPLAY_APPROVAL_ID,
         "commercial_use_allowed": False,
         "monetisation_prohibited": True,
+        "raw_redistribution_allowed": False,
+        "database_writes": 0,
+        "timestamp_evidence_sha256": "24a1037a948afa1759e3bc2babeb8b17b9e1e2dc3c8a8beea2e18f9b5b671279",
     }
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
