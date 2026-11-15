@@ -103,7 +103,7 @@ def test_identity_mapping_can_be_resolved_while_conflicting_team_stats_stay_quar
     _, fixture_rows = validate_report(report, _source_rows(report))
     disputed = next(row for row in fixture_rows if "TEAM_STATS_QUARANTINE" in row["decision_reason"])
     assert disputed["mapping_method"] == "EXACT_TEAM_ORIENTATION_DATE_SCORE"
-    assert "team-stat rows remain excluded" in disputed["decision_reason"]
+    assert "those statistics remain excluded" in disputed["decision_reason"]
 
 
 def test_acceptance_rejects_any_score_disagreement_or_ambiguous_identity():
