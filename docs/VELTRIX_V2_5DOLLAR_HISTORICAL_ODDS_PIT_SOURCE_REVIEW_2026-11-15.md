@@ -62,3 +62,19 @@ The parser is connected to the staging capture and persistence path. Focused tes
 - Crosswalk gate: 763/763 fixtures have exactly one active RESOLVED mapping; zero missing or ambiguous. All 25 captured quote identities match.
 - Historical odds gate: zero 5Dollar historical tick observations; full endpoint remains Ultra-only and unentitled. The Odds API has 3 sports-catalogue responses and zero event/historical odds responses. 98% quote-coverage gate is not met; no CLV or price-movement evidence.
 - No production writes, deployment, publication, Telegram send or schedule activation.
+
+
+## Final acquisition and historical-odds entitlement update — 2026-11-15
+
+The 16 opening-odds capture manifests (109–124) are now reconciled against the actual capture persistence target, `source_observations`, not the downstream normalized `odds_quote_observations` table. On the operational staging branch/database:
+- 400/400 request rows, first attempt only; zero retries.
+- 400/400 linked HTTP 200 responses and 400/400 raw source observations.
+- 400 distinct provider fixture IDs and 400 unique payload hashes.
+- 400/400 canonical fixture matches, PIT flags, Bet365 1X2 opening quotes and exact rights approval ID.
+- 400/400 provider opening timestamps strictly before kickoff; retrieval after opening.
+
+The persistence discrepancy is resolved as an audit-table mismatch; no provider calls were repeated. The 763-fixture denominator leaves 400/763 (52.42%) covered, 363 outstanding, and 348 additional valid observations needed to reach 98% (748/763).
+
+Historical source disposition is unchanged and formally closed for this review cycle: 5Dollar tick history is Ultra-only and account entitlement is not evidenced. The Odds API historical snapshots are technically suitable if paid-plan access, relevant sport keys, UK bookmaker/market availability and returned timestamp coverage are verified; current VELTRIX evidence is catalogue-only and has zero event/historical odds responses. SockOdds and Odds-API.io are research candidates only; no account entitlement, legal/rights scope, exact seven-competition coverage, identity mapping or response evidence is available. Do not count them toward certification.
+
+Latest quota read-back is 16 requests remaining; stop capture until after 17:00 UTC reset and a fresh preflight. No further provider request is made in this update. Stage 2 remains NO-GO: 52.42% is below 98%, no timestamped closing/near-close evidence or CLV exists, and model certification thresholds remain unmet.
