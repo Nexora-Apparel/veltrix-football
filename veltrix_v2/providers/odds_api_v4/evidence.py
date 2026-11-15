@@ -78,14 +78,15 @@ def quote_observation_key(*, provider: str, source_id: str, sport_key: str,
 
 def evaluate_quote_admission(*, quote: Any, crosswalk: FixtureCrosswalk | None,
                              rights: QuoteRights | None, fixture_id: int,
-                             prediction_cutoff_at: datetime, kickoff_at: datetime,
+                             prediction_cutoff_at: datetime | None, kickoff_at: datetime,
                              evaluated_at: datetime) -> QuoteAdmission:
     """Require exact identity, valid rights, and both quote clocks before cutoff."""
     reasons: list[str] = []
-    cutoff = _utc(prediction_cutoff_at, "PREDICTION_CUTOFF_AT")
+    cutoff = (_utc(prediction_cutoff_at, "PREDICTION_CUTOFF_AT")
+              if prediction_cutoff_at is not None else None)
     kickoff = _utc(kickoff_at, "KICKOFF_AT")
     evaluated = _utc(evaluated_at, "EVALUATED_AT")
-    if cutoff >= kickoff:
+    if cutoff is not None and cutoff >= kickoff:
         reasons.append("PREDICTION_CUTOFF_NOT_BEFORE_KICKOFF")
 
     provider = getattr(quote, "provider", None)
@@ -121,9 +122,9 @@ def evaluate_quote_admission(*, quote: Any, crosswalk: FixtureCrosswalk | None,
     if published is not None and retrieved is not None:
         if published > retrieved:
             reasons.append("SOURCE_TIMESTAMP_AFTER_RETRIEVAL")
-        if published > cutoff:
+        if cutoff is not None and published > cutoff:
             reasons.append("SOURCE_TIMESTAMP_AFTER_PREDICTION_CUTOFF")
-        if retrieved > cutoff:
+        if cutoff is not None and retrieved > cutoff:
             reasons.append("RETRIEVAL_AFTER_PREDICTION_CUTOFF")
         if published > kickoff or retrieved >= kickoff:
             reasons.append("QUOTE_NOT_PRE_KICKOFF")
