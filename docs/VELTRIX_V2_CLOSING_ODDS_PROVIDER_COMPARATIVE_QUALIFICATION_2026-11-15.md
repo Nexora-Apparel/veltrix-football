@@ -176,3 +176,85 @@ Value betting remains LOCKED. Production deployment, prediction publication, Tel
 ## 7. Account entitlement read-back — 2026-11-15 23:31 WAT
 
 Read-only query of `provider_entitlement_observations` found exactly one 5Dollar account observation: `plan_code=community`, `entitlement_status=ACTIVE`, seven approved competition IDs, `checked_at=2026-11-12T22:51:54.745Z`, `quota_remaining=299`. No Ultra entitlement observation exists. The last verified plan is therefore Community, not Ultra. Because the observation is dated 12 November, it is not proof of the live account state on 15 November; however, it is sufficient to keep the Ultra-only history route blocked. No plan change, payment or history request was made. A fresh entitlement check must be performed using an authorized no-credit account-status mechanism or provider confirmation before any Ultra route is called.
+
+
+## 6. Fresh public-documentation re-audit — 2026-11-16
+
+This re-audit used public provider documentation only. No provider account was created, no plan was changed, no API key was requested, and no historical endpoint was called.
+
+### The Odds API — coverage is materially stronger than the earlier comparison recorded
+
+The current historical-odds documentation confirms:
+- featured-market historical snapshots from 6 June 2020, sampled every 10 minutes initially and every 5 minutes from September 2022;
+- historical snapshots are available for all sports/bookmakers the provider covers, but the historical endpoint is paid-plan only;
+- all seven required VELTRIX competition families appear in the historical coverage table, with these earliest dates:
+  - England Premier League: 2020-06-06
+  - Spain La Liga: 2020-06-06
+  - Germany Bundesliga: 2020-06-06
+  - Italy Serie A: 2020-06-06
+  - France Ligue 1: 2020-07-16
+  - Brazil Série A: 2020-07-28
+  - Argentina Primera División: 2020-10-30
+  - Brazil Série B: 2022-06-30
+- The API's snapshot timestamp is an as-of time; bookmaker/market last_update timestamps must still be preserved and compared with scheduled kickoff. A closing proxy is the last valid pre-kickoff snapshot only when its age is within a predeclared maximum. It is not continuous tick history.
+
+This makes The Odds API a strong historical-coverage candidate, not an admitted source. The prior live account test returned HTTP 401 on the historical endpoint with a paid-plan restriction. The existing source approval is still narrower than the seven-competition scope. No paid upgrade is authorized. Do not retry the restricted endpoint unless existing account entitlement and expanded rights are independently verified.
+
+Public references:
+- https://the-odds-api.com/historical-odds-data/
+- https://the-odds-api.com/sports-odds-data/sports-apis.html
+
+### Odds-API.io — possible no-upgrade per-event route, but bulk close remains paid
+
+Current docs state:
+- GET /v3/historical/odds returns a finished event's closing odds and final score and is described as available on every plan;
+- GET /v3/historical/closing-lines is the bulk route, up to 366 days, 10 leagues, 30 bookmakers and 100 events per page, and is paid-plan only;
+- closing odds coverage begins December 2025;
+- new free API keys are paused; the published cheapest plan is Solo at £49/month;
+- the documented response includes bookmaker-specific updatedAt timestamps.
+
+This route is worth a no-purchase check only if VELTRIX already has a valid key. Repository search found no ODDS_API_IO_KEY / ODDSAPI_IO_KEY configuration, so there is no evidence that an existing key is available. The seven-league coverage list, bookmaker depth, exact Brazil Série B event availability and storage/model-training rights remain unverified. Do not purchase or create an account for this test.
+
+Public reference: https://odds-api.io/historical-odds-api
+
+### SockOdds — good recorded-tick semantics, still a scope failure
+
+Current docs describe every observed price change with observed_at, opened/changed/withdrawn event type, opening/closing snapshots and graded results. History is Pro-only. Its documented archive begins 22 December 2025 for a small list and 8 October 2026 for other listed leagues. Its current league catalogue still does not establish Brazil Série A/B coverage; its docs explicitly caution that missing history means no recorded observation, not that the market never moved.
+
+Disposition remains NOT APPROVED / NOT SUFFICIENT FOR THE SEVEN-COMPETITION BACKFILL.
+
+Public reference: https://sockodds.com/use-cases/historical-odds-data-api/
+
+### OddsIntel — still not bookmaker-specific evidence
+
+OddsIntel exposes derived consensus closes, close timestamps, price age and source count, but deliberately omits bookmaker names and individual source prices. It cannot satisfy the bookmaker-specific close/CLV evidence contract. Its archive begins 10 October 2026. Do not use it as a substitute for source-level prices.
+
+Public reference: https://data.oddsintel.app/football-closing-odds-api
+
+### OddsRelay — archive too recent and commercial rights incompatible without Enterprise
+
+The current docs say its historical archive begins 17 October 2026 and is appended daily; historical requests consume a shared token pool. Its public terms distinguish personal research from business use and require Enterprise for business/in-house use and publishing. The frozen historical universe predates the archive. No purchase or request.
+
+Public references:
+- https://oddsrelay.io/products/historical-odds
+- https://oddsrelay.io/docs/reference
+
+### iSports API — one-year opening/latest pre-match window and short in-play history
+
+Current documentation describes a football odds-modification record with bookmaker/company IDs and an operateTime timestamp. It documents in-play history for the past month and opening/latest pre-match odds for up to one year, across 18 agencies; access requires the Odds or Odds Pro product. Exact seven-competition event coverage, timestamp semantics, rights and no-purchase entitlement are unverified. Keep as a prospective-only research candidate; no account or paid plan.
+
+Public references:
+- https://www.isportsapi.com/en/docs.html?id=245
+- https://www.isportsapi.com/products/detail/football-api-product-53.html
+
+### Updated ranking — no purchase and no source admission
+
+1. 5Dollar Ultra remains the preferred direct tick-history path only if the current key is verified Ultra through the isolated status-only endpoint.
+2. The Odds API is the strongest long-history coverage candidate across all seven required competitions, but the historical route is paid-only and the current key's 401 remains a hard block.
+3. Odds-API.io is the best potential no-upgrade per-event candidate only if an existing valid key can be located; bulk closing lines remain paid and new free keys are paused.
+4. OddsPapi remains technically promising but quota/rights constrained.
+5. SockOdds has strong tick/settlement semantics but insufficient current Brazil competition scope.
+6. AI Midas remains authorised for historical statistics and additional odds, not certified bookmaker-specific closing quotes or CLV.
+7. OddsIntel is a consensus benchmark only; OddsRelay and iSports remain non-admitted due archive, licensing, pricing or coverage gaps.
+
+**No provider is newly approved. No subscription, upgrade, API call, quota spend or data import resulted from this review.**
