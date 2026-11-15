@@ -381,3 +381,11 @@ At every continuation:
 - Account quota observation: 300/hour, 20/minute; remaining 299 before and 272 after. This is a point-in-time observation, not a quota guarantee.
 - Temporal qualification only: report explicitly says `point_in_time_certifiable=false`; conservative finished-status availability supports settled target labels only, not pre-match features or PIT historical model evaluation.
 - Side effects reported: zero database writes, imports, prediction changes, deployments and Telegram messages. Non-commercial use only; attribution required; raw redistribution prohibited.
+
+
+## OpenFootball and FootballData archive verification — 2026-11-15
+- Workflow [#43727169566](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43727169566) completed successfully on `c86163a75a8f80914de9eb2fd2bd0b2265fa3ed7`; 19 focused archive regression tests passed.
+- OpenFootball: 49 immutable source snapshots; 5,182 observation versions; 375 requests; 49 archive proofs; 20/20 source paths succeeded; 5,182 unique fixtures; 82 not-yet-eligible and 2 rejected results; independent verifier `PASS`. Artifact #14166223794; ZIP SHA-256 `3dd4e89fa9c3d766e3e044efc317a88c6147b232dbb2831402cde26302e7de03`.
+- FootballData: 3 immutable source snapshots; 619 observation versions; 6 requests; 539 unique fixtures; 14 audited normalizations; 1 not-yet-eligible and 0 rejected results; independent verifier `PASS`. Artifact #14166223800; ZIP SHA-256 `d8156a30d6b2f49032c157378385508fc8eefad931023ab2845255877c352acf`.
+- Both packs are immutable CC0 archive evidence only. All observations are marked `point_in_time_certifiable=false`. OpenFootball commit timestamps are not independent first-public-availability evidence. FootballData's reported local match clock has unknown timezone, so `kickoff_at` remains null. Neither pack may be treated as a PIT pre-match feature set or used to satisfy chronological certification.
+- Both artifacts record no database or production writes. No publication, Telegram send or schedule activation occurred.
