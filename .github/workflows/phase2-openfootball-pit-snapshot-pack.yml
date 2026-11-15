@@ -8,6 +8,7 @@ on:
       - ".github/workflows/phase2-openfootball-pit-snapshot-pack.yml"
       - "scripts/veltrix_v2/collect_openfootball_pit_snapshots.py"
       - "veltrix_v2/providers/openfootball_archive/parser.py"
+      - "scripts/veltrix_v2/verify_openfootball_pit_snapshot_pack.py"
   workflow_dispatch:
     inputs:
       max_requests:

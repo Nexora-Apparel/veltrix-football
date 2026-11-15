@@ -92,7 +92,7 @@ def verify_pack(input_dir: Path) -> dict:
             fail("SNAPSHOT_RAW_CONTENT_HASH_MISMATCH")
         try:
             archive = parse_archive(
-                raw.decode("utf-8"), competition_id=comp, source_path=path, source_id=repo,
+                raw.decode("utf-8"), competition_id=comp, source_path=path, source_id="openfootball-cc0-archive",
                 snapshot_commit_sha=sha, snapshot_available_at=snapshot_at, imported_at=generated,
             )
         except UnicodeDecodeError:
