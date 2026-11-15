@@ -438,6 +438,7 @@ def build_feature_rows_from_assets(
         approval_times = [
             parse_aware(approval["effective_at"], "OPENPLAY_APPROVAL_EFFECTIVE_AT"),
             parse_aware(approval["recorded_at"], "OPENPLAY_APPROVAL_RECORDED_AT"),
+            parse_aware(approval["valid_from"], "OPENPLAY_APPROVAL_VALID_FROM"),
             parse_aware(approval["approval_recorded_at"], "OPENPLAY_APPROVAL_ROW_RECORDED_AT"),
         ]
         eligible_min: datetime | None = None
