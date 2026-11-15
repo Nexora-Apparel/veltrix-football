@@ -95,3 +95,18 @@ Stage 2 cannot pass the historical/closing-odds gate or the 98% timestamped odds
 ## 8. Opening-odds acquisition continuation — 2026-11-15
 
 Fourteen additional bounded batches have now been independently reconciled after manifests 109 and 110, bringing manifests 109–124 to 400/400 opening quote observations across 400 distinct fixtures. Each completed batch had 25 requests, 25 responses, 25 PIT-eligible observations, zero duplicates, zero ineligible quotes, fresh Community quota preflight, no retries and no more than 25 fixture requests. Latest verified batch: workflow #43734920511, artifact #14170381591, ZIP SHA-256 `e45a5d9b092affa0e6cfd8a70f70c4695c2b81de83b1a5cce837655950490827`. The fixed 763-fixture denominator leaves 363 fixtures (47.58%) without a captured opening quote. The latest observed Community quota remaining is 16, below the 26-request headroom needed for the next batch; resume only after a fresh preflight at/after the 17:00 UTC reset. This progress does not change the historical/closing odds entitlement decision or Stage 2 release gate.
+
+
+## 9. Historical endpoint entitlement probe — 2026-11-15 20:49–20:50 UTC
+
+A single bounded attempt was made against the already-approved Spain La Liga scope using the existing The Odds API key. The provider returned HTTP 401 with the explicit error that historical odds are available only on paid usage plans. No historical odds payload was returned; no raw prices were captured; no staging source observation or normalized quote was written.
+
+The immediate subsequent no-credit account probe [#43760295591](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43760295591) returned:
+- 187 sport keys; approved Spain La Liga sport key available.
+- Brazil Série B sport key technically discoverable, but Brazil Série B is outside the current five-competition source approval and is not authorized for collection.
+- 226 requests used / 274 remaining; last request cost 0; no historical odds calls made by the preflight itself.
+- No database writes and no raw response artifact.
+
+The 401 is direct negative evidence that the current connected account does not have historical endpoint entitlement. The quota preflight is not a paid-plan entitlement check and does not override the 401. Do not retry the historical endpoint until actual paid historical access is independently confirmed. No subscription or payment was made.
+
+This probe does not alter the 5Dollar Community opening-odds dataset. The 5Dollar quota and The Odds API quota are separate provider accounts and must never be conflated.
