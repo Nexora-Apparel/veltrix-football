@@ -1,0 +1,59 @@
+name: Phase 2 — AI Midas Brazil Serie B Crosswalk Acceptance
+
+on:
+  pull_request:
+    types: [labeled]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-aimidas-serieb-crosswalk-acceptance
+  cancel-in-progress: false
+
+jobs:
+  accept-crosswalks:
+    if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'accept-veltrix-aimidas-serieb-crosswalks' && github.event.pull_request.head.ref == 'integration/v2-report-bundle-wiring-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install staging crosswalk acceptance dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+          python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
+      - name: Compile and test reviewer acceptance
+        run: |
+          python -m compileall -q scripts/veltrix_v2/accept_aimidas_brazil_serie_b_crosswalks.py
+          python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_aimidas_brazil_serie_b_crosswalk_acceptance.py
+      - name: Fetch pinned Brazil Serie B source file only
+        run: python scripts/veltrix_v2/collect_aimidas_serieb_snapshot.py --output-dir /tmp/veltrix-aimidas-serieb-pack
+      - name: Re-run independent 369-match audit
+        run: |
+          python scripts/veltrix_v2/reconcile_aimidas_brazil_serie_b_2026.py \
+            --input-dir /tmp/veltrix-aimidas-serieb-pack \
+            --output /tmp/veltrix-aimidas-serieb-audit.json
+      - name: Accept verified TEAM and FIXTURE crosswalks in staging only
+        run: |
+          python scripts/veltrix_v2/accept_aimidas_brazil_serie_b_crosswalks.py \
+            --report /tmp/veltrix-aimidas-serieb-audit.json \
+            --input-dir /tmp/veltrix-aimidas-serieb-pack \
+            --output /tmp/veltrix-aimidas-serieb-crosswalk-acceptance.json
+      - name: Upload sanitized acceptance evidence (no raw statistics)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-aimidas-serieb-crosswalk-acceptance
+          path: /tmp/veltrix-aimidas-serieb-crosswalk-acceptance.json
+          if-no-files-found: warn
+          retention-days: 90
