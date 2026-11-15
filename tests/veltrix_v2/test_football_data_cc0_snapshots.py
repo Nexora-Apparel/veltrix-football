@@ -39,6 +39,10 @@ def test_parser_preserves_unknown_timezone_and_audits_team_name_cleanup():
     assert row.home_team_name == "Club A"
     assert row.source_reported_local_time == "20:00"
     assert row.source_timezone == "UNKNOWN"
+    assert row.available_at == IMPORTED
+    assert row.recorded_at == IMPORTED
+    assert row.point_in_time_certifiable is False
+    assert row.availability_basis == "archive_first_observed_at_import_v1"
     assert row.team_name_normalizations[0]["reason"] == "TRAILING_LINE_NUMBER_ARTIFACT_BASE_VERIFIED_IN_SAME_SNAPSHOT"
 
 def test_parser_rejects_unverified_team_name_suffix_and_respects_two_day_boundary():
