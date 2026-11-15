@@ -363,16 +363,17 @@ def accept(report_path: Path, input_dir: Path, database_url: str) -> dict:
                 )
                 for row in expected
             ]
-            conn.executemany(
-                """
-                INSERT INTO entity_crosswalk_versions (
-                    entity_type,provider,source_id,provider_entity_id,canonical_entity_key,
-                    mapping_version,mapping_status,mapping_method,confidence,reviewer_id,
-                    valid_from,evidence_observation_id,decision_reason,recorded_at
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                """,
-                values,
-            )
+            with conn.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO entity_crosswalk_versions (
+                        entity_type,provider,source_id,provider_entity_id,canonical_entity_key,
+                        mapping_version,mapping_status,mapping_method,confidence,reviewer_id,
+                        valid_from,evidence_observation_id,decision_reason,recorded_at
+                    ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    """,
+                    values,
+                )
             inserted = len(values)
             idempotent = False
 
