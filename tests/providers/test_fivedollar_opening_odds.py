@@ -156,6 +156,7 @@ def test_prospective_target_window_starts_now_and_ends_within_seven_days(monkeyp
 
 
 def test_prospective_targets_require_exact_ledger_and_current_scheduled_snapshot_evidence(monkeypatch):
+    from datetime import timedelta
     from types import SimpleNamespace
 
     from scripts import phase2_capture_fivedollar_opening_odds as capture
