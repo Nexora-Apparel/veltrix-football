@@ -35,6 +35,10 @@ def fixture(i, *, status=FixtureStatus.FINISHED, kickoff=None, retrieved=None,
     kickoff = kickoff or datetime(2026, 6, 1, tzinfo=UTC) + timedelta(days=i)
     retrieved = retrieved or CUTOFF - timedelta(hours=1)
     finished = status is FixtureStatus.FINISHED
+    if finished and response_sha256 is None:
+        response_sha256 = "e" * 64
+    if finished and capture_manifest_sha256 is None:
+        capture_manifest_sha256 = "f" * 64
     payload = {
         "id": str(i), "status": status.value,
         "league": {"id": competition, "name": "England Premier League"},
