@@ -268,3 +268,21 @@ The official historical guide confirms:
 - A two-bookmaker Solo plan is £49/month. A candidate shortlist is Bet365 plus one sharp benchmark, but exact per-league availability must be verified before choosing a plan.
 
 This improves the candidate ranking for the five approved European competitions, but it does not remove the need for a new provider-specific Veltrix rights approval, a budget decision, a coverage pilot, exact canonical event reconciliation, timestamp-age checks, and prospective CLV verification. It does not establish Brazil Série B coverage.
+
+
+## 9. OddsPapi historical odds and settlement qualification — 2026-11-15
+
+OddsPapi is now the strongest newly identified technical candidate for fixture-level timestamped bookmaker price history and separate settlement evidence. Its v4 `/historical-odds` endpoint returns per-bookmaker/per-market/per-outcome snapshots with `createdAt`, `price`, `limit` and `active`; it accepts up to three bookmaker slugs and has a documented five-second cooldown. For completed fixtures, ETag/304 support is available. The vendor's historical guide states 250 free requests/month and a rolling history of up to 100 days per fixture, with actual depth varying by fixture. The official endpoint page says data is available since January 2026; the more restrictive 100-day rolling limit governs planning until clarified in writing.
+
+OddsPapi also documents:
+- `/v4/scores`: period scores and `updatedAt` timestamps;
+- `/v4/settlements`: per-market/outcome grades (WIN/LOSE/HALFWIN/HALFLOSS/PUSH/CANCELLED/UNDECIDED).
+The score record and settlement grades must be retained separately and reconciled; neither replaces the other. For 1X2, use the last active per-outcome historical snapshot strictly before scheduled kickoff, never the last row without a pre-kickoff filter because the history continues in-play.
+
+Coverage research identifies Brazilian Série A tournament ID 325 and Série B tournament ID 390. A vendor Brazil guide demonstrates historical odds on played Série A fixtures; it does not yet prove historical response completeness for VELTRIX's exact Brazil Série B fixtures or the frozen 763-fixture universe. Fixture-level coverage remains unverified pending an authorized no-write pilot.
+
+Rights are the blocker. Public terms prohibit standalone resale/repackaging/redistribution, but do not clearly grant VELTRIX's intended internal raw-response retention, model training, validation, benchmarking, backtesting or derived public display rights. The provider does not guarantee completeness. No OddsPapi approval exists in Neon, no OddsPapi response was requested or persisted, and no source was admitted. Written vendor confirmation and a provider-specific source approval must precede any API request or ingestion.
+
+Quota feasibility: 748 fixture-level calls are required for 98% of the 763-fixture universe; 763 for full coverage. The free 250-request monthly quota cannot complete this in one month. Sequential acquisition across three months risks early fixtures aging out of the provider's stated 100-day rolling window. 25 fixtures/day would require roughly 750 fixture-level calls/month before any extra polling. No paid plan or quota upgrade is authorized.
+
+Full audit and current staging state: `docs/VELTRIX_V2_ODDSPAPI_HISTORICAL_ODDS_QUALIFICATION_2026-11-15.md`. Until rights, plan, retention and actual event-level coverage pass, OddsPapi remains TECHNICALLY PROMISING / NOT APPROVED / NOT ADMITTED. Existing 5Dollar 763/763 opening quotes remain opening-only; 5Dollar closing snapshot objects lack a quote-level timestamp, while timestamped tick history requires Ultra and the account has no evidenced Ultra entitlement. Value betting remains LOCKED.
