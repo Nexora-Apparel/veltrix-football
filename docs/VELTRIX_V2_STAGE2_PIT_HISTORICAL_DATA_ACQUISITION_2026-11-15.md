@@ -123,3 +123,19 @@ The first Stage 2 workflow run on the initial parser correction (run 43712824451
 The updated foundation regression run on commit `593b3fcd28ba1e0129e781652cb036daff9ca214` is in progress at the time of this note. No pass is claimed until the exact-head checks finish. The Stage 2 archive-collection workflow itself has not been rerun on this corrected head.
 
 **Stage 2 remains OPEN.** This correction removes an unsafe PIT claim; it does not create the missing historical as-of data. Staging import, identity crosswalk integration, external historical PIT provider evidence and verified historical odds remain outstanding.
+
+
+## 9. Corrected archive regression outcome — 2026-11-15
+
+The corrected code head `593b3fcd28ba1e0129e781652cb036daff9ca214` passed the following relevant checks:
+
+- Phase 2 Data Foundation run [43712883985](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43712883985): SUCCESS. The OpenFootball archive parser, export script, rights-scoped OpenFootball snapshot pack, FootballData CC0 parser/snapshot pack, and chronological/date-only walk-forward test steps all completed successfully.
+- PostgreSQL 16/18 historical foundation acceptance [43712884068](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43712884068): SUCCESS.
+- Historical Model Audit [43712884051](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43712884051): SUCCESS.
+- Certification Evidence Integrity [43712883984](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43712883984): SUCCESS.
+- Phase 5 Shadow Regression [43712884088](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43712884088): CANCELLED during superseding commits; no pass is claimed for this run.
+- Earlier Stage 2 collection workflow [43712824451](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43712824451): FAILED on the pre-test-correction commit `48c6e89f1915ef2543ff58d61f8cb5c88c9fc8e3`. Its two failures were stale expectations that archive commit time was PIT availability and that the retrospective archive could train a historical cutoff. The corrected tests passed in the later Foundation run, but the full external archive collection/verification workflow has not been rerun on the corrected code.
+
+The latest PR head is `bc0a5f053b7e6a10e6b6d9f9e9d0bcaa30f4fbba`; this is a documentation-only commit after the tested code head above. No exact-head code test is claimed for the documentation-only commit.
+
+**Final Stage 2 disposition for this execution window: NOT COMPLETE.** The timestamp misclassification has been corrected and the focused regression/integration checks passed. The actual Stage 2 exit gates remain unmet: a genuinely PIT-qualified historical source, independently verified source availability timestamps, confirmed supplemental artifact evidence, guarded staging import, and exact cross-provider identity resolution are still outstanding. No production data, schedules, Telegram or publication settings were changed.
