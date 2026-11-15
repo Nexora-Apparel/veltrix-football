@@ -51,7 +51,7 @@ jobs:
       - name: Install project and PostgreSQL client
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e . "psycopg[binary]>=3.2,<4"
+          python -m pip install -r requirements.txt "psycopg[binary]>=3.2,<4"
 
       - name: Validate dry-run mode
         run: python -m scripts.phase5_collect_5dollar_shadow --persist-staging --fixtures-only

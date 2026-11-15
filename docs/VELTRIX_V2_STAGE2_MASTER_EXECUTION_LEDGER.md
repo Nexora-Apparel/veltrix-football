@@ -475,3 +475,10 @@ At the time of this ledger:
 - Updated the Phase 5 workflow to a one-time push-triggered fixture-evidence-only run with 90-day finished snapshot lookback, 14-day scheduled window and 25-target cap. No scheduled trigger was added. It will not generate predictions or activate any publication path.
 - Corrected source documentation to describe the 25 existing ledger events accurately as V2 Poisson v1 first-observed non-PIT shadow records, not assumed legacy-model records. They remain ineligible for the market certification selection thresholds because they lack timestamped odds-snapshot and settlement links and are not PIT-certified.
 - The 5Dollar opening-quote capture run [#43767115313](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43767115313) did not call the provider because no future canonical fixture targets existed. The new fixture-only discovery run will be independently inspected before any further odds-capture changes.
+
+
+### Fixture-only discovery workflow attempt 1 — 2026-11-15
+
+- The first fixture-only workflow run [#43767399295](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43767399295) stopped during dependency installation before tests, dry-run, API calls or database access.
+- Failure: workflow used `pip install -e .`, but this repository has no `setup.py` or `pyproject.toml`. No provider quota was consumed and no staging writes occurred.
+- Corrected the workflow to install the pinned project dependencies from `requirements.txt` plus psycopg, matching the existing Phase 2 capture workflow. The next push will retry the same 14-request maximum / 14-day fixture-only discovery with no model import or paper-ledger writes.
