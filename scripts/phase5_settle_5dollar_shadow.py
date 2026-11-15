@@ -83,7 +83,8 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
                                 and e.model_version == event.model_version
                                 for e in ledger.events)]
         if not eligible:
-            return {
+            scorecard = evaluate_prospective_settlements(ledger)
+            result = {
                 "status": "NO_ELIGIBLE_FINISHED_TARGETS",
                 "shadow_targets": len(targets),
                 "eligible_unsettled_targets": 0,
@@ -92,7 +93,15 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
                 "publication": False,
                 "telegram": False,
                 "schedule": False,
+                "value_betting": "LOCKED",
+                "ledger_chain_verified": True,
+                "prospective_scorecard": asdict(scorecard),
             }
+            out_dir.mkdir(parents=True, exist_ok=True)
+            (out_dir / "settlement_summary.json").write_text(
+                json.dumps(result, indent=2, sort_keys=True), encoding="utf-8"
+            )
+            return result
 
         by_competition: dict[str, list] = {}
         for event in eligible:
