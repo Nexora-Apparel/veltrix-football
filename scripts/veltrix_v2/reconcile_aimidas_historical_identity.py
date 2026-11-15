@@ -297,6 +297,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-dir", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--summary-output")
     args = parser.parse_args()
     database_url = os.environ.get("DATABASE_URL", "")
     if not database_url:
