@@ -149,6 +149,7 @@ def test_sigstore_verifier_uses_runtime_python_module_and_pinned_workflow_identi
     assert "--repository" in command and "Nexora-Apparel/veltrix-football" in command
     assert "--ref" in command and "refs/heads/main" in command
     assert "--cert-identity" in command and workflow_identity in command
+    assert "--cert-oidc-issuer" in command and "https://token.actions.githubusercontent.com" in command
     assert kwargs["timeout"] == 90
 
 
@@ -239,3 +240,76 @@ def test_attestation_verifier_fetches_and_verifies_candidate_bundle_for_exact_su
         ".github/workflows/report-certification-attestation.yml@refs/heads/main"
     )
     assert session.get.call_count == 2
+
+
+def test_pre_attestation_verifier_checks_report_binding_and_delegates_all_release_evidence(monkeypatch):
+    from veltrix_v2.evaluation.publication_certification import CERTIFICATION_MANIFEST_SCHEMA
+    from veltrix_v2.reporting.report_identity import REPORT_SCHEMA, bind_report_identity
+    import scripts.veltrix_v2.verify_pre_attestation_report as preflight
+
+    report = bind_report_identity({
+        "schema": REPORT_SCHEMA,
+        "report_id": "preflight-test-2026-11-15",
+        "as_of_date": "2026-11-15",
+        "cutoff_at_utc": "2026-11-15T10:00:00+00:00",
+        "release_mode": "RESTRICTED_PUBLIC",
+        "predictions": [],
+    })
+    manifest = {
+        "manifest_schema": CERTIFICATION_MANIFEST_SCHEMA,
+        "report_id": report["report_id"],
+        "report_sha256": report["report_sha256"],
+        "status": "CERTIFIED",
+        "certifications": [{"status": "CERTIFIED", "blockers": []}],
+    }
+    manifest_bytes = json.dumps(manifest, sort_keys=True).encode()
+    seen = {}
+
+    def fake_authorize(candidate_report, candidate_manifest, attestation, rights, reader):
+        seen["report"] = candidate_report
+        seen["manifest"] = candidate_manifest
+        seen["attestation"] = attestation(candidate_manifest, hashlib.sha256(candidate_manifest).hexdigest())
+        seen["rights"] = rights({"rights_evidence_uri": "https://evidence.example/rights.json"})
+        seen["evidence"] = reader("https://evidence.example/source.json")
+        return True
+
+    monkeypatch.setattr(preflight, "verify_publication_authorization", fake_authorize)
+    ok, code = preflight.verify_pre_attestation_report(
+        json.dumps(report, sort_keys=True).encode(),
+        manifest_bytes,
+        lambda uri: b"verified-evidence",
+    )
+    assert ok is True
+    assert code == "PRE_ATTESTATION_RELEASE_EVIDENCE_VERIFIED"
+    assert seen["attestation"] is True
+    assert seen["rights"] is False  # A real provider-rights record is required.
+    assert seen["evidence"] == b"verified-evidence"
+
+
+def test_pre_attestation_verifier_rejects_report_manifest_hash_mismatch():
+    from veltrix_v2.evaluation.publication_certification import CERTIFICATION_MANIFEST_SCHEMA
+    from veltrix_v2.reporting.report_identity import REPORT_SCHEMA, bind_report_identity
+    from scripts.veltrix_v2.verify_pre_attestation_report import verify_pre_attestation_report
+
+    report = bind_report_identity({
+        "schema": REPORT_SCHEMA,
+        "report_id": "preflight-mismatch-2026-11-15",
+        "as_of_date": "2026-11-15",
+        "cutoff_at_utc": "2026-11-15T10:00:00+00:00",
+        "release_mode": "RESTRICTED_PUBLIC",
+        "predictions": [],
+    })
+    manifest = {
+        "manifest_schema": CERTIFICATION_MANIFEST_SCHEMA,
+        "report_id": report["report_id"],
+        "report_sha256": "0" * 64,
+        "status": "CERTIFIED",
+        "certifications": [{"status": "CERTIFIED", "blockers": []}],
+    }
+    ok, code = verify_pre_attestation_report(
+        json.dumps(report).encode(),
+        json.dumps(manifest).encode(),
+        lambda uri: b"evidence",
+    )
+    assert ok is False
+    assert code == "REPORT_BOUND_MANIFEST_INVALID"
