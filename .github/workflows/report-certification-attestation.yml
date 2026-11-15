@@ -1,0 +1,62 @@
+name: VELTRIX Report Certification Attestation
+
+on:
+  workflow_dispatch:
+    inputs:
+      report_id:
+        description: Immutable report ID whose report-bound certification manifest is ready
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  attest-report-manifest:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate report identity and all certification records
+        env:
+          REPORT_ID: ${{ inputs.report_id }}
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, re
+          from pathlib import Path
+          from veltrix_v2.reporting.report_identity import verify_report_identity
+          report_id = os.environ["REPORT_ID"]
+          if not re.fullmatch(r"[A-Za-z0-9._-]{1,160}", report_id):
+              raise SystemExit("REPORT_ID_INVALID")
+          report_path = Path("reports") / f"{report_id}.json"
+          manifest_path = Path("reports/certification/publication-manifests") / f"{report_id}.json"
+          report = json.loads(report_path.read_text(encoding="utf-8"))
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          identity = verify_report_identity(report)
+          if identity.report_id != report_id:
+              raise SystemExit("REPORT_IDENTITY_MISMATCH")
+          if manifest.get("manifest_schema") != "VELTRIX_V2_CERTIFICATION_MANIFEST_V1":
+              raise SystemExit("CERTIFICATION_MANIFEST_SCHEMA_INVALID")
+          if manifest.get("report_id") != identity.report_id or manifest.get("report_sha256") != identity.report_sha256:
+              raise SystemExit("CERTIFICATION_MANIFEST_REPORT_BINDING_MISMATCH")
+          records = manifest.get("certifications")
+          if not isinstance(records, list) or not records:
+              raise SystemExit("CERTIFICATION_RECORDS_MISSING")
+          if any(not isinstance(row, dict) or row.get("status") != "CERTIFIED" or row.get("blockers") for row in records):
+              raise SystemExit("CERTIFICATION_RECORD_NOT_QUALIFIED")
+          if manifest.get("status") != "CERTIFIED":
+              raise SystemExit("CERTIFICATION_MANIFEST_NOT_CERTIFIED")
+          print("REPORT_BOUND_CERTIFICATION_MANIFEST_VALID")
+          PY
+      - name: Create GitHub artifact attestation for the exact report-bound manifest
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: reports/certification/publication-manifests/${{ inputs.report_id }}.json
