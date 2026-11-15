@@ -1,6 +1,6 @@
-# Controlled continuation: a documentation-only workflow-file commit can trigger
-# one bounded follow-up batch on this integration branch while workflow_dispatch
-# remains unavailable until this workflow is present on the repository default branch.
+# Controlled continuation: the source_observations read-back audit reconciles
+# manifests 109 and 110; each new push triggers one bounded follow-up batch.
+# workflow_dispatch remains unavailable until this workflow is on the default branch.
 name: VELTRIX Phase 2 — Manual 5Dollar Opening Odds Capture
 
 on:
