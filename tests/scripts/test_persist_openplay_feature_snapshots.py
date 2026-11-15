@@ -11,7 +11,11 @@ from veltrix_v2.data.openplay_feature_bundle import canonical_json_bytes
 def _row(team="10", comp="20", match_date="2026-11-01", eligibility="2026-11-15T13:00:00+00:00"):
     return {
         "canonical_team_id":team,
+        "canonical_opponent_id":"11",
         "canonical_competition_id":comp,
+        "provider_team_id":"p-team",
+        "provider_opponent_id":"p-opp",
+        "competition_code":"comp",
         "match_date":match_date,
         "eligibility_at":eligibility,
         "provider_match_id":"m-"+match_date,
