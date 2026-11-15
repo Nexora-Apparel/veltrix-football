@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Collect CC0 Brazil Serie B JSON snapshots by immutable Git commit."""
 from __future__ import annotations
-import argparse, hashlib, json, os
+import argparse, hashlib, json, os, sys
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
