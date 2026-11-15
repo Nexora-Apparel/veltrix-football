@@ -498,3 +498,9 @@ The Neon rehearsal branch `veltrix-0011-migration-rehearsal-2026-11-15` reports 
 - The workflow uploads an aggregate-only scorecard. No fixture-level IDs or quarantine rows are included in the artifact.
 - The collector will not make provider requests until a shadow target has actually kicked off; current targets are scheduled for 18–21 November 2026.
 - Workflow link: https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase5-5dollar-shadow-settlement.yml
+
+## 2026-11-15 deployment trust runtime configuration audit
+
+- Read-only Vercel inspection found the V2 verifier factory and canonical bundle URL configured only for the Preview target on the integration branch. Neither variable is configured for Production.
+- The active deployment verifier uses GitHub Sigstore artifact attestations and does not depend on Vercel KMS. The previously observed KMS 403 is not the current trust-verification dependency.
+- Production remains fail-closed until the report-bound certification manifest, matching attestation and immutable canonical report bundle exist. Do not copy Preview settings into Production or deploy before those artifacts are real and verified.
