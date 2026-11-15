@@ -31,7 +31,7 @@ Safety envelope:
 - Quotes missing a valid timezone-aware opening timestamp, malformed prices, or timestamps at/after kickoff are stored as ineligible evidence, never repaired.
 - The paid Ultra tick-history endpoint is not called.
 
-As of this review, 763 5Dollar canonical fixtures fall within the last 90 days in staging. The workflow is intentionally bounded to 25 per run; repeated manual runs are required for broader coverage. No opening quote has yet been acquired by this new workflow.
+As of this review, 763 5Dollar canonical fixtures fall within the last 90 days in staging. The workflow is intentionally bounded to 25 per run; repeated manual runs are required for broader coverage. At the time of this initial audit no opening quote had yet been acquired; this zero-quote snapshot is superseded by the first capture evidence below.
 
 ## OpenPlay row-level data qualification
 
@@ -83,7 +83,7 @@ The correction and regression test are committed on PR #120:
 - Test-fixture context-manager correction: `c0ff02f2b021cf9afbe942056e011e59cc9cbc4a`.
 - Exact-head Phase 2, PostgreSQL 16/18, Phase 5 shadow, historical audit and certification-integrity checks: PASS on `c0ff02f2b021cf9afbe942056e011e59cc9cbc4a`.
 
-No provider odds requests have been made. The 763 count is a fixture-universe count, not a quote-coverage result. The manual workflow is still on the draft PR branch and cannot be dispatched until the workflow exists on the default branch; no merge is authorized here. Once available, execute bounded batches (maximum 25 fixture requests, one request per fixture, no retries) and measure actual timestamped quote coverage from persisted observations.
+At the time of this pre-capture audit no provider odds requests had been made. The 763 count is a fixture-universe count, not a quote-coverage result. The workflow was subsequently triggered safely by a path-filtered integration-branch push without merging PR #120; the first batch and its read-back are recorded below.
 
 
 ## 5Dollar opening-odds capture and historical-odds gate — 2026-11-15
