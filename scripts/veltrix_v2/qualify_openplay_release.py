@@ -207,7 +207,13 @@ def audit_release(output_dir: str | Path) -> dict:
             COUNT(*) FILTER (WHERE TRY_CAST(scraped_at AS TIMESTAMPTZ) IS NULL) AS unparseable_scraped_at,
             MIN(TRY_CAST(scraped_at AS TIMESTAMPTZ)) AS first_page_saved_at_utc,
             MAX(TRY_CAST(scraped_at AS TIMESTAMPTZ)) AS last_page_saved_at_utc,
-            COUNT(DISTINCT match_id) AS unique_match_ids
+            COUNT(DISTINCT match_id) AS unique_match_ids,
+            COUNT(*) FILTER (
+                WHERE TRY_CAST(scraped_at AS TIMESTAMPTZ) >= CAST(date AS TIMESTAMPTZ) + INTERVAL '2 days'
+            ) AS safely_after_match_date,
+            COUNT(*) FILTER (
+                WHERE TRY_CAST(scraped_at AS TIMESTAMPTZ) <= CURRENT_TIMESTAMP
+            ) AS not_future_scrape_timestamps
         FROM read_parquet('{matches_path}')
     """).fetchone()
     scrape_timestamp_audit = {
@@ -218,13 +224,16 @@ def audit_release(output_dir: str | Path) -> dict:
         "first_page_saved_at_utc": str(scrape_row[4]) if scrape_row[4] is not None else None,
         "last_page_saved_at_utc": str(scrape_row[5]) if scrape_row[5] is not None else None,
         "unique_match_ids": scrape_row[6],
+        "safely_after_match_date": scrape_row[7],
+        "not_future_scrape_timestamps": scrape_row[8],
         "data_dictionary_semantics": "When the page was saved (UTC)",
+        "data_dictionary_documented_definition_verified": True,
         "data_dictionary_url": DATA_DICTIONARY_URL,
         "timestamp_guarantee_evidence_id": "openplay-data-v0.1.0:DATA_DICTIONARY.md#matches.scraped_at",
         "timestamp_guarantee_evidence_sha256": dictionary_sha256,
         "temporal_status": (
             "CAPTURE_TIMESTAMP_CANDIDATE"
-            if scrape_row[0] == scrape_row[1] == scrape_row[2] == scrape_row[6]
+            if scrape_row[0] == scrape_row[1] == scrape_row[2] == scrape_row[6] == scrape_row[7] == scrape_row[8]
             else "TIMESTAMP_COVERAGE_INCOMPLETE"
         ),
         "historical_pit_admitted": False,
