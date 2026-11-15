@@ -565,3 +565,8 @@ At the time of this ledger:
 - No merge, deployment, publication, Telegram send, schedule activation, value-bet unlock or production write. Value betting remains LOCKED.
 
 **Next:** independently confirm 5Dollar Ultra entitlement without upgrading; request written Odds-API.io Brazil Série B coverage and rights details before any paid trial; leave The Odds API historical endpoint untouched after its HTTP 401; keep all 25 prospective forecasts non-PIT until new V2 forecasts and eligible quote evidence exist; run the settlement collector only after target kickoffs and provider FINISHED status, using the existing staging-only append-only path.
+
+
+### 5Dollar account entitlement evidence — 2026-11-15 23:31 WAT
+
+- Read-only Neon query of `provider_entitlement_observations` returned one 5Dollar record: plan `community`, status `ACTIVE`, seven approved competition IDs, checked at `2026-11-12T22:51:54.745Z`, quota remaining 299. No Ultra entitlement observation exists. This supersedes the weaker wording "entitlement not evidenced": the last verified account plan is Community, not Ultra. Because the observation is dated 12 November, it is not a live plan check for 15 November; do not infer today's plan state or call the Ultra-only tick-history endpoint. No plan change, payment, API request or database write was made. Full decision is documented in `docs/VELTRIX_V2_CLOSING_ODDS_PROVIDER_COMPARATIVE_QUALIFICATION_2026-11-15.md` (latest update commit `21d444670038d156b7d2eaa219bea014de1df361`).
