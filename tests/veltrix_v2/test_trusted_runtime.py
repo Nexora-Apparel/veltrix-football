@@ -88,7 +88,7 @@ def _rights_bytes():
         "provider_id": "5dollarfootballapi",
         "permitted_scope": "historical-results-and-fixtures",
         "status": "APPROVED",
-        "allowed_actions": ["MODEL_TRAINING", "PUBLIC_DISPLAY"],
+        "allowed_actions": ["MODEL_TRAINING", "PUBLIC_DISPLAY", "PREDICTION_PUBLICATION"],
         "terms_version": "2026-11",
         "terms": {
             "status": "ACCEPTED",
@@ -121,6 +121,7 @@ def test_provider_rights_evaluator_checks_provider_scope_terms_entitlement_and_q
 
 @pytest.mark.parametrize("mutation", [
     lambda data: data["allowed_actions"].clear(),
+    lambda data: data["allowed_actions"].remove("PREDICTION_PUBLICATION"),
     lambda data: data["entitlement"].update(status="EXPIRED"),
     lambda data: data["entitlement"].update(expires_at="2020-01-01T00:00:00Z"),
     lambda data: data["entitlement"]["quota"].update(remaining=0),
@@ -344,3 +345,16 @@ def test_public_repository_attestation_lookup_omits_authorization_header():
     headers = session.get.call_args.kwargs["headers"]
     assert "Authorization" not in headers
     assert f"sha256:{digest}" in session.get.call_args.args[0]
+
+
+
+@pytest.mark.parametrize("provider_id", ["goal-api", "strikerapi", "unregistered-provider"])
+def test_provider_rights_evaluator_rejects_suspended_or_unregistered_providers(provider_id):
+    raw = json.loads(_rights_bytes())
+    raw["provider_id"] = provider_id
+    payload = json.dumps(raw, sort_keys=True, separators=(",", ":")).encode()
+    record = _rights_record()
+    record["provider_id"] = provider_id
+    record["rights_evidence_sha256"] = hashlib.sha256(payload).hexdigest()
+    record["rights_evaluated_at"] = raw["evaluated_at"]
+    assert build_provider_rights_evaluator(lambda uri: payload)(record) is False
