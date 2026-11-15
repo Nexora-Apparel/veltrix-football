@@ -97,7 +97,7 @@ def _load_approval(dsn: str) -> SourceApproval:
             raw_redistribution_allowed=bool(row["raw_redistribution_allowed"]),
         )
         for purpose in (DataUsePurpose.COLLECTION, DataUsePurpose.STORAGE):
-            decision = evaluate_source_use(approval, purpose, at_utc=now, commercial=True)
+            decision = evaluate_source_use(approval, purpose, at_utc=now, commercial=False)
             if not decision.allowed:
                 raise PermissionError(decision.reason_code)
         return approval
@@ -247,7 +247,7 @@ def run_probe(*, api_key: str, staging_dsn: str, persist: bool) -> dict[str, obj
         "provider_response_id": persisted_response_id,
         "entitlement_observation_id": entitlement_observation_id,
         "markets_and_regions": "NOT_VERIFIED_BY_SPORTS_ENDPOINT",
-        "credit_budget_activation": "BLOCKED_PENDING_ACCOUNT_BILLING_EVIDENCE",
+        "credit_budget_activation": "NOT_ACTIVATED_NO_CREDIT_PROBE",
         "prediction_publication": False,
         "telegram_delivery": False,
     }
