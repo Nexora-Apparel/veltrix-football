@@ -121,6 +121,13 @@ def predict_dixon_coles_match(
             continue
         if historical.kickoff_at is None:
             continue
+        # A past kickoff alone does not prove its result was knowable at the
+        # target cutoff. Enforce both publication/availability and ingestion
+        # clocks for the rho-training outcome itself.
+        if not observation_eligible_as_of(
+            historical, cutoff_at=cutoff_at, competition_id=competition_id
+        ):
+            continue
         historical_cutoff = historical.kickoff_at - timedelta(seconds=1)
         if historical_cutoff >= cutoff_at:
             continue
