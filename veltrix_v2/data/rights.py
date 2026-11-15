@@ -13,7 +13,7 @@ def evaluate_source_use(
     purpose: DataUsePurpose,
     *,
     at_utc: datetime,
-    commercial: bool = True,
+    commercial: bool = False,
     public_facing: bool = False,
 ) -> RightsDecision:
     if at_utc.tzinfo is None or at_utc.utcoffset() is None:
@@ -88,7 +88,7 @@ def evaluate_fixture_import(
         DataUsePurpose.MODEL_TRAINING,
     )
     decisions = tuple(
-        evaluate_source_use(approval, purpose, at_utc=evaluated_at_utc, commercial=True)
+        evaluate_source_use(approval, purpose, at_utc=evaluated_at_utc, commercial=False)
         for purpose in purposes
     )
     denied = next((decision for decision in decisions if not decision.allowed), None)
