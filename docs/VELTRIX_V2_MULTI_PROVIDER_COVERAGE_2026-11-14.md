@@ -11,7 +11,7 @@ The model pipeline requests data domains, not named vendors. This registry is po
 | Provider | State | Permitted role |
 |---|---|---|
 | 5DollarFootballAPI | Active, limited | Primary live fixtures/results within free quota and accessible competitions |
-| OpenFootball | Archive only | CC0 date-only result snapshots with immutable commit/content evidence; usable only after snapshot and actual retrieval cutoffs, never as historical target fixtures |
+| OpenFootball | Archive only | CC0 date-only historical results; snapshot evidence is being expanded, and production feature use remains gated |
 | StatsBomb Open Data | Research archive, gated | Selected historical matches include event data, lineups and shot-level xG; research-use/attribution review required |
 | The Odds API | Optional, gated | Odds only after rights, allowance, remaining quota and explicit spend caps are verified |
 | GOAL API | Suspended — credits exhausted | No calls, retries, scans or credit checks until reset and requalification |
@@ -32,7 +32,7 @@ The model pipeline requests data domains, not named vendors. This registry is po
 
 1. Provider availability does not equal source-rights approval.
 2. A retrieval timestamp does not prove when a result became available to the source.
-3. OpenFootball date-only observations may inform future forecast features only after the immutable source snapshot and actual retrieval are known by the forecast cutoff; they are never walk-forward target fixtures, and the current evaluator does not backdate later imports.
+3. OpenFootball date-only observations remain outside the production feature path until the Stage 2 artifact is collected, independently audited and connected through evidence-backed crosswalks. They are never walk-forward target fixtures, and the current evaluator does not backdate later imports.
 4. The 5Dollar historical parser's four-day availability proxy is not source publication or availability evidence.
 5. Derived features inherit the temporal eligibility of their underlying observations.
 6. Conflicting records require identity and payload reconciliation; never average contradictory scores.

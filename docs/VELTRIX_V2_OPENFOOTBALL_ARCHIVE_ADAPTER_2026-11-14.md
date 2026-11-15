@@ -20,7 +20,7 @@ For date-only observations, model eligibility is conservatively delayed until 00
 
 ## Limitations
 
-- Date-only rows may inform future forecast features only after both the source snapshot and actual import timestamps are at or before the forecast cutoff and the conservative eligibility boundary has passed.
+- Date-only rows are candidates for future forecast features only after both the source snapshot and actual import timestamps are at or before the forecast cutoff and the conservative eligibility boundary has passed; the production feature path remains gated until the Stage 2 artifact and identity crosswalks are independently verified.
 - They are never walk-forward evaluation targets because exact kickoff times are absent. The current model evaluator also requires recorded_at <= cutoff, so a snapshot imported today cannot be silently used for a historical cutoff before today's import. Retrospective archive-proof integration is a separate gate.
 - They cannot be backdated to their match dates or used for historical pre-match backtesting.
 - Team identity is source-scoped; cross-provider team mapping remains a separate, evidence-backed step.

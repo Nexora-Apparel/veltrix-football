@@ -91,9 +91,9 @@ PROVIDER_REGISTRY: tuple[ProviderProfile, ...] = (
     ProviderProfile("OpenFootball", "openfootball-cc0-archive", ProviderState.ARCHIVE_ONLY,
         _caps(
             (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Static, immutable source snapshots only; not a live fixture feed."),
-            (DataDomain.RESULTS, CapabilityState.CONDITIONAL, "CC0 date-only results are usable only with exact source-commit, raw-content, retrieval and two-day safety-boundary evidence."),
-            (DataDomain.TEAM_FORM, CapabilityState.DERIVED, "Derive internally only from archive observations whose snapshot and actual retrieval timestamps precede the forecast cutoff; never backdate retrieval."),
-            (DataDomain.TEAM_STRENGTH, CapabilityState.DERIVED, "Derive internally only from cutoff-eligible archive observations; date-only rows are never historical evaluation targets."),
+            (DataDomain.RESULTS, CapabilityState.AVAILABLE, "CC0 historical scores exist; each row still requires exact source-commit, raw-content, retrieval and two-day safety-boundary evidence."),
+            (DataDomain.TEAM_FORM, CapabilityState.EXPLORATORY_ONLY, "Do not enter the production feature path until the Stage 2 archive artifact, archive-proof verifier and cross-provider identity gates pass."),
+            (DataDomain.TEAM_STRENGTH, CapabilityState.EXPLORATORY_ONLY, "Do not enter the production feature path until the Stage 2 archive artifact, archive-proof verifier and cross-provider identity gates pass."),
             (DataDomain.REST_DAYS, CapabilityState.UNAVAILABLE, "Date-only records do not support exact rest-day calculations."),
             (DataDomain.ODDS_1X2, CapabilityState.UNAVAILABLE, "No odds data."),
             (DataDomain.ODDS_TOTALS, CapabilityState.UNAVAILABLE, "No odds data."),
