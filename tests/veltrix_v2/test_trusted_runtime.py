@@ -134,13 +134,14 @@ def test_sigstore_verifier_uses_runtime_python_module_and_pinned_workflow_identi
         return Mock(returncode=0)
     monkeypatch.setattr("veltrix_v2.reporting.trusted_runtime.subprocess.run", fake_run)
     digest = hashlib.sha256(b"manifest").hexdigest()
+    workflow_identity = (
+        "https://github.com/Nexora-Apparel/veltrix-football/"
+        ".github/workflows/report-certification-attestation.yml@refs/heads/main"
+    )
     assert _verify_sigstore_bundle(
         artifact_sha256=digest,
         bundle_bytes=b'{"mediaType":"sigstore"}',
-        workflow_identity=(
-            "https://github.com/Nexora-Apparel/veltrix-football/"
-            ".github/workflows/report-certification-attestation.yml@refs/heads/main"
-        ),
+        workflow_identity=workflow_identity,
     ) is True
     command, kwargs = calls[0]
     assert command[:4] == [command[0], "-m", "sigstore", "verify"]
@@ -181,15 +182,16 @@ def test_deployment_factory_requires_attestation_credentials_and_host_allowlist(
         build_deployment_publication_verifier({"GH_TOKEN": "token"})
 
 
-def test_application_runtime_uses_default_deployment_factory_when_bundle_url_is_set():
+def test_application_runtime_uses_default_deployment_factory_when_bundle_url_is_set(monkeypatch):
     from veltrix_v2.reporting.runtime import load_runtime_publication_dependencies
+    monkeypatch.setenv("GH_TOKEN", "test-token")
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.setenv("VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS", "raw.githubusercontent.com,evidence.example")
     dependencies = load_runtime_publication_dependencies({
         "VELTRIX_V2_REPORT_BUNDLE_URL": (
             "https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/"
             "command-data/public-data/v2_report_bundle.json"
         ),
-        "GH_TOKEN": "test-token",
-        "VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS": "raw.githubusercontent.com,evidence.example",
     })
     assert dependencies is not None
     assert callable(dependencies.verifier)
@@ -197,8 +199,10 @@ def test_application_runtime_uses_default_deployment_factory_when_bundle_url_is_
     assert dependencies.bundle_url.endswith("/command-data/public-data/v2_report_bundle.json")
 
 
-def test_application_runtime_does_not_construct_trusted_factory_without_credentials():
+def test_application_runtime_does_not_construct_trusted_factory_without_credentials(monkeypatch):
     from veltrix_v2.reporting.runtime import load_runtime_publication_dependencies
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     with pytest.raises(DeploymentVerificationError, match="GITHUB_ATTESTATION_READ_TOKEN_REQUIRED"):
         load_runtime_publication_dependencies({
             "VELTRIX_V2_REPORT_BUNDLE_URL": (
