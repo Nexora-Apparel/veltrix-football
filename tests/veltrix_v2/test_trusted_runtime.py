@@ -172,7 +172,7 @@ def test_attestation_lookup_uses_exact_digest_and_rejects_untrusted_bundle_hosts
     manifest = b"bound report manifest"
     digest = hashlib.sha256(manifest).hexdigest()
     assert verifier(manifest, digest) is False
-    assert digest in session.get.call_args.args[0]
+    assert f"sha256:{digest}" in session.get.call_args.args[0]
     assert session.get.call_args.kwargs["allow_redirects"] is False
 
 
@@ -243,6 +243,7 @@ def test_attestation_verifier_fetches_and_verifies_candidate_bundle_for_exact_su
         token="read-only-attestations-token", session=session
     )(manifest, digest) is True
     assert verified[0]["artifact_sha256"] == digest
+    assert f"sha256:{digest}" in session.get.call_args_list[0].args[0]
     assert verified[0]["bundle_bytes"] == b'{"sigstore":"bundle"}'
     assert verified[0]["workflow_identity"].endswith(
         ".github/workflows/report-certification-attestation.yml@refs/heads/main"
