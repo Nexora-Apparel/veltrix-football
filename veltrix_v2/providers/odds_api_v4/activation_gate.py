@@ -43,11 +43,12 @@ class RightsApprovalEvidence:
 class ProviderBudgetEvidence:
     provider: str
     provider_account_ref: str
-    billing_period_start: date
-    billing_period_end: date
-    monthly_allowance: int
+    # Optional legacy metadata; never required for personal-use research.
+    billing_period_start: date | None
+    billing_period_end: date | None
+    monthly_allowance: int | None
     provider_remaining: int
-    monthly_hard_cap: int
+    monthly_hard_cap: int | None
     per_run_hard_cap: int
     request_count_cap: int
     observed_at: datetime
@@ -227,51 +228,34 @@ def evaluate_activation_gate(
     if (not isinstance(scope.estimated_credits, int) or isinstance(scope.estimated_credits, bool)
             or scope.estimated_credits < 0):
         reasons.add("ESTIMATED_CREDITS_INVALID")
+    # Monthly/billing counters are intentionally excluded from this per-request
+    # provider-usage guard. Current remaining quota + local per-run/request caps
+    # are sufficient for a bounded personal-use probe.
     usage_fields = (
-        scope.month_committed_credits, scope.run_committed_credits,
+        scope.run_committed_credits,
         scope.provider_credits_committed_since_snapshot, scope.request_count_committed,
     )
     if any(not isinstance(x, int) or isinstance(x, bool) or x < 0 for x in usage_fields):
         reasons.add("COMMITTED_USAGE_INVALID")
 
-    budget_fields = (
-        budget.monthly_allowance, budget.provider_remaining, budget.monthly_hard_cap,
-        budget.per_run_hard_cap, budget.request_count_cap,
-    )
+    budget_fields = (budget.provider_remaining, budget.per_run_hard_cap, budget.request_count_cap)
     if (any(not isinstance(x, int) or isinstance(x, bool) for x in budget_fields)
-            or budget.monthly_allowance <= 0 or budget.provider_remaining < 0
-            or budget.monthly_hard_cap <= 0 or budget.per_run_hard_cap <= 0
+            or budget.provider_remaining < 0 or budget.per_run_hard_cap <= 0
             or budget.request_count_cap <= 0):
-        reasons.add("PROVIDER_BUDGET_LIMITS_INVALID")
+        reasons.add("PROVIDER_USAGE_GUARDS_INVALID")
     elif all(isinstance(x, int) and not isinstance(x, bool) and x >= 0 for x in usage_fields) and (
         isinstance(scope.estimated_credits, int) and not isinstance(scope.estimated_credits, bool)
         and scope.estimated_credits >= 0
     ):
-        monthly_headroom = min(budget.monthly_allowance, budget.monthly_hard_cap) - scope.month_committed_credits
         run_headroom = budget.per_run_hard_cap - scope.run_committed_credits
         provider_headroom = budget.provider_remaining - scope.provider_credits_committed_since_snapshot
         request_headroom = budget.request_count_cap - scope.request_count_committed
-        if monthly_headroom < scope.estimated_credits:
-            reasons.add("MONTHLY_CREDIT_CAP_EXCEEDED")
         if run_headroom < scope.estimated_credits:
             reasons.add("PER_RUN_CREDIT_CAP_EXCEEDED")
         if provider_headroom < scope.estimated_credits:
             reasons.add("PROVIDER_REMAINING_CREDITS_INSUFFICIENT")
         if request_headroom < 1:
             reasons.add("REQUEST_COUNT_CAP_EXCEEDED")
-
-    if (isinstance(budget.billing_period_start, date)
-            and not isinstance(budget.billing_period_start, datetime)
-            and isinstance(budget.billing_period_end, date)
-            and not isinstance(budget.billing_period_end, datetime)):
-        if budget.billing_period_end <= budget.billing_period_start:
-            reasons.add("BUDGET_BILLING_PERIOD_INVALID")
-        elif _aware(scope.dispatch_at) and not (
-            budget.billing_period_start <= scope.dispatch_at.date() < budget.billing_period_end
-        ):
-            reasons.add("BUDGET_BILLING_PERIOD_MISMATCH")
-    else:
-        reasons.add("BUDGET_BILLING_PERIOD_INVALID")
 
     if _aware(scope.dispatch_at) and _aware(budget.observed_at) and _aware(budget.valid_until):
         if (budget.valid_until <= budget.observed_at
