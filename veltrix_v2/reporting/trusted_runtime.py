@@ -330,6 +330,9 @@ def build_deployment_publication_verifier(
                 or manifest.get("manifest_schema") != CERTIFICATION_MANIFEST_SCHEMA
                 or manifest.get("report_id") != identity.report_id
                 or manifest.get("report_sha256") != identity.report_sha256
+                or manifest.get("status") != "CERTIFIED"
+                or not isinstance(manifest.get("certifications"), list)
+                or not manifest.get("certifications")
             ):
                 return False
             return verify_publication_authorization(
