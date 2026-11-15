@@ -290,3 +290,24 @@ def test_prospective_observed_history_rejects_late_collector_recording():
         kickoff_at=KICKOFF, cutoff_at=CUTOFF, allow_prospective_observed=True,
     )
     assert result.evidence_match_count == 119
+
+
+def test_conservative_four_day_results_are_prospective_only_and_never_backdated():
+    observed = []
+    for row in sample_history(120):
+        available = row.kickoff_at + timedelta(days=4)
+        observed.append(replace(
+            row, point_in_time_certifiable=False,
+            availability_basis="provider_finished_status_conservative_4d",
+            available_at=available, recorded_at=available + timedelta(hours=1),
+            payload_sha256="a" * 64, rights_approval_id="approved-source",
+            evidence_manifest_sha256="b" * 64, capture_evidence_sha256="c" * 64,
+        ))
+    with pytest.raises(InsufficientHistoryError):
+        predict_match(observed, competition_id="league", home_team_id="A",
+                      away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF)
+    result = predict_match(
+        observed, competition_id="league", home_team_id="A", away_team_id="B",
+        kickoff_at=KICKOFF, cutoff_at=CUTOFF, allow_prospective_observed=True,
+    )
+    assert 50 <= result.evidence_match_count < 120
