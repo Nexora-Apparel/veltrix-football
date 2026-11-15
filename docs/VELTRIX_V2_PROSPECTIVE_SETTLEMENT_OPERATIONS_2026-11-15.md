@@ -115,10 +115,10 @@ ROI and CLV remain explicitly unavailable: the current prediction/settlement led
 
 ## Manual GitHub Actions runner
 
-The staging-only collector is available through the manual workflow:
+The staging-only manual workflow is committed on the integration branch:
 `https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase5-5dollar-shadow-settlement.yml`
 
-The workflow performs a no-I/O dry-run first, then executes the existing bounded collector with the approved 5Dollar key and staging DSN. It has no schedule trigger, production database target, publication path or Telegram delivery path. It uploads only `settlement_public_summary.json`; row-level fixture identifiers and quarantine details remain only in the ephemeral runner workspace and are not uploaded as artifacts.
+GitHub requires a `workflow_dispatch` workflow file to exist on the default branch before it can be manually dispatched. This workflow is therefore not dispatchable yet: PR #120 remains draft/unmerged because production release gates are still open. Do not merge solely to expose this runner. Until controlled promotion is authorized, execute the CLI from a controlled runner after kickoff using the documented `FIVEDOLLARFOOTBALL_API_KEY` and staging-only `VELTRIX_STAGING_DATABASE_URL` environment variables. The workflow, once promoted, performs a no-I/O dry-run before execution, has no schedule trigger, production database target, publication path or Telegram delivery path, and uploads only `settlement_public_summary.json`.
 
 The collector now checks quota headroom on every provider page and verifies the full ledger plus exact settlement event hashes from a fresh PostgreSQL connection after the write transaction commits. A missing post-commit event or hash mismatch fails the workflow. The current 25 targets are not due until their kickoffs (18–21 November 2026); running before then returns `NO_ELIGIBLE_FINISHED_TARGETS` without provider requests or settlement writes.
 
