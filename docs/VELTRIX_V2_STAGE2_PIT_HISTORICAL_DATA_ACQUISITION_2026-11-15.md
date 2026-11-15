@@ -1,6 +1,6 @@
 # VELTRIX FOOTBALL 2.0 — Stage 2: Rights-approved PIT historical data acquisition
 
-Status: IN PROGRESS — the OpenFootball base pack has been captured and independently verified (5,182 unique result versions across 20 source paths, 49 snapshots, 375/500 requests, zero source failures). A separate CC0 FootballData Brazil Serie B supplement is being added. Staging persistence, exact rights-scope records, archive-proof model integration and cross-provider identity resolution remain outstanding.
+Status: IN PROGRESS — the OpenFootball base pack has been captured and independently verified (5,182 unique result versions across 20 source paths, 49 snapshots, 375/500 requests, zero source failures). The supplemental CC0 FootballData Brazil Serie B collector and independent verifier are implemented and included in the same bounded workflow; the latest artifact verification result still needs confirmation. Staging persistence, exact rights-scope records, archive-proof model integration and cross-provider identity resolution remain outstanding.
 
 ## 1. Acceptance boundary
 
