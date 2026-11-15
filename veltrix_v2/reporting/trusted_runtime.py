@@ -254,11 +254,9 @@ def _verify_sigstore_bundle(
 
 
 def build_github_attestation_verifier(
-    *, token: str, session: requests.Session | None = None
+    *, token: str | None = None, session: requests.Session | None = None
 ):
-    """Resolve attestations by exact subject digest and verify every candidate."""
-    if not token:
-        raise DeploymentVerificationError("GITHUB_ATTESTATION_READ_TOKEN_REQUIRED")
+    """Resolve public or authenticated attestations by exact subject digest."""
     client = session or requests.Session()
     workflow_identity = f"https://github.com/{REPOSITORY}/{WORKFLOW_PATH}@refs/heads/main"
 
@@ -267,13 +265,15 @@ def build_github_attestation_verifier(
             return False
         url = f"https://api.github.com/repos/{REPOSITORY}/attestations/sha256:{digest}"
         try:
+            headers = {
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2026-03-10",
+            }
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
             response = client.get(
                 url,
-                headers={
-                    "Accept": "application/vnd.github+json",
-                    "Authorization": f"Bearer {token}",
-                    "X-GitHub-Api-Version": "2026-03-10",
-                },
+                headers=headers,
                 timeout=(3.05, 10),
                 allow_redirects=False,
             )
@@ -340,9 +340,7 @@ def build_deployment_publication_verifier(
 ):
     """Create the real deployment verifier factory used by website and Telegram."""
     env = os.environ if environ is None else environ
-    token = env.get("GH_TOKEN") or env.get("GITHUB_TOKEN")
-    if not token:
-        raise DeploymentVerificationError("GITHUB_ATTESTATION_READ_TOKEN_REQUIRED")
+    token = env.get("GH_TOKEN") or env.get("GITHUB_TOKEN") or None
     hosts = _allowed_hosts(env)
     client = session or requests.Session()
     evidence_reader = build_hash_checked_evidence_reader(allowed_hosts=hosts, session=client)
