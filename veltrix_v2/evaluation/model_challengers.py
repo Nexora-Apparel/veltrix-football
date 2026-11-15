@@ -7,7 +7,7 @@ model. Equal-weight blends are diagnostic challengers, never auto-promoted.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 import math
 import random
@@ -18,6 +18,10 @@ from veltrix_v2.models.form import team_form_as_of
 from veltrix_v2.models.poisson import (
     InsufficientHistoryError, MatchObservation, observation_eligible_as_of,
     predict_match,
+)
+from veltrix_v2.models.dixon_coles import predict_dixon_coles_match
+from veltrix_v2.evaluation.calibration import (
+    apply_multiclass_temperature, fit_multiclass_temperature,
 )
 
 
@@ -87,6 +91,9 @@ class ChallengerComparisonReport:
     paired_vs_poisson: dict[str, PairedImprovement]
     competitions: tuple[CompetitionReliability, ...]
     fixtures: tuple[FixtureCandidateRow, ...]
+    calibration_metrics: dict[str, dict[str, CandidateMetrics]] = field(default_factory=dict)
+    calibration_fit_samples: dict[str, int] = field(default_factory=dict)
+    calibration_test_samples: dict[str, int] = field(default_factory=dict)
 
 
 def _aware(value: datetime) -> bool:
@@ -289,21 +296,90 @@ def evaluate_model_challengers(
             "blend_elo_form": _blend(p_elo, p_form),
             "blend_all_equal": _blend(p_poisson, p_elo, p_form),
         }
+        # Fit rho only from observations that were fully available by this
+        # target cutoff. A fold without sufficient score-rate history omits DC.
+        try:
+            dc = predict_dixon_coles_match(
+                training, competition_id=target.competition_id,
+                home_team_id=target.home_team_id, away_team_id=target.away_team_id,
+                kickoff_at=target.kickoff_at, cutoff_at=cutoff,
+                minimum_fit_rows=30,
+            )
+            predictions["dixon_coles"] = _normalise(ProbabilityVector(
+                dc.prediction.home_win, dc.prediction.draw, dc.prediction.away_win
+            ))
+        except (InsufficientHistoryError, TypeError, ValueError):
+            pass
         scored.append(FixtureCandidateRow(
             target.fixture_id, target.competition_id, target.kickoff_at, cutoff,
             _actual(target), predictions,
         ))
 
     names = ("poisson", "elo", "form", "blend_poisson_elo",
-             "blend_poisson_form", "blend_elo_form", "blend_all_equal")
-    metrics = {name: _metrics(scored, name) for name in names}
-    paired = {name: _paired_improvement(scored, name) for name in names if name != "poisson"}
+             "blend_poisson_form", "blend_elo_form", "blend_all_equal", "dixon_coles")
+    metrics = {
+        name: _metrics([row for row in scored if name in row.predictions], name)
+        for name in names
+    }
+    paired = {
+        name: _paired_improvement([row for row in scored if name in row.predictions], name)
+        for name in names if name != "poisson"
+        and any(name in row.predictions for row in scored)
+    }
+
+    # For each competition, fit temperature only on the first chronological
+    # calibration partition and score it on the later untouched partition.
+    calibration_metrics: dict[str, dict[str, CandidateMetrics]] = {}
+    calibration_fit_samples: dict[str, int] = {}
+    calibration_test_samples: dict[str, int] = {}
     competition_reports = []
     for competition in sorted({row.competition_id for row in scored}):
-        subset = [row for row in scored if row.competition_id == competition]
+        subset = sorted(
+            [row for row in scored if row.competition_id == competition],
+            key=lambda row: (row.kickoff_at, row.fixture_id),
+        )
+        raw_metrics = {
+            name: _metrics([row for row in subset if name in row.predictions], name)
+            for name in names
+        }
+        calibrated_for_comp: dict[str, CandidateMetrics] = {}
+        split = max(50, int(len(subset) * 0.6))
+        if split < len(subset):
+            calibration_rows, evaluation_rows = subset[:split], subset[split:]
+            for candidate in ("poisson", "dixon_coles"):
+                fit_rows = [row for row in calibration_rows if candidate in row.predictions]
+                test_rows = [row for row in evaluation_rows if candidate in row.predictions]
+                if len(fit_rows) < 50 or not test_rows:
+                    continue
+                labels = [("HOME", "DRAW", "AWAY").index(row.actual_class) for row in fit_rows]
+                probabilities = [
+                    (row.predictions[candidate].home,
+                     row.predictions[candidate].draw,
+                     row.predictions[candidate].away)
+                    for row in fit_rows
+                ]
+                try:
+                    calibrator = fit_multiclass_temperature(probabilities, labels)
+                except (TypeError, ValueError):
+                    continue
+                calibrated_rows = []
+                key = f"{candidate}_temperature"
+                for row in test_rows:
+                    p = row.predictions[candidate]
+                    adjusted = apply_multiclass_temperature(
+                        (p.home, p.draw, p.away), calibrator
+                    )
+                    predictions = dict(row.predictions)
+                    predictions[key] = ProbabilityVector(*adjusted)
+                    calibrated_rows.append(replace(row, predictions=predictions))
+                calibrated_for_comp[key] = _metrics(calibrated_rows, key)
+                calibration_fit_samples[f"{competition}:{candidate}"] = len(fit_rows)
+                calibration_test_samples[f"{competition}:{candidate}"] = len(test_rows)
+        calibration_metrics[competition] = calibrated_for_comp
         competition_reports.append(CompetitionReliability(
-            competition, len(subset), {name: _metrics(subset, name) for name in names}
+            competition, len(subset), raw_metrics
         ))
+
     return ChallengerComparisonReport(
         evaluation_as_of=evaluation_as_of, input_rows=len(source),
         duplicate_fixture_rows=duplicate_rows, scored_fixtures=len(scored),
@@ -312,5 +388,7 @@ def evaluate_model_challengers(
         skipped_invalid_targets=skipped_invalid,
         skipped_without_shared_history=skipped_history,
         metrics=metrics, paired_vs_poisson=paired, competitions=tuple(competition_reports),
-        fixtures=tuple(scored),
+        fixtures=tuple(scored), calibration_metrics=calibration_metrics,
+        calibration_fit_samples=calibration_fit_samples,
+        calibration_test_samples=calibration_test_samples,
     )
