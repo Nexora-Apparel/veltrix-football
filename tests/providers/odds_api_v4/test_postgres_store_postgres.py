@@ -1,7 +1,7 @@
 """Real PostgreSQL integration tests for the immutable odds quote writer.
 
-Each test gets a disposable database populated by the complete migration chain.
-No Neon branch or staging database is used.
+Each test gets a disposable database or isolated schema populated by the
+complete migration chain. Neon schema mode never writes to the public schema.
 """
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ import uuid
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import psycopg
+from psycopg import sql
 import pytest
 
 from scripts.db_migrate import migrate
@@ -70,7 +71,7 @@ def postgres_db(monkeypatch):
     admin_dsn, database_name, target_dsn = _database_urls()
     if admin_dsn == "schema":
         with psycopg.connect(BASE_DSN) as admin:
-            admin.execute(psycopg.sql.SQL("CREATE SCHEMA {}").format(psycopg.sql.Identifier(database_name)))
+            admin.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(database_name)))
         try:
             actual_database = urlsplit(BASE_DSN).path.lstrip("/")
             monkeypatch.setenv("VELTRIX_EXPECTED_DATABASE", actual_database)
@@ -82,7 +83,7 @@ def postgres_db(monkeypatch):
             yield target_dsn
         finally:
             with psycopg.connect(BASE_DSN) as admin:
-                admin.execute(psycopg.sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(psycopg.sql.Identifier(database_name)))
+                admin.execute(sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(sql.Identifier(database_name)))
         return
     with psycopg.connect(admin_dsn, autocommit=True) as admin:
         admin.execute(f'CREATE DATABASE "{database_name}"')
