@@ -5,7 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.veltrix_v2.import_aimidas_staging import (
     audit_import, canonical_json, sha256,
