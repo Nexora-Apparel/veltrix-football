@@ -123,3 +123,13 @@ At the time of this ledger:
 - No public prediction publication is authorized or reported.
 - Value betting remains locked pending certification.
 - OpenFootball and FootballData archive data remain retrospective/non-PIT absent independent publication-time evidence.
+
+### Community rights-contract reconciliation — 2026-11-15
+- Added source-specific authorization record: `docs/legal/5dollar-community-noncommercial-authorization-2026-11-15.md`. It binds the project-owner non-commercial condition to the 5Dollar October 2026 terms review and the seven exact account-entitled provider competition IDs.
+- Updated `scripts/phase2_fivedollar_history_dry_run.py` to use approval ID `approval-5dollar-community-fixture-result-benchmarking-2026-11-14`, set `commercial_use_allowed=False`, and hash/reference the new source-specific authorization record. It still requires the provider terms review file, preserves Community-only secret use, seven-competition scope, and the existing 40-request hard budget/quota preflight.
+- Added `test_community_probe_uses_current_noncommercial_approval_evidence` to `tests/test_phase2_data_foundation.py`, asserting the exact approval ID, non-commercial flag, evidence URI/hash, raw redistribution prohibition and competition scope.
+- Commits: authorization document `1dcdea9bc202428da9fecbad4b3dd23f3c2917f7`; script correction `8ad3b4629cf42ee5ca27da91cd4068469cfc979c`; focused regression test `db86995533dcba8b61f1c755cc6067f1137f9e73`.
+- Read-back verification: script blob `8a6dd22485a176eb22914051bbdd59fd902b0f1d`; test blob `e44c9cbc57f2f860a6c8ee45780412f4487af314`; Community workflow blob `eb309212da4a6f5de1b74334c00620bc89cb3a42` still references `FIVEDOLLARFOOTBALL_COMMUNITY_API_KEY`.
+- Test execution status: NOT RUN in this session. The GitHub Actions connector exposes no workflow-dispatch action; `fetch_commit_workflow_runs` returned no runs for the test commit. Do not claim tests passed or dispatch the provider probe yet.
+- Safety: no provider requests, database writes, production writes, deployment, schedule or Telegram sends were performed.
+- Next action: obtain an authorized way to run the focused offline tests against this exact branch head; only after tests pass, address safe dispatch of the bounded read-only Community probe.
