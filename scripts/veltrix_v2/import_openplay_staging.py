@@ -147,7 +147,7 @@ def import_bundle(database_url: str, input_dir: str | Path) -> dict:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO capture_manifests(manifest_key,manifest_sha256,capture_scope,requests_planned)
-                VALUES (%s,%s,%s,0)
+                VALUES (%s,%s,%s,15)
                 ON CONFLICT (manifest_key) DO NOTHING
                 RETURNING capture_manifest_id
             """, ("openplay-" + TAG + "-" + TAG_COMMIT, manifest_hash, Jsonb(manifest)))
@@ -161,6 +161,7 @@ def import_bundle(database_url: str, input_dir: str | Path) -> dict:
                 if not existing or existing[1].strip() != manifest_hash:
                     raise RuntimeError("OPENPLAY_CAPTURE_MANIFEST_IDEMPOTENCY_CONFLICT")
                 manifest_id = existing[0]
+            cur.execute("SELECT capture_manifest_id FROM capture_manifests WHERE capture_manifest_id=%s FOR UPDATE", (manifest_id,))
 
             for name in expected_names:
                 raw = asset_bytes[name]
@@ -231,7 +232,11 @@ def import_bundle(database_url: str, input_dir: str | Path) -> dict:
             cur.execute("""
                 INSERT INTO capture_manifest_events(
                     capture_manifest_id,status,event_at,reason_code,evidence_sha256,coverage_summary
-                ) VALUES (%s,'COMPLETED',%s,'OPENPLAY_RELEASE_ASSETS_CAPTURED',%s,%s)
+                ) SELECT %s,'COMPLETED',%s,'OPENPLAY_RELEASE_ASSETS_CAPTURED',%s,%s
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM capture_manifest_events
+                    WHERE capture_manifest_id=%s AND status='COMPLETED' AND evidence_sha256=%s
+                )
             """, (manifest_id,now,manifest_hash,Jsonb({
                 "asset_count":len(expected_names),
                 "parquet_tables":len(PARQUET_ROWS),
@@ -240,7 +245,7 @@ def import_bundle(database_url: str, input_dir: str | Path) -> dict:
                 "all_raw_asset_hashes_verified":True,
                 "point_in_time_certifiable":False,
                 "commercial_use_allowed":False,
-            })))
+            })),manifest_id,manifest_hash)
         conn.commit()
 
     return {
@@ -248,8 +253,8 @@ def import_bundle(database_url: str, input_dir: str | Path) -> dict:
         "manifest_sha256":manifest_hash,
         "capture_manifest_id":manifest_id,
         "assets":len(expected_names),
-        "raw_responses_verified":inserted_responses,
-        "source_observations_verified":inserted_observations,
+        "raw_responses_readback_verified":inserted_responses,
+        "source_observations_readback_verified":inserted_observations,
         "parquet_rows":sum(PARQUET_ROWS.values()),
         "point_in_time_certifiable":False,
         "commercial_use_allowed":False,
