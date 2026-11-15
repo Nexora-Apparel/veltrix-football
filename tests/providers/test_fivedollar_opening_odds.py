@@ -116,6 +116,39 @@ def test_fixture_identity_and_timezones_are_required():
             retrieved_at=RETRIEVED, kickoff_at=datetime(2026, 11, 14, 18),
         )
 
+def test_prospective_target_window_starts_now_and_ends_within_seven_days(monkeypatch):
+    from datetime import timedelta
+    from types import SimpleNamespace
+
+    from scripts import phase2_capture_fivedollar_opening_odds as capture
+
+    monkeypatch.setattr(
+        capture, "_load_approval",
+        lambda connection, at: SimpleNamespace(competition_scope="522514093"),
+    )
+
+    class Cursor:
+        description = ()
+        def __enter__(self): return self
+        def __exit__(self, exc_type, exc, traceback): return False
+        def execute(self, sql, params): self.sql, self.params = sql, params
+        def fetchall(self): return []
+
+    class Connection:
+        def __init__(self): self.cursor_instance = Cursor()
+        def cursor(self): return self.cursor_instance
+
+    connection = Connection()
+    capture._load_targets(
+        connection, mode="prospective", lookback_days=90, future_days=7,
+        limit=25, now=RETRIEVED,
+    )
+    params = connection.cursor_instance.params
+    assert params[5] == RETRIEVED
+    assert params[6] == RETRIEVED + timedelta(days=7)
+    assert params[7] == ["522514093"]
+
+
 def test_capture_target_scope_uses_provider_competition_ids(monkeypatch):
     from types import SimpleNamespace
 
@@ -152,7 +185,8 @@ def test_capture_target_scope_uses_provider_competition_ids(monkeypatch):
 
     connection = Connection()
     capture._load_targets(
-        connection, lookback_days=90, limit=25, now=RETRIEVED,
+        connection, mode="historical", lookback_days=90, future_days=0,
+        limit=25, now=RETRIEVED,
     )
     sql = connection.cursor_instance.sql
     assert "c.provider_competition_id::text = ANY(%s::text[])" in sql

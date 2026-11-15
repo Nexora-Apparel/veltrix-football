@@ -458,3 +458,10 @@ At the time of this ledger:
 - It stopped at the parser/safety-test step before the dry run or API execution because the script's updated module docstring was missing its closing triple quote, producing an `IndentationError`.
 - Confirmed execution boundary: no 5Dollar status preflight, no fixture API calls, no database connection or writes occurred in this failed attempt. No provider quota was consumed by the capture job.
 - Fixed the docstring terminator. The next push will rerun the same bounded prospective 7-day batch (maximum 25 fixtures), subject to parser tests and the existing live quota preflight. This remains opening-only evidence; it is not a closing price or CLV observation.
+
+
+### Prospective opening-quote capture attempt 2 — 2026-11-15
+
+- After fixing the module docstring, the second workflow attempt [#43767046125](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43767046125) reached the test suite and failed one existing test that called the refactored private `_load_targets` helper without the new `mode` and `future_days` arguments. The other 32 tests passed.
+- The workflow stopped before dry-run, quota preflight, provider API calls or database connection. No API quota was consumed and no staging writes occurred.
+- Updated the existing competition-scope test for historical mode and added a prospective-window test verifying the SQL bounds are exactly `now` through `now + 7 days`, with the approved Brazil Série B competition scope. A fresh bounded run will execute on the next branch push.
