@@ -69,6 +69,9 @@ class FakeConnection:
     def cursor(self):
         return self._cursor
 
+    def rollback(self):
+        return None
+
 
 NOW = datetime.now(UTC).replace(microsecond=0)
 RETRIEVED = NOW - timedelta(seconds=2)
