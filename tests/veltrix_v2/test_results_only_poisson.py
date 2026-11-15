@@ -22,6 +22,9 @@ def match(i, home, away, hg, ag, *, available=None, recorded=None, kickoff=None,
         available_at=available or CUTOFF - timedelta(days=i),
         recorded_at=recorded or CUTOFF - timedelta(days=i),
         home_goals=hg, away_goals=ag,
+        # Controlled unit fixtures explicitly opt into the PIT contract.
+        # Production admission still requires independently verified evidence.
+        point_in_time_certifiable=True,
     )
 
 
@@ -128,7 +131,7 @@ def test_result_cannot_be_available_before_kickoff_or_recorded_before_available(
         kickoff_at=CUTOFF - timedelta(days=3),
         available_at=CUTOFF - timedelta(days=4),
         recorded_at=CUTOFF - timedelta(days=4),
-        home_goals=9, away_goals=0,
+        home_goals=9, away_goals=0, point_in_time_certifiable=True,
     )
     result = predict_match(rows + [invalid], competition_id="league",
                            home_team_id="A", away_team_id="B",
