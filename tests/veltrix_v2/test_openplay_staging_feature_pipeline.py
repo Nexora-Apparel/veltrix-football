@@ -186,6 +186,7 @@ def _snapshots():
 
 def _approval():
     return {
+        "status": "APPROVED",
         "effective_at": datetime(2026, 11, 15, 0, 0, tzinfo=UTC).isoformat(),
         "recorded_at": datetime(2026, 11, 15, 12, 37, 26, tzinfo=UTC).isoformat(),
         "approval_recorded_at": datetime(2026, 11, 15, 12, 37, 26, tzinfo=UTC).isoformat(),
