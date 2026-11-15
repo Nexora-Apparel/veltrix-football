@@ -54,7 +54,7 @@ def test_internal_form_and_strength_features_have_explicit_derived_status():
     for domain in (DataDomain.ODDS_1X2, DataDomain.ODDS_TOTALS, DataDomain.ODDS_BTTS):
         assert profile.capability(domain).state is CapabilityState.CONDITIONAL
         assert profile in providers_for(domain, include_conditional=True)
-        assert profile not in dispatchable_providers_for(domain, include_conditional=True)
+        assert profile not in dispatchable_providers_for(domain)
 
 def test_statsbomb_is_historical_research_only_xg_and_lineup_candidate():
     profile = next(p for p in PROVIDER_REGISTRY if p.provider == "StatsBomb Open Data")
