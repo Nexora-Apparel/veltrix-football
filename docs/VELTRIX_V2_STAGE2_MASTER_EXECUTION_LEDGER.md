@@ -270,3 +270,15 @@ At the time of this ledger:
 - Latest completed batch: workflow [#43734920511](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734920511), artifact [#14170381591](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734920511/artifacts/14170381591), SHA-256 `e45a5d9b092affa0e6cfd8a70f70c4695c2b81de83b1a5cce837655950490827`.
 - Latest Community quota read-back: 16 remaining. This is below the next 25-fixture batch's required preflight headroom (26 including status); do not dispatch another capture until a fresh quota preflight after the 17:00 UTC reset.
 - Formal decision remains **NO-GO — Stage 2 not complete / not release-ready**. See `docs/VELTRIX_V2_STAGE2_FINAL_EXIT_DECISION_2026-11-15.md`. Historical/closing odds entitlement and certification thresholds remain blocked. Stage 3 stays on hold.
+
+
+### AI Midas historical identity reconciliation — 2026-11-15
+
+- Read-only workflow [#43755219763](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43755219763) passed on code head `a951513f2518842a03b6305245b66b3591f5ced0`; 19 focused tests passed and all six pinned historical archives (19,605 rows) were audited.
+- Canonical registry examined: 2,496 fixtures. It begins in November 2025, while the six historical archives end by 25 May 2025; no canonical fixture candidates were found.
+- 6,495 source rows have both exact-normalized teams represented in the current registry but no fixture candidate; 13,110 rows have at least one team absent from the current registry.
+- Exact duplicate groups: 0. Conflicting duplicate groups: 0.
+- Raw source season/date values, source file pins, original line numbers and row fingerprints are preserved in the ephemeral detailed report. Sanitized aggregate artifact [#14178350008](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43755219763/artifacts/14178350008) contains no raw CSV or row-level detail.
+- Database transaction was explicitly read-only. No normalized fixtures, results, entity crosswalks, model features or predictions were written. No mapping was marked `RESOLVED`.
+- Full report: `docs/VELTRIX_V2_AIMIDAS_HISTORICAL_IDENTITY_RECONCILIATION_2026-11-15.md`.
+- This identity audit does not supply historical PIT timestamps, closing odds, CLV or certification evidence. AI Midas rows remain non-PIT and model admission remains false.
