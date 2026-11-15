@@ -22,6 +22,13 @@ def history(n=120):
             available_at=kickoff + timedelta(hours=2),
             recorded_at=kickoff + timedelta(hours=3),
             home_goals=1 + (i % 3 == 0), away_goals=i % 2,
+            provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+            availability_basis="collector_first_observed_v1",
+            point_in_time_certifiable=False,
+            payload_sha256=hashlib.sha256(f"history-{i}".encode()).hexdigest(),
+            rights_approval_id="approval-5dollar-community-fixture-result-2026-11",
+            evidence_manifest_sha256="c" * 64,
+            capture_evidence_sha256="d" * 64,
         ))
     return rows
 
