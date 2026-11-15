@@ -231,8 +231,28 @@ def test_walk_forward_exposes_only_cutoff_eligible_openplay_context():
         "available_at": (eligible_at - timedelta(days=2)).isoformat(),
         "recorded_at": (eligible_at - timedelta(hours=1)).isoformat(),
         "eligibility_at": eligible_at.isoformat(),
-        "crosswalk_provenance": {},
-        "approval_provenance": {},
+        "point_in_time_certifiable": True,
+        "commercial_use_allowed": False,
+        "rights_approval_id": "approval-openplay-whoscored-opta-noncommercial-2026-11-15",
+        "source_timestamp_basis": "documented_guarantee",
+        "source_observation_id": 700,
+        "provider_response_id": 101,
+        "crosswalk_provenance": {
+            key: {
+                "mapping_status": "RESOLVED", "evidence_observation_id": 10,
+                "crosswalk_version_id": 20,
+                "valid_from": (eligible_at - timedelta(minutes=1)).isoformat(),
+                "recorded_at": (eligible_at - timedelta(minutes=1)).isoformat(),
+                "valid_until": None,
+            }
+            for key in ("team", "opponent", "competition")
+        },
+        "approval_provenance": {
+            "effective_at": (eligible_at - timedelta(days=1)).isoformat(),
+            "recorded_at": (eligible_at - timedelta(days=1)).isoformat(),
+            "approval_recorded_at": (eligible_at - timedelta(days=1)).isoformat(),
+            "valid_until": None,
+        },
     }
     features = [
         {**base, "canonical_team_id": target.home_team_id, "provider_match_id": "prior-home"},
