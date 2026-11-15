@@ -16,6 +16,11 @@ import sys
 import time
 from urllib.parse import urlparse
 
+# Direct script execution places scripts/ rather than the repository root on sys.path.
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
+
 from veltrix_v2.data.fivedollar import parse_fixture_page
 from veltrix_v2.data.contracts import DataUsePurpose
 from veltrix_v2.data.rights import evaluate_source_use
