@@ -255,7 +255,7 @@ def build_openplay_team_match_features(
                 "passes","passes_completed","pass_pct","passes_final_third",
                 "progressive_passes","key_passes","xa","tackles","tackles_won",
                 "interceptions","clearances","ball_recoveries","aerials","aerials_won",
-                "fouls_committed","offsides","corners_taken","possession_pct",
+                "fouls_committed","offsides","corners_taken",
             )
         }
         metrics = {
@@ -270,6 +270,13 @@ def build_openplay_team_match_features(
             ],
             "xg_model": xg_model,
             "source_match_score_consistent": bool(match.get("score_matches_events")),
+            # The pinned v0.1.0 release documents this as a share, but the
+            # observed values include negatives and therefore violate that
+            # contract. Keep it out of model features until source semantics
+            # are independently resolved; never rescale or infer a replacement.
+            "excluded_source_metrics": {
+                "possession_pct": "SOURCE_VALUES_VIOLATE_DOCUMENTED_PERCENTAGE_RANGE"
+            },
         }
         identity = {
             "provider": OPENPLAY_PROVIDER,
