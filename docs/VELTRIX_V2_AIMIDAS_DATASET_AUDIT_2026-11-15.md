@@ -1,7 +1,7 @@
 # VELTRIX FOOTBALL 2.0 — AI Midas dataset inventory and temporal audit
 
 **Audit date:** 2026-11-15  
-**Classification:** PARTIAL — source authorized; inventory verified; staging ingestion and model admission not performed  
+**Classification:** PARTIAL — source authorized; inventory and immutable snapshot verified; staging database ingestion and model admission not performed  
 **Source repository:** https://github.com/aimidas1/aimidas1  
 **Pinned source commit:** `29baca362a34ce5dcd3924b07ec9c7d5139d83fc`  
 **Repository pushed at:** `2026-11-11T00:00:10Z`  
@@ -131,10 +131,19 @@ Git blob SHA is recorded as the immutable repository object identifier; it is no
 
 **Not performed:** Neon writes, production imports, model training, prediction changes, deployment, schedule activation, Telegram delivery or PR merge.
 
+## 8. Immutable snapshot execution — 2026-11-15
+
+- Added `scripts/veltrix_v2/collect_aimidas_snapshot.py` and `scripts/veltrix_v2/verify_aimidas_snapshot.py`.
+- Added `tests/veltrix_v2/test_aimidas_snapshot.py`: **7 passed**.
+- Added manual-free, no-key workflow `.github/workflows/phase2-aimidas-snapshot-audit.yml`, triggered only by relevant integration-branch pushes; no schedule, API secret, database connection or production permission is configured.
+- Workflow [#43752239352](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752239352) completed **success** on code commit `4d431594b3f678781acc68a8a18232351e93a862`.
+- Collector captured **14/14 pinned CSV files**, 11,599,486 source bytes, with expected Git blob SHA-1 checks and SHA-256 manifests. Independent offline verifier reproduced all 14 CSV audits and returned `PASS`.
+- Artifact [#14176128656](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752239352/artifacts/14176128656), `veltrix-stage2-aimidas-snapshot-pack`, ZIP SHA-256 `dca676cb75ab395f27f5149694dd3e8cac9f2b0349aff1d83a7cf225408563bb`, retained until 2027-02-13.
+- Workflow output confirms `database_written=false`, `production_written=false`, `model_admitted=false`, `predictions_changed=false`, `point_in_time_certifiable=false`. The artifact is an immutable research snapshot, not a Neon import or PIT evidence.
+
 ### Remaining bounded actions
 
-1. Add a deterministic, pinned, no-key snapshot collector that stores raw files and hashes in an isolated artifact; no database writes by default.
-2. Build exact team/competition/date crosswalk candidates for Brazil Série B and quarantine ambiguous matches.
-3. Keep the 2016–2025 Brazil Série B historical gap explicit; do not silently substitute Brazil Série A or Italy Serie B.
-4. Keep average odds separate from bookmaker quote observations and continue searching for timestamped closing odds.
-5. Admit only leakage-safe features for future cutoffs after the actual Veltrix import timestamp; keep retrospective walk-forward certification blocked.
+1. Build exact team/competition/date crosswalk candidates for Brazil Série B and quarantine ambiguous matches.
+2. Keep the 2016–2025 Brazil Série B historical gap explicit; do not silently substitute Brazil Série A or Italy Serie B.
+3. Keep average odds separate from bookmaker quote observations and continue searching for timestamped closing odds.
+4. Admit only leakage-safe features for future cutoffs after the actual Veltrix import timestamp; keep retrospective walk-forward certification blocked.
