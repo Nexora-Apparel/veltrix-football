@@ -176,3 +176,25 @@ def test_walk_forward_binds_model_build_id_to_every_scored_fixture():
 def test_walk_forward_rejects_blank_model_build_id():
     with pytest.raises(ValueError, match="MODEL_BUILD_ID_INVALID"):
         walk_forward_evaluate(history(40), evaluation_as_of=AS_OF, model_build_id=" ")
+
+
+@pytest.mark.parametrize(
+    ("available_delta", "recorded_delta"),
+    [
+        (timedelta(hours=-1), timedelta(hours=2)),
+        (timedelta(hours=2), timedelta(hours=1)),
+    ],
+)
+def test_walk_forward_rejects_impossible_target_result_chronology(
+    available_delta, recorded_delta,
+):
+    rows = history(40)
+    target = rows[-2]
+    rows[-2] = replace(
+        target,
+        available_at=target.kickoff_at + available_delta,
+        recorded_at=target.kickoff_at + recorded_delta,
+    )
+    report = walk_forward_evaluate(rows, evaluation_as_of=AS_OF)
+    assert report.skipped_invalid_target >= 1
+    assert all(row.fixture_id != target.fixture_id for row in report.fixtures)

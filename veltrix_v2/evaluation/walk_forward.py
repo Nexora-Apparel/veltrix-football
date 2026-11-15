@@ -222,6 +222,12 @@ def walk_forward_evaluate(
                 or target.recorded_at > evaluation_as_of):
             skipped_future += 1
             continue
+        # A target result cannot become available before kickoff or be recorded
+        # before its availability timestamp. Reject impossible source chronology.
+        if (target.available_at < target.kickoff_at
+                or target.recorded_at < target.available_at):
+            skipped_invalid += 1
+            continue
         if (not isinstance(target.home_goals, int) or isinstance(target.home_goals, bool)
                 or not isinstance(target.away_goals, int) or isinstance(target.away_goals, bool)
                 or target.home_goals < 0 or target.away_goals < 0

@@ -312,3 +312,27 @@ def test_paper_ledger_rejects_invalid_multi_market_probability_vectors():
     )
     with pytest.raises(ValueError, match="PAPER_PREDICTION_MARKET_VECTOR_NOT_NORMALISED"):
         ledger.append_prediction(prediction)
+
+
+@pytest.mark.parametrize(
+    ("available_delta", "recorded_delta"),
+    [
+        (timedelta(hours=-1), timedelta(hours=2)),
+        (timedelta(hours=2), timedelta(hours=1)),
+    ],
+)
+def test_challenger_rejects_impossible_target_result_chronology(
+    available_delta, recorded_delta,
+):
+    rows = comparison_rows()
+    target = rows[-1]
+    rows[-1] = replace(
+        target,
+        available_at=target.kickoff_at + available_delta,
+        recorded_at=target.kickoff_at + recorded_delta,
+    )
+    report = evaluate_model_challengers(
+        rows, evaluation_as_of=BASE + timedelta(days=20)
+    )
+    assert report.skipped_invalid_targets == 1
+    assert all(row.fixture_id != target.fixture_id for row in report.fixtures)

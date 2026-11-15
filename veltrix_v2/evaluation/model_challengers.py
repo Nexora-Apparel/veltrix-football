@@ -262,6 +262,11 @@ def evaluate_model_challengers(
         if target.kickoff_at > evaluation_as_of or target.available_at > evaluation_as_of or target.recorded_at > evaluation_as_of:
             skipped_future += 1
             continue
+        # Target labels must obey the same temporal invariants as training rows.
+        if (target.available_at < target.kickoff_at
+                or target.recorded_at < target.available_at):
+            skipped_invalid += 1
+            continue
         if (not target.fixture_id or not target.competition_id or not target.home_team_id
                 or not target.away_team_id or target.home_team_id == target.away_team_id
                 or any(not isinstance(x, int) or isinstance(x, bool) or x < 0
