@@ -23,7 +23,7 @@ EXPECTED_TABLES = {
     "provider_credit_budget_snapshots", "provider_credit_reservation_events",
     "provider_quota_snapshots", "provider_quota_reconciliation_events",
     "provider_capture_state_events", "paper_ledger_events",
-    "telegram_delivery_claims", "telegram_delivery_reconciliations",
+    "telegram_delivery_claims", "telegram_delivery_reconciliations", "odds_quote_observations",
 }
 EXPECTED_INDEXES = {
     "fixtures_kickoff_idx", "fixtures_competition_kickoff_idx",
@@ -39,6 +39,8 @@ EXPECTED_INDEXES = {
     "provider_quota_reconciliation_reservation_idx", "provider_capture_state_events_latest_idx",
     "paper_ledger_prediction_unique", "paper_ledger_settlement_unique",
     "telegram_delivery_reconciliation_root_unique", "telegram_delivery_reconciliation_successor_unique",
+    "odds_quote_fixture_market_time_idx", "odds_quote_provider_event_idx",
+    "odds_quote_response_idx", "odds_quote_rights_idx",
 }
 
 
@@ -117,7 +119,8 @@ def run_acceptance() -> dict:
                     'provider_capture_state_events'::regclass,
                     'paper_ledger_events'::regclass,
                     'telegram_delivery_claims'::regclass,
-                    'telegram_delivery_reconciliations'::regclass
+                    'telegram_delivery_reconciliations'::regclass,
+                    'odds_quote_observations'::regclass
                   )
             """)
             immutable_triggers = {row[0] for row in cur.fetchall()}
@@ -153,6 +156,8 @@ def run_acceptance() -> dict:
                 "telegram_delivery_reconciliations_no_update",
                 "telegram_delivery_reconciliations_no_delete",
                 "telegram_delivery_reconciliations_no_truncate",
+                "odds_quote_observation_identity_guard",
+                "odds_quote_observations_append_only",
             }
             assert expected_triggers <= immutable_triggers, sorted(expected_triggers - immutable_triggers)
 
