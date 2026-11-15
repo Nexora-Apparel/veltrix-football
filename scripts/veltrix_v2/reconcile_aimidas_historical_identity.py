@@ -13,11 +13,14 @@ import io
 import json
 import os
 import re
+import sys
 import unicodedata
 from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.veltrix_v2.collect_aimidas_snapshot import (
     REPOSITORY, SOURCE_COMMIT, SOURCE_FILES,
