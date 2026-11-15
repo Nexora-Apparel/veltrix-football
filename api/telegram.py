@@ -446,7 +446,19 @@ def dashboard_data() -> dict:
     )
 
     if not isinstance(report, dict):
-        return {"status": "UNAVAILABLE", "warning": "No published report could be loaded.", "predictions": []}
+        verifier_configured = _authoritative_publication_verifier() is not None
+        bundle_reader_configured = _authoritative_report_bundle_reader() is not None
+        runtime_status = getattr(app.state, "v2_publication_runtime_status", "UNCONFIGURED")
+        return {
+            "status": "UNAVAILABLE",
+            "warning": "No published report could be loaded.",
+            "predictions": [],
+            "runtime_configuration": {
+                "status": runtime_status,
+                "verifier_configured": verifier_configured,
+                "bundle_reader_configured": bundle_reader_configured,
+            },
+        }
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
     upcoming = []
