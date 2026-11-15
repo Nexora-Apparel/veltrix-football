@@ -197,11 +197,13 @@ The shared source match-key SHA-256 is 2ead50b10c190f2c4db326f25a0b15cf73a0e129c
 
 The run's audit job and focused tests passed. PR #120 remains draft/open/unmerged; this audit success is not a merge or release approval.
 
-## 10. Side effects
+## 10. Side effects of the independent identity-audit run
 
-- Database transaction: read-only.
-- Database mutations: 0.
-- Crosswalk rows written: 0.
+This section records the original read-only reconciliation run only. It does not describe the later reviewer-backed acceptance transaction documented in §7.
+
+- Audit database transaction: read-only.
+- Audit database mutations: 0.
+- Audit crosswalk rows written: 0.
 - Normalized fixtures/results/statistics written: 0.
 - Production writes/deployments: 0.
 - Predictions changed: 0.
