@@ -124,6 +124,8 @@ def fit_binary_platt(
         raise ValueError("BINARY_CALIBRATION_PROBABILITY_INVALID")
     if any(not isinstance(y, int) or isinstance(y, bool) or y not in (0, 1) for y in ys):
         raise ValueError("BINARY_CALIBRATION_LABEL_INVALID")
+    if set(ys) != {0, 1}:
+        raise ValueError("BINARY_CALIBRATION_REQUIRES_BOTH_CLASSES")
     if not isinstance(iterations, int) or iterations < 1 or not math.isfinite(l2) or l2 < 0:
         raise ValueError("PLATT_OPTIMISATION_PARAMETERS_INVALID")
     xs = [_logit(p) for p in ps]
