@@ -47,7 +47,7 @@ jobs:
       - name: Install project and database driver
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e . "psycopg[binary]>=3.2,<4" pytest
+          python -m pip install -r requirements.txt "psycopg[binary]>=3.2,<4"
 
       - name: Run opening-odds parser and capture safety tests
         run: python -m pytest -q tests/providers/test_fivedollar_opening_odds.py tests/scripts/test_phase2_capture_fivedollar_opening_odds.py
