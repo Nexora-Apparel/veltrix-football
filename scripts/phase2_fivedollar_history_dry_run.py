@@ -41,7 +41,9 @@ EXPECTED_COMPETITIONS = {
     "4212821298": "Spain La Liga",
 }
 TERMS_REVIEW_PATH = Path(__file__).resolve().parents[1] / "docs/legal/5dollar-terms-review-2026-11-12.md"
+AUTHORIZATION_EVIDENCE_PATH = Path(__file__).resolve().parents[1] / "docs/legal/5dollar-community-noncommercial-authorization-2026-11-15.md"
 TERMS_REVIEW_URI = "https://github.com/Nexora-Apparel/veltrix-football/blob/main/docs/legal/5dollar-terms-review-2026-11-12.md"
+AUTHORIZATION_EVIDENCE_URI = "https://github.com/Nexora-Apparel/veltrix-football/blob/integration/v2-report-bundle-wiring-20261114/docs/legal/5dollar-community-noncommercial-authorization-2026-11-15.md"
 TERMS_URL = "https://5dollarfootballapi.com/terms"
 ATTRIBUTION = "Football data by 5DollarFootballAPI"
 ATTRIBUTION_URL = "https://5dollarfootballapi.com"
@@ -119,10 +121,12 @@ def _safe_headers(headers: dict) -> dict:
 def _source_approval(now: datetime) -> SourceApproval:
     if not TERMS_REVIEW_PATH.is_file():
         raise ProbeFailure("TERMS_REVIEW_EVIDENCE_MISSING")
-    evidence_hash = hashlib.sha256(TERMS_REVIEW_PATH.read_bytes()).hexdigest()
+    if not AUTHORIZATION_EVIDENCE_PATH.is_file():
+        raise ProbeFailure("NONCOMMERCIAL_AUTHORIZATION_EVIDENCE_MISSING")
+    evidence_hash = hashlib.sha256(AUTHORIZATION_EVIDENCE_PATH.read_bytes()).hexdigest()
     reviewed = datetime(2026, 11, 12, 0, 0, tzinfo=timezone.utc)
     return SourceApproval(
-        approval_id="approval-5dollar-community-fixture-result-2026-11",
+        approval_id="approval-5dollar-community-fixture-result-benchmarking-2026-11-14",
         provider=PROVIDER,
         source_id=SOURCE_ID,
         competition_scope=",".join(sorted(EXPECTED_COMPETITIONS)),
@@ -136,10 +140,10 @@ def _source_approval(now: datetime) -> SourceApproval:
             DataUsePurpose.CACHE,
             DataUsePurpose.PUBLIC_DISPLAY,
         }),
-        commercial_use_allowed=True,
+        commercial_use_allowed=False,
         terms_url=TERMS_URL,
         terms_version="October 2026",
-        evidence_uri=TERMS_REVIEW_URI,
+        evidence_uri=AUTHORIZATION_EVIDENCE_URI,
         evidence_sha256=evidence_hash,
         rights_basis="TERMS",
         reviewed_at_utc=reviewed,
