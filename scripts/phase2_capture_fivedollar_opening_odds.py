@@ -5,6 +5,7 @@ bounded historical lookback and prospective upcoming-fixture windows. Opening
 quotes are not current/closing prices and cannot certify CLV. No paid historical
 tick endpoint, automatic retries, production writes, publication, Telegram or
 schedule activation.
+"""
 from __future__ import annotations
 
 import argparse

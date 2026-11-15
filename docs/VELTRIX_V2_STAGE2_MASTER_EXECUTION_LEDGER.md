@@ -450,3 +450,11 @@ At the time of this ledger:
 - Updated the manual workflow's push-trigger default to one prospective 7-day batch (maximum 25). No daily schedule, production write, model prediction, selection, Telegram delivery or publication is enabled. The quota preflight fails closed if the account cannot cover the planned fixture requests.
 - Added tests for historical/prospective window boundaries, timezone awareness, invalid mode/range rejection, and opening-only/non-CLV dry-run semantics.
 - This single commit is expected to trigger one bounded prospective capture workflow using existing GitHub Actions secrets; the actual API/DB result must be retrieved and independently verified before claiming any quote rows were acquired.
+
+
+### Prospective opening-quote capture attempt 1 — 2026-11-15
+
+- The new bounded 7-day prospective capture workflow was triggered by the single branch push: [run #43766983519](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43766983519).
+- It stopped at the parser/safety-test step before the dry run or API execution because the script's updated module docstring was missing its closing triple quote, producing an `IndentationError`.
+- Confirmed execution boundary: no 5Dollar status preflight, no fixture API calls, no database connection or writes occurred in this failed attempt. No provider quota was consumed by the capture job.
+- Fixed the docstring terminator. The next push will rerun the same bounded prospective 7-day batch (maximum 25 fixtures), subject to parser tests and the existing live quota preflight. This remains opening-only evidence; it is not a closing price or CLV observation.
