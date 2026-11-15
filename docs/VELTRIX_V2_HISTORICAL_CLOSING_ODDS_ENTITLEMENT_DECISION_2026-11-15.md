@@ -110,3 +110,20 @@ The immediate subsequent no-credit account probe [#43760295591](https://github.c
 The 401 is direct negative evidence that the current connected account does not have historical endpoint entitlement. The quota preflight is not a paid-plan entitlement check and does not override the 401. Do not retry the historical endpoint until actual paid historical access is independently confirmed. No subscription or payment was made.
 
 This probe does not alter the 5Dollar Community opening-odds dataset. The 5Dollar quota and The Odds API quota are separate provider accounts and must never be conflated.
+
+
+## 10. Verified account plan and comparative source update — 2026-11-15 23:31 WAT
+
+The staging entitlement history contains one provider-observed 5Dollar account record:
+- `plan_code=community`
+- `entitlement_status=ACTIVE`
+- seven approved competition IDs
+- checked at `2026-11-12T22:51:54.745Z`
+- quota remaining 299 at that observation
+- no Ultra entitlement observation
+
+This strengthens the prior statement "Ultra entitlement not evidenced": the last verified plan is Community, not Ultra. The record is dated 12 November and does not prove the live plan state on 15 November. Do not call the Ultra-only tick-history route. A fresh entitlement check must use an authorized no-credit account-status mechanism or written provider confirmation. No upgrade, payment or restricted endpoint request was made.
+
+The comparative provider review now identifies 5Dollar Ultra as the lowest-cost direct bookmaker-level tick-history route if entitlement is already available (published $25/month, 19 bookmakers and full tick history), but no paid plan change is authorized. Odds-API.io is a technically strong bulk closing-line alternative but its public coverage table lists Brazil Série A and not Série B; exact Série B coverage and rights are unverified. SockOdds has recorded price history and graded results but its current catalogue has no Brazil Série B coverage. OddsIntel is consensus-only and cannot replace raw bookmaker-specific quotes. OddsPapi remains blocked by rights and quota. The Odds API historical route remains blocked by HTTP 401.
+
+Full comparison: `docs/VELTRIX_V2_CLOSING_ODDS_PROVIDER_COMPARATIVE_QUALIFICATION_2026-11-15.md`.
