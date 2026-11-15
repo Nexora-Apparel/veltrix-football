@@ -15,7 +15,7 @@ This is a definitive no-go decision against the current evidence set, not a decl
 
 ## 2. Opening-odds evidence — reconciled
 
-The fixed 90-day, seven-competition universe contains 763 eligible 5Dollar fixtures. Manifests 109–120 are independently reconciled in the named staging database:
+The fixed 90-day, seven-competition universe contains 763 eligible 5Dollar fixtures. Manifests 109–121 are independently reconciled in the named staging database:
 
 | Manifest | Workflow run | Requests | HTTP responses | Opening observations | Distinct fixtures | PIT eligible |
 |---:|---:|---:|---:|---:|---:|---:|
@@ -31,13 +31,14 @@ The fixed 90-day, seven-competition universe contains 763 eligible 5Dollar fixtu
 | 118 | 43733721786 | 25 | 25 | 25 | 25 | 25 |
 | 119 | 43733924743 | 25 | 25 | 25 | 25 | 25 |
 | 120 | 43734128538 | 25 | 25 | 25 | 25 | 25 |
-| **Total** | | **300** | **300** | **300** | **300** | **300** |
+| 121 | 43734327570 | 25 | 25 | 25 | 25 | 25 |
+| **Total** | | **325** | **325** | **325** | **325** | **325** |
 
-Independent aggregate read-back confirms 300/300 distinct provider fixture IDs map to canonical fixtures, are PIT eligible, preserve valid opening timestamp ordering, use Bet365 1X2, and have active RESOLVED fixture crosswalks. No duplicates or ineligible observations were found in these twelve manifests.
+Independent aggregate read-back confirms 325/325 distinct provider fixture IDs map to canonical fixtures, are PIT eligible, preserve valid opening timestamp ordering, use Bet365 1X2, and have active RESOLVED fixture crosswalks. No duplicates or ineligible observations were found in these thirteen manifests.
 
-**Coverage:** 300/763 = 39.32%. 463 fixtures remain without a captured opening quote. At least 748 timestamped quotes are required to reach 98% of this denominator, so at least 448 additional valid quotes are still required. The full acquisition target remains 463 additional quotes.
+**Coverage:** 325/763 = 42.60%. 438 fixtures remain without a captured opening quote. At least 748 timestamped quotes are required to reach 98% of this denominator, so at least 423 additional valid quotes are still required. The full acquisition target remains 438 additional quotes.
 
-All twelve batches were capped at 25 fixture requests, used a fresh Community quota preflight, used no automatic retries, retained the provider's opening timestamp and were written only to staging. The latest completed batch is workflow #43734128538, artifact #14170085844, SHA-256 `088f5e1adf07a375cc469e23e3d35f7dadfdf4ed2d5e1aaabd51fcfb95428fe8`.
+All thirteen batches were capped at 25 fixture requests, used a fresh Community quota preflight, used no automatic retries, retained the provider's opening timestamp and were written only to staging. The latest completed batch is workflow #43734327570, artifact #14170016337, SHA-256 `f752a53019de07e1a3b3c23b139fc5edf5f0d20dbe8e3bc2b06ff4912751a559`.
 
 ## 3. Second-batch persistence discrepancy — resolved
 
@@ -71,8 +72,8 @@ Formal source decision: **BLOCKED — ENTITLEMENT NOT VERIFIED**. The detailed e
 | OpenFootball / FootballData archive verification | PASS as artifacts only | Verified, but retrospective/non-PIT |
 | OpenPlay staging feature bundle | PASS as staging sidecar | Verified derived bundle; identity coverage remains partial |
 | 5Dollar fixture crosswalk | PASS | 763/763 exact active RESOLVED mappings |
-| 5Dollar opening-odds persistence | PASS | 300/300 independently read back |
-| Opening-odds coverage | FAIL / INCOMPLETE | 39.32%; 448 more to reach 98%; 463 to complete universe |
+| 5Dollar opening-odds persistence | PASS | 325/325 independently read back |
+| Opening-odds coverage | FAIL / INCOMPLETE | 42.60%; 423 more to reach 98%; 438 to complete universe |
 | Historical/closing odds entitlement | BLOCKED | 5Dollar Ultra not evidenced; Odds API paid historical access unverified |
 | CLV / closing-line benchmark | NOT MET | Zero timestamped closing or historical snapshots |
 | Walk-forward and prospective certification | NOT MET | Sample, settlement, date, odds-coverage and benchmark thresholds unmet |
@@ -101,3 +102,8 @@ Manifests 117–119 have since completed and independently reconciled, bringing 
 ## 10. Acquisition continuation update — 2026-11-15
 
 Manifest 120 has completed and independently reconciled, bringing the total to 300/763 (39.32%) opening quotes across 300 distinct fixtures. Manifests 109–120 each have 25/25 requests, responses, observations and PIT-eligible fixtures. The 98% threshold requires at least 448 more valid quotes; full acquisition requires 463. The next batch trigger is being advanced separately and will not be counted until independently reconciled. The Stage 2 decision remains NO-GO.
+
+
+## 11. Acquisition continuation update — 2026-11-15
+
+Manifest 121 has completed and independently reconciled, bringing the total to 325/763 (42.60%) opening quotes across 325 distinct fixtures. Manifests 109–121 each have 25/25 requests, responses, observations and PIT-eligible fixtures. The 98% threshold requires at least 423 more valid quotes; full acquisition requires 438. The next batch trigger is being advanced separately and will not be counted until independently reconciled. The Stage 2 decision remains NO-GO.
