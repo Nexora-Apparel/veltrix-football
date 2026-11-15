@@ -200,14 +200,13 @@ def test_walk_forward_rejects_impossible_target_result_chronology(
     assert all(row.fixture_id != target.fixture_id for row in report.fixtures)
 
 
-def test_walk_forward_rejects_non_certifiable_target_when_certified_history_exists():
+def test_walk_forward_allows_non_pit_result_as_label_but_never_as_training():
     rows = history(40)
     target = rows[-1]
     rows[-1] = replace(target, point_in_time_certifiable=False)
     report = walk_forward_evaluate(rows, evaluation_as_of=AS_OF)
     assert report.non_certifiable_input_rows == 1
-    assert report.skipped_uncertified_targets == 1
-    assert all(row.fixture_id != target.fixture_id for row in report.fixtures)
+    assert target.fixture_id in {row.fixture_id for row in report.fixtures}
 
 
 def test_walk_forward_rejects_target_with_invalid_pit_payload_hash():
