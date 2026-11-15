@@ -360,7 +360,9 @@ def build_feature_rows_from_assets(
         "matches_seen": 0, "matches_in_scope": 0,
         "matches_excluded_known_gaps_or_issues": 0,
         "matches_unmapped": 0, "matches_without_snapshot": 0,
-        "matches_without_team_stats": 0, "feature_rows_written": 0,
+        "matches_without_team_stats": 0,
+        "matches_quarantined_duplicate_team_stats": 0,
+        "feature_rows_written": 0,
     }
     exclusions = {}
     try:
@@ -375,6 +377,13 @@ def build_feature_rows_from_assets(
             excluded.update(str(row[0]) for row in values if row[0] is not None)
         exclusions["known_gap_and_data_issue_match_ids"] = len(excluded)
         duplicate_report = _duplicate_counts(db, root)
+        team_stats_duplicate_matches = {
+            str(row[0]) for row in db.execute("""
+                SELECT CAST(match_id AS VARCHAR)
+                FROM read_parquet(?)
+                GROUP BY match_id,team_id HAVING count(*) > 1
+            """, [str(root / "team_match_stats.parquet")]).fetchall()
+        }
 
         xg_models = {
             row[0] for row in db.execute(
@@ -419,6 +428,9 @@ def build_feature_rows_from_assets(
                         counters["matches_excluded_known_gaps_or_issues"] += 1
                         continue
                     counters["matches_in_scope"] += 1
+                    if match_id in team_stats_duplicate_matches:
+                        counters["matches_quarantined_duplicate_team_stats"] += 1
+                        continue
                     snapshot = snapshots.get(match_id)
                     if snapshot is None:
                         counters["matches_without_snapshot"] += 1
@@ -533,6 +545,7 @@ def build_feature_rows_from_assets(
         "counters": counters,
         "exclusions": exclusions,
         "duplicate_natural_keys": duplicate_report,
+        "team_stats_duplicate_match_ids": sorted(team_stats_duplicate_matches),
         "team_crosswalk_count": len(team_crosswalk),
         "competition_crosswalk_count": len(competition_crosswalk),
         "asset_provenance": {name: dict(value) for name, value in sorted(assets.items())},
