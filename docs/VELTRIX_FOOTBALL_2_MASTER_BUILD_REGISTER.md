@@ -29,7 +29,7 @@ The architecture retains the website, API/command-centre and Telegram delivery i
 | Forecast/model layer | New Poisson, Elo, team-form, challenger comparison and forecast-evidence foundations | Implemented as software foundations; not certified; legacy priors/fallback logic are excluded |
 | Evaluation | Chronological walk-forward, calibration/reliability, Brier/log-loss comparison, date-clustered bootstrap and historical model audit surfaces | Implemented/tested in code; eligible evidence is insufficient for market certification |
 | Paper/shadow tracking | Append-only prospective ledger, hash-chain verification, duplicate protection, first-observed shadow forecasts, settlement runner and aggregate scorecard path | Shadow evidence only; 25 predictions, zero settlements at the latest recorded audit |
-| Odds | Opening-odds capture path, odds observation schema/migration, provider quote provenance and bookmaker benchmark contracts | Capture code exists; quote coverage remains zero in latest staging readback; historical odds entitlement is not established |
+| Odds | Opening-odds capture path, odds observation schema/migration, provider quote provenance and bookmaker benchmark contracts | First bounded 5Dollar capture: 25 timestamped Bet365 1X2 opening quotes; 25/763 eligible fixtures (3.28%). No 5Dollar historical ticks or The Odds API event/historical odds. Historical entitlement and 98% coverage remain blocked. |
 | Certification | Strict publication verifier, evidence-manifest byte/hash checks, source-rights evidence checks, market thresholds and release fail-closed contracts | Verifier exists; no qualifying real certification manifest/attestation is present |
 | Report bundle | Canonical report identity, immutable multi-surface bundle, per-surface hashes, portable one-file envelope and commit marker | Adapter/test foundations exist; certified production bundle not present |
 | Website | V2 report/dashboard loaders, portable bundle preference, bounded fetch/cache, no legacy fallback and verifier-dependent fail-closed state | Code exists; without trusted runtime verifier and certified bundle, V2 predictions remain unavailable |
@@ -320,12 +320,12 @@ Historical PR branches and commit histories are retained for audit/recovery. The
 | FootballData collector/verifier | IMPLEMENTED / ARTIFACT RECONCILIATION REQUIRED | Inspect existing workflow artifact and independently verify; no rebuild |
 | Archive PIT admission | BLOCKED | No independent historical publication-time proof |
 | 5Dollar Community qualification | QUALIFIED — READ-ONLY / NON-PIT | Workflow #43726672957: 59 tests passed; 2,505/2,505 fixture/result labels qualified across seven competitions; 28/40 requests; no side effects. Report SHA-256 `3bf4d797df92c293af6f346e296d3d76f7e7d9ec8988320d3992da1b5f6c668a`. Explicitly not PIT-certifiable and not pre-match feature evidence. |
-| 5Dollar opening-odds code | VERIFIED code correction/test at recorded checkpoint | Preserve; verify exact current-head CI |
-| 5Dollar opening-odds quote capture | IMPLEMENTED / NOT RUN | 763 candidate audit but zero quotes at that audit; bounded capture outstanding |
+| 5Dollar opening-odds code | VERIFIED — 26 FOCUSED TESTS PASS | Workflow #43727509783; 26 tests passed in 0.15s; exact PR head CI also passed. | Preserve; no rebuild. |
+| 5Dollar opening-odds quote capture | PARTIAL — FIRST BOUNDED BATCH VERIFIED | Workflow #43727509783: 25 quotes inserted/read back, all timestamp and identity checks pass; 25/763 = 3.28%. | 738 candidates remain; further runs max 25 fixture requests, no retries and fresh quota preflight. |
 | 5Dollar shadow capture | EXECUTED, NON-PIT | 671 rows observed; all non-PIT; duplicate protection worked |
 | Shadow ledger | IMPLEMENTED / PARTIAL | 25 shadow events, zero settlements in latest recorded count |
 | Settlement runner | IMPLEMENTED / WAITING FOR ELIGIBLE TARGETS | Manual-only; verify real settlement and post-commit evidence |
-| Historical odds entitlement | BLOCKED / NOT VERIFIED | No paid request before entitlement/quota/cost evidence |
+| Historical odds entitlement | BLOCKED / NOT VERIFIED | 5Dollar full tick-history endpoint requires Ultra; no entitlement/call. The Odds API has catalogue-only evidence, no event/historical request. |
 | Model foundations | IMPLEMENTED / NOT CERTIFIED | Require eligible PIT and prospective evaluation evidence |
 | Evaluation/certification verifier | IMPLEMENTED / NO MARKET CERTIFIED | Thresholds not met; no valid real certificate |
 | Portable report bundle | IMPLEMENTED / NOT RELEASE-ACCEPTED | Need signed manifest, trusted runtime wiring and real artifact |
@@ -345,7 +345,7 @@ The Stage 2 master ledger remains the operational queue. Preserve this order:
 3. Inspect existing OpenFootball and FootballData workflow artifacts and run their independent verifiers.
 4. Resolve any default-branch dispatch constraint without merging PR #120 merely to expose workflows.
 5. Run bounded 5Dollar opening-odds capture (maximum 25 fixture requests per run, no retries) only after safe dispatch and quota/rights guards are confirmed; reconcile persisted quotes.
-6. Reconcile crosswalk and historical odds gates using existing evidence only.
+6. Crosswalk reconciliation passed for the 763-fixture 5Dollar universe (exactly one active resolved mapping per fixture); historical odds gates remain blocked as documented.
 7. Publish one definitive Stage 2 exit report.
 
 Do not introduce new providers, architecture or unrelated features while closing Stage 2. After Stage 2, subsequent phases should append to this master register rather than create a competing source of truth.
@@ -389,3 +389,13 @@ At every continuation:
 - FootballData: 3 immutable source snapshots; 619 observation versions; 6 requests; 539 unique fixtures; 14 audited normalizations; 1 not-yet-eligible and 0 rejected results; independent verifier `PASS`. Artifact #14166223800; ZIP SHA-256 `d8156a30d6b2f49032c157378385508fc8eefad931023ab2845255877c352acf`.
 - Both packs are immutable CC0 archive evidence only. All observations are marked `point_in_time_certifiable=false`. OpenFootball commit timestamps are not independent first-public-availability evidence. FootballData's reported local match clock has unknown timezone, so `kickoff_at` remains null. Neither pack may be treated as a PIT pre-match feature set or used to satisfy chronological certification.
 - Both artifacts record no database or production writes. No publication, Telegram send or schedule activation occurred.
+
+
+## Stage 2 acquisition exit evidence — 2026-11-15
+- PR #120 remains open/draft/unmerged at head `70b1a8ef1742975464f74dfefcf8dac265d46d86`; exact-head CI checks passed, with daily-predictions skipped by design.
+- OpenFootball and FootballData archives: workflow #43727169566 and independent verifiers PASS; all archive rows remain non-PIT.
+- 5Dollar Community fixture/result qualification: 2,505/2,505 labels qualified read-only; non-PIT.
+- 5Dollar opening odds: workflow #43727509783, 26 focused tests passed; 25/25 Bet365 1X2 opening quotes inserted in staging; quota preflight Community 300/hour, 20/minute, remaining 299→274. Artifact #14166689086, ZIP SHA-256 `b8a6b0594294fdd4b6178ebab0e010c2a30fb15b87686c3ba30457dae82fd171`.
+- Crosswalk: all 763 eligible 90-day fixtures in the seven 5Dollar competitions have exactly one active RESOLVED fixture crosswalk. All 25 captured quotes match canonical fixture identity, bookmaker, market, prices and temporal order.
+- Coverage: 25/763 = 3.28%; 738 remain. 98% timestamped odds certification threshold is not met. 5Dollar historical ticks: 0. The Odds API: 3 catalogue-only responses; 0 event/historical odds responses. Historical tick/CLV reconstruction remains blocked.
+- **Stage 2 status: OPEN / NOT RELEASE-READY.** The acquisition exit report is issued, but historical odds coverage and entitlement gates remain open. No production writes, deployments, schedule activation, publication, Telegram sends or value betting unlock.
