@@ -335,7 +335,8 @@ def test_run_capture_orchestrates_mocked_pages_with_optional_staging_ledger(
             "ledger_event_count": 1,
             "ledger_head_sha256": "e" * 64,
             "chain_verified": True,
-        }\n            "post_commit_verified": True,\n        }
+            "post_commit_verified": True,
+        }
 
     monkeypatch.setattr(
         capture, "_persist_paper_predictions_to_staging",
@@ -358,6 +359,7 @@ def test_run_capture_orchestrates_mocked_pages_with_optional_staging_ledger(
     assert result["admitted_shadow_predictions"] == 1
     assert result["persisted_shadow_ledger_events"] == (1 if persist_staging else 0)
     assert result["paper_ledger_persisted_to_staging"] is persist_staging
+    assert result["paper_ledger_post_commit_verified"] is persist_staging
     assert result["database_writes"] is persist_staging
     assert len(persistence_calls) == (1 if persist_staging else 0)
     if persist_staging:
