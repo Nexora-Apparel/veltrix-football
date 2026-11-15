@@ -749,3 +749,76 @@ No paid upgrade, PR merge, production write/deploy, public prediction publicatio
 - Continue historical provider qualification and prospective quote capture without paid upgrades. Do not call the 5Dollar odds-history route unless a fresh status artifact proves Ultra.
 
 **No paid upgrade, PR merge, production write/deploy, public prediction publication, Telegram delivery, schedule activation or value-bet unlock.**
+
+
+## Superseding execution checkpoint — 2026-11-16 00:45 WAT
+
+This entry supersedes the prior 2026-11-15 status-only, fixture, feature-snapshot and forecast blockers where the evidence below now resolves them. Preserve the earlier entries as an audit trail; do not treat them as current state.
+
+### PR and code checkpoint
+- PR #120 remains OPEN, DRAFT and UNMERGED.
+- Integration branch: integration/v2-report-bundle-wiring-20261114.
+- Code HEAD at the start of this checkpoint: 179c0962cb84361f74c670151092e397d3b1c603. The subsequent master-ledger append is documentation-only.
+- Latest required CI at the recorded code HEAD was still running: Phase 5 Shadow Regression in progress; PostgreSQL 16/18 foundation acceptance in progress; certification evidence integrity in progress; Phase 2 foundation and AI Midas reconciliation queued; Historical Model Audit Tests passed; Daily Fixture Predictions skipped as intended. Do not merge until all required checks pass.
+- No merge, production deploy, Telegram delivery, schedule activation or public publication.
+
+### 5Dollar entitlement — verified without odds-history quota
+- GitHub Actions run 43775297650 executed the isolated status-only request. Exactly one authenticated GET /v1/status call was made.
+- HTTP 200; exact plan field: community. Entitlement is ACTIVE, but Ultra is NOT VERIFIED.
+- Rate limit: 300/hour; burst: 20/minute; daily quota was not reported. The response header showed 299 remaining in the current hourly window.
+- No leagues, fixtures, odds or odds-history endpoint was called. A fresh staging audit reports zero 5Dollar odds-history requests.
+- Raw response and evidence were persisted to staging: provider_entitlement_observations.id=5; provider_responses.id=1292; request_id=github-actions:43775297650; checked_at=2026-11-15T23:33:27.239666Z; raw response SHA-256 0528c7de950462f3423311b2e23f73ab9cd523d8425e5631b7c182a56079305e; evidence SHA-256 93dcca6cc11aa872e48b9651f0806b884ceff7d5c174152639ce6a382ab494b2.
+- No upgrade was purchased or attempted. Do not call any Ultra-only history endpoint on this Community entitlement.
+- The previous manual-dispatch blocker is resolved for this verification: the status-only script was invoked once from the existing push-triggered Phase 4 workflow using a commit-message gate. The dedicated manual workflow remains in the branch, but no manual dispatch is required for the completed check.
+
+### Upcoming fixture and PIT feature reconciliation
+- Canonical staging fixture set: 25 upcoming 5Dollar fixtures across six competitions; 25 exact provider fixture-ID crosswalks remain resolved. Kickoff window remains 2026-11-18T22:30:00Z through 2026-11-21T15:00:00Z.
+- OpenPlay derived feature bundle: 20,178 feature rows, with source, response, asset, crosswalk and rights provenance.
+- Seven targets pass exact home-team, away-team and competition identity requirements and have five eligible historical match rows for each side. Eighteen remain excluded; do not fill them with generic priors or guessed identities.
+- Feature snapshot admission succeeded in Phase 4. Latest staging read-back: 42 immutable feature snapshots, 420 links and 42 ELIGIBLE events, representing seven distinct target fixtures. Repeated early workflow executions created redundant snapshot attempts; the writer now uses stable content identity and verifies existing links before reuse. The next Phase 4 run is the integration check for reuse and forecast no-op behavior.
+- The first seven forecast snapshots were IDs 15–21. Later stable-key snapshots are IDs 36–42. No snapshot or eligibility event was deleted or rewritten.
+
+### New V2 prospective forecast series
+- New independent model: veltrix-openplay-xg-poisson-v1; formula: symmetric_recent_xg_attack_defence_v1. Model artifact SHA-256: 0332c653... (exact full hash is retained in the workflow artifact).
+- No legacy results-Poisson model, global prior, generic fallback or bookmaker odds input was used. The model requires both teams' recent xG and xG-against rows and produces 1X2, BTTS and O/U 2.5 probabilities.
+- First forecast workflow run 43775129579 appended seven new PREDICTION events to ledger veltrix-v2-prospective-observed. Fresh-connection post-commit verification and full ledger-chain verification passed.
+- Seven forecasts: Athletic Club–Espanyol; Chelsea–Leeds; Tottenham–Ipswich; Como–Cagliari; Lazio–Lecce; Manchester City–Fulham; Troyes–Le Havre.
+- Later run 43775920990 confirmed the seven forecast keys already existed and appended no duplicates. Forecast runner is being hardened to exclude already-recorded fixture/model pairs before generation and verify exact evidence hashes; the current code HEAD's integration run is pending.
+- Current paper ledger read-back: 7 PREDICTION events for veltrix-openplay-xg-poisson-v1 plus 25 untouched legacy SHADOW_PREDICTION events for veltrix-results-poisson-v1. Do not merge these series or relabel the legacy events.
+- The model is prospective research only. It has not passed chronological walk-forward validation or calibration. Value betting remains LOCKED; no public website or Telegram publication.
+
+### AI Midas temporal qualification
+- AI Midas remains an authorised source for historical statistics and additional odds, including Brazil Série B identity work.
+- Current staging has 14 AI Midas archive asset observations (7 season-match CSVs, 6 historical-match CSVs, 1 advanced-team-match CSV), all first recorded by VELTRIX at 2026-11-15T19:41:43.265Z. Source timestamp basis is unknown and point_in_time_certifiable is false.
+- Identity reconciliation remains 369 resolved fixture mappings and 20 resolved team mappings. This does not certify bookmaker-specific closing odds or historical PIT availability.
+- Retain for authorised historical research. Do not promote to PIT_CERTIFIED historical training evidence. A distinct prospective archive-as-of-import evidence class may be evaluated separately; the current seven-forecast series does not use AI Midas.
+
+### Timestamped odds and settlement
+- Existing 5Dollar opening evidence: 788 timestamped, PIT-marked OPENING quote observations. These are not closing quotes and do not qualify for CLV.
+- Dedicated odds_quote_observations table remains The Odds API-specific and contains 0 rows.
+- The Odds API approval is active for five European competitions. Last no-cost sports-catalogue probe (2026-11-15 13:21 UTC) recorded 205 used / 295 remaining credits and all five approved sport keys. Monthly allowance is null and billing-period boundaries are NOT ESTABLISHED; no provider_credit_budget_snapshots row exists. Do not spend live odds credits until billing-period boundaries and hard caps are verified and a reservation snapshot is recorded.
+- Public documentation re-audit recorded in docs/VELTRIX_V2_CLOSING_ODDS_PROVIDER_COMPARATIVE_QUALIFICATION_2026-11-15.md. The Odds API historical endpoint is paid-only and the existing account previously returned HTTP 401. Odds-API.io event-level history is a possible no-purchase route only if an existing key is found; repository search found no such key. No account or plan purchase.
+- No new closing-odds capture was performed. No odds-history quota was spent.
+- All 25 upcoming fixtures remain scheduled/future. No prospective prediction has reached a genuine FINISHED result; zero new settlements. Do not settle historical fixture rows that have no corresponding prospective paper prediction.
+
+### Current staging evidence summary
+- Upcoming canonical fixtures: 25; exact 5Dollar fixture crosswalks: 25.
+- Feature snapshots: 42; distinct target fixtures: 7; links: 420; eligibility events: 42, all ELIGIBLE.
+- New V2 PREDICTION events: 7.
+- Legacy SHADOW_PREDICTION events: 25, unchanged.
+- Timestamped 5Dollar opening quotes: 788.
+- The Odds API dedicated quote rows: 0.
+- Settlements: 0.
+- 5Dollar odds-history requests: 0.
+
+### Unchanged certification gates
+Each market still requires at least 1,000 chronological walk-forward matches; at least 300 prospective settled selections over at least 90 distinct dates; at least 98% timestamped bookmaker-specific odds coverage; positive net ROI with a positive lower 95% confidence bound; and 1X2 Brier score and log loss better than the de-vigged bookmaker benchmark. None of these gates is met by the current seven-forecast series. Value betting remains LOCKED.
+
+### Next execution
+1. Finish CI at the current code HEAD and verify the idempotent snapshot-reuse / already-forecasted no-op workflow.
+2. Keep The Odds API live capture blocked until its billing cycle and hard credit caps are established; keep 5Dollar odds-history blocked on Community.
+3. Continue no-purchase historical provider qualification and exact identity coverage expansion; do not promote AI Midas archive timestamps to historical PIT.
+4. Keep collecting timestamped opening/current quotes only through approved providers with valid quota reservations. Preserve opening vs closing roles.
+5. Revisit settlement only after one of the seven prospective forecast fixtures is genuinely FINISHED and exact provider settlement evidence is present.
+
+**No paid upgrade, no history endpoint call, no public publication, no Telegram send, no schedule activation, no production write and no value-bet unlock.**
