@@ -28,7 +28,8 @@ def make_approval():
     )
 
 
-def make_fixture(*, provider_fixture_id="777", home_team="11", retrieved=None):
+def make_fixture(*, provider_fixture_id="777", home_team="11", retrieved=None,
+                 response_sha256=None, capture_manifest_sha256=None):
     kickoff = NOW - timedelta(days=1)
     retrieved = retrieved or NOW - timedelta(minutes=5)
     payload = {
@@ -49,6 +50,8 @@ def make_fixture(*, provider_fixture_id="777", home_team="11", retrieved=None):
         available_at_utc=kickoff + timedelta(days=4),
         availability_basis="provider_finished_status_conservative_4d",
         point_in_time_certifiable=False, rights_approval_id="approval-5dollar",
+        response_sha256=response_sha256,
+        capture_manifest_sha256=capture_manifest_sha256,
     )
 
 
@@ -80,8 +83,9 @@ def make_ledger():
 
 def test_reconciles_exact_finished_result_using_first_observed_time():
     ledger = make_ledger()
+    fixture = make_fixture(response_sha256="d" * 64, capture_manifest_sha256="e" * 64)
     appended, quarantined = reconcile_finished_fixtures(
-        ledger, [make_fixture()], make_approval(), recorded_at=NOW,
+        ledger, [fixture], make_approval(), recorded_at=NOW,
     )
     assert len(appended) == 1
     assert quarantined == ()
@@ -91,6 +95,8 @@ def test_reconciles_exact_finished_result_using_first_observed_time():
     assert settlement.payload["result_available_at"] == settlement.payload["result_retrieved_at"]
     assert settlement.payload["settlement_delay_basis"] == "collector_first_observed_v1"
     assert settlement.payload["home_goals"] == 2
+    assert settlement.payload["result_response_sha256"] == "d" * 64
+    assert settlement.payload["result_capture_manifest_sha256"] == "e" * 64
     assert ledger.verify_chain()
 
 
