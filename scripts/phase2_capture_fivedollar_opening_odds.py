@@ -280,7 +280,7 @@ def _load_targets(connection, *, mode: str, lookback_days: int, future_days: int
                       ON pr.provider=%s AND pr.source_id=%s
                      AND pr.http_status=200 AND pr.request_params->>'status'='scheduled'
                      AND pr.fetched_at >= %s
-                     AND pr.request_id LIKE '%' || c.provider_competition_id || '-scheduled-1'
+                     AND POSITION(c.provider_competition_id || '-scheduled-1' IN pr.request_id) > 0
                      AND EXISTS (
                         SELECT 1
                         FROM jsonb_array_elements(convert_from(pr.raw_body,'UTF8')::jsonb->'data') fx
