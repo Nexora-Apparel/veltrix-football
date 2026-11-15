@@ -131,19 +131,35 @@ Git blob SHA is recorded as the immutable repository object identifier; it is no
 
 **Not performed:** Neon writes, production imports, model training, prediction changes, deployment, schedule activation, Telegram delivery or PR merge.
 
-## 8. Immutable snapshot execution — 2026-11-15
+## 8. Brazil Série B crosswalk audit — read-only staging comparison
+
+The AI Midas 2026 Brazil Série B advanced-statistics file was reconciled against the canonical 5DollarFootballAPI Brazil Série B fixture registry using a read-only query on Neon project `withered-sky-75161174`, branch `br-silent-violet-bc5de88s` (`veltrix-phase3-import-dry-run`), database `veltrix_football_staging`. No rows were inserted or updated.
+
+- Canonical competition: Brazil Série B; 5Dollar provider competition ID `522514093`.
+- Canonical 2026 fixture universe in this branch: **371 fixtures**, all FINISHED and with canonical result rows; 20 distinct teams.
+- AI Midas source: **369 distinct matches**, 738 team rows.
+- Team identity: **20/20 source teams** map to the canonical team registry after accent/spelling normalization. Ten source labels required aliases: América Mineiro → America MG; Atlético Goianiense → Atletico GO; Avaí → Avai; Ceará → Ceara; Criciúma → Criciuma; Cuiabá → Cuiaba; Goiás → Goias; Náutico → Nautico; Operário PR → Operario PR; São Bernardo → Sao Bernardo.
+- Fixture identity: **369/369** source matches map to one unique canonical fixture; **0 unmatched, 0 ambiguous, 369 distinct fixture IDs**.
+- Score reconciliation: **369/369** AI Midas match labels agree with the canonical 5Dollar result; no canonical result is missing.
+- Date reconciliation: all 369 source date values fall within one UTC calendar day of the canonical kickoff date; 333 share the same UTC date and 36 are one UTC day later. This confirms the source date is not a UTC kickoff timestamp.
+- Coverage against the inspected 371-fixture canonical universe: **369/371 = 99.46%**. Two canonical fixtures are absent from the AI Midas file. The source file ends on 2026-11-08, while the canonical fixture universe extends to 2026-11-11.
+
+This is a verified identity crosswalk result, not a PIT admission. Keep the source date-only value unchanged; do not convert it to UTC or use it as a precise kickoff time. The two missing fixtures remain missing; no imputation is permitted.
+
+## 9. Immutable snapshot execution — 2026-11-15
 
 - Added `scripts/veltrix_v2/collect_aimidas_snapshot.py` and `scripts/veltrix_v2/verify_aimidas_snapshot.py`.
 - Added `tests/veltrix_v2/test_aimidas_snapshot.py`: **7 passed**.
-- Added manual-free, no-key workflow `.github/workflows/phase2-aimidas-snapshot-audit.yml`, triggered only by relevant integration-branch pushes; no schedule, API secret, database connection or production permission is configured.
-- Workflow [#43752239352](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752239352) completed **success** on code commit `4d431594b3f678781acc68a8a18232351e93a862`.
+- Added no-key workflow `.github/workflows/phase2-aimidas-snapshot-audit.yml`, triggered only by relevant integration-branch pushes; no schedule or provider API secret is used.
+- Workflow [#43752239352](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752239352) first passed the collector/verifier but uploaded a raw-source artifact. That artifact was deleted by the subsequent privacy correction; the prior run now has no artifacts.
+- Workflow [#43752435643](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752435643) completed **success** on code commit `4b666d6666b0aaf32daaa60a6ffb75cc2d76a306`. The cleanup step confirmed deletion of the prior raw artifact.
 - Collector captured **14/14 pinned CSV files**, 11,599,486 source bytes, with expected Git blob SHA-1 checks and SHA-256 manifests. Independent offline verifier reproduced all 14 CSV audits and returned `PASS`.
-- Artifact [#14176128656](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752239352/artifacts/14176128656), `veltrix-stage2-aimidas-snapshot-pack`, ZIP SHA-256 `dca676cb75ab395f27f5149694dd3e8cac9f2b0349aff1d83a7cf225408563bb`, retained until 2027-02-13.
-- Workflow output confirms `database_written=false`, `production_written=false`, `model_admitted=false`, `predictions_changed=false`, `point_in_time_certifiable=false`. The artifact is an immutable research snapshot, not a Neon import or PIT evidence.
+- The public artifact now contains **only** `manifest.json` and `verification.json`; the 11.6 MB raw snapshots remain ephemeral on the runner and are not uploaded. Artifact [#14176976339](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752435643/artifacts/14176976339), ZIP SHA-256 `54ce4e05d6fd84f410c6723c181030ecde4376a10003ed6523ff9b536591b595`.
+- Workflow output confirms `database_written=false`, `production_written=false`, `model_admitted=false`, `predictions_changed=false`, `point_in_time_certifiable=false`. The metadata artifact is not a Neon import or PIT evidence.
 
 ### Remaining bounded actions
 
-1. Build exact team/competition/date crosswalk candidates for Brazil Série B and quarantine ambiguous matches.
+1. Design a staging-only feature/observation import contract for AI Midas, preserving the raw file hashes, source date and actual Veltrix retrieval time; do not write to production.
 2. Keep the 2016–2025 Brazil Série B historical gap explicit; do not silently substitute Brazil Série A or Italy Serie B.
 3. Keep average odds separate from bookmaker quote observations and continue searching for timestamped closing odds.
 4. Admit only leakage-safe features for future cutoffs after the actual Veltrix import timestamp; keep retrospective walk-forward certification blocked.
