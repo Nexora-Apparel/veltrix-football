@@ -138,33 +138,37 @@ def _write_and_verify_assets(cur, root: Path) -> dict[str, dict[str, Any]]:
     """, (PROVIDER,SOURCE_ID,PROVIDER,SOURCE_ID))
     expected = set(PARQUET_ROWS) | set(CSV_FILES)
     assets: dict[str, dict[str, Any]] = {}
-    for (response_id,endpoint,response_hash,raw,observation_id,payload,payload_hash,
-         recorded_at,retrieved_at,rights_id,pit,published_at,linked_response_id) in cur.fetchall():
-        name = endpoint.rsplit("/", 1)[-1]
-        if name not in expected or name in assets:
-            raise RuntimeError("OPENPLAY_STAGING_ASSET_SET_INVALID")
-        raw_bytes = bytes(raw)
-        actual = sha256(raw_bytes)
-        if (actual != response_hash.strip() or payload.get("asset_sha256") != actual
-            or sha256(canonical_json(payload)) != payload_hash.strip()
-            or linked_response_id != response_id or rights_id != APPROVAL_ID
-            or pit is not False or published_at is not None
-            or payload.get("tag_commit") != TAG_COMMIT
-            or payload.get("commercial_use_allowed") is not False
-            or payload.get("monetisation_prohibited") is not True):
-            raise RuntimeError("OPENPLAY_STAGING_ASSET_PROVENANCE_INVALID:" + name)
-        expected_rows = PARQUET_ROWS.get(name)
-        if payload.get("row_count") != expected_rows:
-            raise RuntimeError("OPENPLAY_STAGING_ASSET_ROW_COUNT_METADATA_INVALID:" + name)
-        (root / name).write_bytes(raw_bytes)
-        assets[name] = {
-            "asset_name": name, "sha256": actual, "bytes": len(raw_bytes),
-            "provider_response_id": int(response_id),
-            "source_observation_id": int(observation_id),
-            "source_observation_payload_sha256": payload_hash.strip(),
-            "recorded_at": iso(recorded_at), "retrieved_at": iso(retrieved_at),
-            "row_count": expected_rows,
-        }
+    while True:
+        batch = cur.fetchmany(1)
+        if not batch:
+            break
+        for (response_id,endpoint,response_hash,raw,observation_id,payload,payload_hash,
+             recorded_at,retrieved_at,rights_id,pit,published_at,linked_response_id) in batch:
+            name = endpoint.rsplit("/", 1)[-1]
+            if name not in expected or name in assets:
+                raise RuntimeError("OPENPLAY_STAGING_ASSET_SET_INVALID")
+            raw_bytes = bytes(raw)
+            actual = sha256(raw_bytes)
+            if (actual != response_hash.strip() or payload.get("asset_sha256") != actual
+                or sha256(canonical_json(payload)) != payload_hash.strip()
+                or linked_response_id != response_id or rights_id != APPROVAL_ID
+                or pit is not False or published_at is not None
+                or payload.get("tag_commit") != TAG_COMMIT
+                or payload.get("commercial_use_allowed") is not False
+                or payload.get("monetisation_prohibited") is not True):
+                raise RuntimeError("OPENPLAY_STAGING_ASSET_PROVENANCE_INVALID:" + name)
+            expected_rows = PARQUET_ROWS.get(name)
+            if payload.get("row_count") != expected_rows:
+                raise RuntimeError("OPENPLAY_STAGING_ASSET_ROW_COUNT_METADATA_INVALID:" + name)
+            (root / name).write_bytes(raw_bytes)
+            assets[name] = {
+                "asset_name": name, "sha256": actual, "bytes": len(raw_bytes),
+                "provider_response_id": int(response_id),
+                "source_observation_id": int(observation_id),
+                "source_observation_payload_sha256": payload_hash.strip(),
+                "recorded_at": iso(recorded_at), "retrieved_at": iso(retrieved_at),
+                "row_count": expected_rows,
+            }
     if set(assets) != expected or len(assets) != 15:
         raise RuntimeError("OPENPLAY_STAGING_ASSET_SET_INCOMPLETE")
     return assets
@@ -372,13 +376,20 @@ def build_feature_rows_from_assets(
         exclusions["known_gap_and_data_issue_match_ids"] = len(excluded)
         duplicate_report = _duplicate_counts(db, root)
 
+        xg_models = {
+            row[0] for row in db.execute(
+                "SELECT DISTINCT xg_model FROM read_parquet(?)",
+                [str(root / "matches.parquet")],
+            ).fetchall()
+        }
+        if xg_models != {OPENPLAY_XG_MODEL}:
+            raise RuntimeError("OPENPLAY_XG_MODEL_SET_MISMATCH")
         matches_cursor = db.cursor()
         matches_cursor.execute("""
             SELECT * FROM read_parquet(?)
             WHERE in_v1_scope IS TRUE AND score_matches_events IS TRUE
-              AND xg_model = ?
             ORDER BY CAST(match_id AS BIGINT)
-        """, [str(root / "matches.parquet"), OPENPLAY_XG_MODEL])
+        """, [str(root / "matches.parquet")])
         table_streams = {
             filename: MatchGroupStream(_filtered_cursor(db, root, filename))
             for filename in TABLE_KEYS
@@ -507,7 +518,11 @@ def build_feature_rows_from_assets(
     finally:
         db.close()
 
-    rows_digest = hashlib.sha256(rows_path.read_bytes()).hexdigest()
+    rows_hasher = hashlib.sha256()
+    with rows_path.open("rb") as rows_handle:
+        for chunk in iter(lambda: rows_handle.read(1024 * 1024), b""):
+            rows_hasher.update(chunk)
+    rows_digest = rows_hasher.hexdigest()
     manifest = {
         "status": "PASS_STAGING_FEATURE_BUNDLE",
         "provider": PROVIDER, "source_id": SOURCE_ID,
