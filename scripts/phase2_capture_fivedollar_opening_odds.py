@@ -183,6 +183,162 @@ def _load_targets(connection, *, mode: str, lookback_days: int, future_days: int
     if not scope or "*" in scope:
         raise PermissionError("OPENING_ODDS_COMPETITION_SCOPE_INVALID")
     with connection.cursor() as cur:
+        if mode == "prospective":
+            cur.execute("""
+                SELECT COUNT(DISTINCT e.payload->>'target_source_fixture_id')
+                FROM paper_ledger_events e
+                WHERE e.ledger_id='veltrix-v2-prospective-observed'
+                  AND e.event_type='SHADOW_PREDICTION'
+                  AND e.payload->>'target_provider'=%s
+                  AND e.payload->>'target_source_id'=%s
+                  AND e.payload->>'target_provider_competition_id'=ANY(%s::text[])
+                  AND (e.payload->>'kickoff_at')::timestamptz >= %s
+                  AND (e.payload->>'kickoff_at')::timestamptz < %s
+                  AND e.payload ? 'target_response_sha256'
+                  AND e.payload ? 'target_capture_manifest_sha256'
+                  AND NOT EXISTS (
+                    SELECT 1 FROM source_observations o
+                    WHERE o.provider=%s AND o.source_id=%s
+                      AND o.entity_type='odds_opening_quote'
+                      AND o.provider_entity_id=e.payload->>'target_source_fixture_id'
+                  )
+            """, (PROVIDER, SOURCE_ID, scope, window_start, window_end, PROVIDER, SOURCE_ID))
+            candidate_count = int(cur.fetchone()[0] or 0)
+            cur.execute("""
+                WITH candidates AS (
+                    SELECT
+                        e.fixture_id AS ledger_fixture_id,
+                        e.event_sha256 AS source_prediction_event_sha256,
+                        e.payload->>'target_source_fixture_id' AS provider_fixture_id,
+                        e.payload->>'target_provider_competition_id' AS provider_competition_id,
+                        (e.payload->>'competition_id')::bigint AS canonical_competition_id,
+                        (e.payload->>'home_team_id')::bigint AS canonical_home_team_id,
+                        (e.payload->>'away_team_id')::bigint AS canonical_away_team_id,
+                        (e.payload->>'kickoff_at')::timestamptz AS kickoff_at,
+                        (e.payload->>'prediction_cutoff_at')::timestamptz AS prediction_cutoff_at,
+                        e.payload->>'evidence_class' AS prediction_evidence_class,
+                        CASE WHEN e.payload->>'point_in_time_certifiable' IN ('true','false')
+                             THEN (e.payload->>'point_in_time_certifiable')::boolean
+                             ELSE false END AS prediction_point_in_time_certifiable,
+                        e.payload->>'target_response_sha256' AS original_target_response_sha256,
+                        e.payload->>'target_capture_manifest_sha256' AS original_target_manifest_sha256
+                    FROM paper_ledger_events e
+                    WHERE e.ledger_id='veltrix-v2-prospective-observed'
+                      AND e.event_type='SHADOW_PREDICTION'
+                      AND e.payload->>'target_provider'=%s
+                      AND e.payload->>'target_source_id'=%s
+                      AND e.payload->>'target_provider_competition_id'=ANY(%s::text[])
+                      AND (e.payload->>'kickoff_at')::timestamptz >= %s
+                      AND (e.payload->>'kickoff_at')::timestamptz < %s
+                      AND e.payload ? 'target_response_sha256'
+                      AND e.payload ? 'target_capture_manifest_sha256'
+                      AND NOT EXISTS (
+                        SELECT 1 FROM source_observations o
+                        WHERE o.provider=%s AND o.source_id=%s
+                          AND o.entity_type='odds_opening_quote'
+                          AND o.provider_entity_id=e.payload->>'target_source_fixture_id'
+                      )
+                ),
+                verified AS (
+                    SELECT
+                        c.*,
+                        ht.provider_team_id AS provider_home_team_id,
+                        at.provider_team_id AS provider_away_team_id,
+                        comp.provider_competition_id,
+                        hx.crosswalk_version_id AS home_team_crosswalk_version_id,
+                        hx.evidence_observation_id AS home_team_evidence_observation_id,
+                        ax.crosswalk_version_id AS away_team_crosswalk_version_id,
+                        ax.evidence_observation_id AS away_team_evidence_observation_id,
+                        cx.crosswalk_version_id AS competition_crosswalk_version_id,
+                        cx.evidence_observation_id AS competition_evidence_observation_id,
+                        pr.id AS current_snapshot_provider_response_id,
+                        pr.request_id AS current_snapshot_request_id,
+                        pr.response_sha256 AS current_snapshot_response_sha256,
+                        pr.fetched_at AS current_snapshot_fetched_at
+                    FROM candidates c
+                    JOIN teams ht ON ht.id=c.canonical_home_team_id AND ht.provider=%s
+                    JOIN teams at ON at.id=c.canonical_away_team_id AND at.provider=%s
+                    JOIN competitions comp ON comp.id=c.canonical_competition_id
+                      AND comp.provider=%s
+                      AND comp.provider_competition_id=c.provider_competition_id
+                    JOIN entity_crosswalk_versions hx
+                      ON hx.entity_type='TEAM' AND hx.provider=%s AND hx.source_id=%s
+                     AND hx.provider_entity_id=ht.provider_team_id
+                     AND hx.canonical_entity_key=ht.id::text AND hx.mapping_status='RESOLVED'
+                     AND hx.valid_from<=%s AND (hx.valid_until IS NULL OR hx.valid_until>%s)
+                    JOIN entity_crosswalk_versions ax
+                      ON ax.entity_type='TEAM' AND ax.provider=%s AND ax.source_id=%s
+                     AND ax.provider_entity_id=at.provider_team_id
+                     AND ax.canonical_entity_key=at.id::text AND ax.mapping_status='RESOLVED'
+                     AND ax.valid_from<=%s AND (ax.valid_until IS NULL OR ax.valid_until>%s)
+                    JOIN entity_crosswalk_versions cx
+                      ON cx.entity_type='COMPETITION' AND cx.provider=%s AND cx.source_id=%s
+                     AND cx.provider_entity_id=comp.provider_competition_id
+                     AND cx.canonical_entity_key=comp.id::text AND cx.mapping_status='RESOLVED'
+                     AND cx.valid_from<=%s AND (cx.valid_until IS NULL OR cx.valid_until>%s)
+                    JOIN provider_responses pr
+                      ON pr.provider=%s AND pr.source_id=%s
+                     AND pr.http_status=200 AND pr.request_params->>'status'='scheduled'
+                     AND pr.fetched_at >= %s
+                     AND pr.request_id LIKE '%' || c.provider_competition_id || '-scheduled-1'
+                     AND EXISTS (
+                        SELECT 1
+                        FROM jsonb_array_elements(convert_from(pr.raw_body,'UTF8')::jsonb->'data') fx
+                        WHERE fx->>'id'=c.provider_fixture_id
+                          AND fx->'teams'->'home'->>'id'=ht.provider_team_id
+                          AND fx->'teams'->'away'->>'id'=at.provider_team_id
+                          AND fx->'league'->>'id'=comp.provider_competition_id
+                          AND (fx->>'kickoff_utc')::timestamptz=c.kickoff_at
+                     )
+                )
+                SELECT
+                    NULL::bigint AS id,
+                    ledger_fixture_id,
+                    provider_fixture_id,
+                    canonical_competition_id AS competition_id,
+                    kickoff_at,
+                    NULL::text AS season_key,
+                    NULL::bigint AS crosswalk_version_id,
+                    NULL::text AS canonical_fixture_id,
+                    provider_home_team_id,
+                    provider_away_team_id,
+                    provider_competition_id,
+                    source_prediction_event_sha256,
+                    prediction_cutoff_at,
+                    prediction_evidence_class,
+                    prediction_point_in_time_certifiable,
+                    original_target_response_sha256,
+                    original_target_manifest_sha256,
+                    current_snapshot_provider_response_id,
+                    current_snapshot_request_id,
+                    current_snapshot_response_sha256,
+                    current_snapshot_fetched_at,
+                    home_team_crosswalk_version_id,
+                    home_team_evidence_observation_id,
+                    away_team_crosswalk_version_id,
+                    away_team_evidence_observation_id,
+                    competition_crosswalk_version_id,
+                    competition_evidence_observation_id
+                FROM verified
+                ORDER BY kickoff_at ASC,provider_fixture_id
+                LIMIT %s
+            """, (
+                PROVIDER, SOURCE_ID, scope, window_start, window_end, PROVIDER, SOURCE_ID,
+                PROVIDER, PROVIDER, PROVIDER,
+                PROVIDER, SOURCE_ID, now, now, PROVIDER, SOURCE_ID, now, now,
+                PROVIDER, SOURCE_ID, now, now,
+                PROVIDER, SOURCE_ID, now - timedelta(hours=24), limit,
+            ))
+            rows = cur.fetchall()
+            names = [c.name for c in cur.description]
+            if len(rows) != min(candidate_count, limit):
+                raise RuntimeError("PROSPECTIVE_SHADOW_TARGET_EVIDENCE_INCOMPLETE")
+            targets = [dict(zip(names, row)) for row in rows]
+            provider_ids = [str(t["provider_fixture_id"]) for t in targets]
+            if len(provider_ids) != len(set(provider_ids)):
+                raise RuntimeError("PROSPECTIVE_SHADOW_TARGET_DUPLICATE")
+            return targets
+
         cur.execute("""
             SELECT f.id,f.provider_fixture_id,f.competition_id,f.kickoff_at,
                    f.season_key,x.crosswalk_version_id,x.valid_from,x.valid_until,
@@ -332,7 +488,29 @@ def _persist_capture(connection, *, manifest_id: int, target: dict, raw: bytes,
                          and opened_at <= retrieved_at)
     payload = {
         "fixture_id": observation.fixture_id,
-        "canonical_fixture_id": str(target["id"]),
+        "canonical_fixture_id": target.get("canonical_fixture_id") or (str(target["id"]) if target.get("id") is not None else None),
+        "prospective_ledger_fixture_id": target.get("ledger_fixture_id"),
+        "source_prediction_event_sha256": target.get("source_prediction_event_sha256"),
+        "source_prediction_evidence_class": target.get("prediction_evidence_class"),
+        "source_prediction_point_in_time_certifiable": target.get("prediction_point_in_time_certifiable"),
+        "source_prediction_cutoff_at": target.get("prediction_cutoff_at").isoformat() if target.get("prediction_cutoff_at") else None,
+        "original_target_response_sha256": target.get("original_target_response_sha256"),
+        "original_target_manifest_sha256": target.get("original_target_manifest_sha256"),
+        "current_fixture_snapshot_provider_response_id": target.get("current_snapshot_provider_response_id"),
+        "current_fixture_snapshot_request_id": target.get("current_snapshot_request_id"),
+        "current_fixture_snapshot_response_sha256": target.get("current_snapshot_response_sha256"),
+        "current_fixture_snapshot_fetched_at": target.get("current_snapshot_fetched_at").isoformat() if target.get("current_snapshot_fetched_at") else None,
+        "home_team_crosswalk_version_id": target.get("home_team_crosswalk_version_id"),
+        "home_team_evidence_observation_id": target.get("home_team_evidence_observation_id"),
+        "away_team_crosswalk_version_id": target.get("away_team_crosswalk_version_id"),
+        "away_team_evidence_observation_id": target.get("away_team_evidence_observation_id"),
+        "competition_crosswalk_version_id": target.get("competition_crosswalk_version_id"),
+        "competition_evidence_observation_id": target.get("competition_evidence_observation_id"),
+        "market_selection_eligible": False,
+        "clv_eligible": False,
+        "captured_after_associated_prediction_cutoff": bool(
+            target.get("prediction_cutoff_at") and retrieved_at > target["prediction_cutoff_at"]
+        ),
         "bookmaker": observation.bookmaker_slug,
         "market": observation.market,
         "home_price": str(observation.home_price) if observation.home_price is not None else None,
@@ -407,9 +585,18 @@ def _persist_capture(connection, *, manifest_id: int, target: dict, raw: bytes,
             "provider_timestamp" if opened_at else "unknown",
         ))
         inserted = cur.fetchone() is not None
+    market_selection_eligible = bool(
+        target.get("ledger_fixture_id")
+        and target.get("prediction_point_in_time_certifiable") is True
+        and target.get("prediction_cutoff_at") is not None
+        and retrieved_at <= target["prediction_cutoff_at"]
+        and point_in_time
+    )
     return {
         "response_id": response_id, "response_sha256": response_hash,
         "point_in_time_certifiable": point_in_time, "observation_inserted": inserted,
+        "market_selection_eligible": market_selection_eligible,
+        "clv_eligible": False,
         "quota_remaining": quota_remaining, "quota_used": quota_used,
         "diagnostics": [d.code for d in parsed.diagnostics],
     }
@@ -450,9 +637,15 @@ def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
             )
         target_manifest = [
             {"provider_fixture_id":str(t["provider_fixture_id"]),
-             "canonical_fixture_id":str(t["id"]),
+             "canonical_fixture_id":t.get("canonical_fixture_id") or (str(t["id"]) if t.get("id") is not None else None),
+             "prospective_ledger_fixture_id":t.get("ledger_fixture_id"),
+             "source_prediction_event_sha256":t.get("source_prediction_event_sha256"),
+             "current_snapshot_response_sha256":t.get("current_snapshot_response_sha256"),
              "kickoff_at":t["kickoff_at"].isoformat(),
-             "crosswalk_version_id":t["crosswalk_version_id"]}
+             "crosswalk_version_id":t.get("crosswalk_version_id"),
+             "home_team_crosswalk_version_id":t.get("home_team_crosswalk_version_id"),
+             "away_team_crosswalk_version_id":t.get("away_team_crosswalk_version_id"),
+             "competition_crosswalk_version_id":t.get("competition_crosswalk_version_id")}
             for t in targets
         ]
         manifest_body = {
@@ -534,6 +727,12 @@ def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
             "quotes_ineligible":sum(not r["point_in_time_certifiable"] for r in results),
             "observations_inserted":sum(r["observation_inserted"] for r in results),
             "duplicate_responses":sum(not r["observation_inserted"] for r in results),
+            "associated_forecast_records":len(targets) if mode == "prospective" else 0,
+            "associated_forecast_pit_certifiable":sum(
+                1 for t in targets if t.get("prediction_point_in_time_certifiable") is True
+            ) if mode == "prospective" else 0,
+            "market_selection_eligible_quotes":sum(bool(r.get("market_selection_eligible")) for r in results),
+            "clv_eligible_quotes":sum(bool(r.get("clv_eligible")) for r in results),
             "quota_remaining_after_last":results[-1]["quota_remaining"] if results else None,
             "commercial_use_allowed":False,"monetisation_prohibited":True,
             "publication":False,"telegram":False,"schedule_activation":False,

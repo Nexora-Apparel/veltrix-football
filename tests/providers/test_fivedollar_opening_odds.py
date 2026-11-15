@@ -128,10 +128,16 @@ def test_prospective_target_window_starts_now_and_ends_within_seven_days(monkeyp
     )
 
     class Cursor:
-        description = ()
+        def __init__(self): self.calls = []; self.rows = []; self.description = ()
         def __enter__(self): return self
         def __exit__(self, exc_type, exc, traceback): return False
-        def execute(self, sql, params): self.sql, self.params = sql, params
+        def execute(self, sql, params):
+            self.calls.append((sql, params))
+            if "COUNT(DISTINCT e.payload->>'target_source_fixture_id')" in sql:
+                self.rows = [(0,)]
+            else:
+                self.rows = []
+        def fetchone(self): return self.rows[0]
         def fetchall(self): return []
 
     class Connection:
@@ -143,10 +149,80 @@ def test_prospective_target_window_starts_now_and_ends_within_seven_days(monkeyp
         connection, mode="prospective", lookback_days=90, future_days=7,
         limit=25, now=RETRIEVED,
     )
-    params = connection.cursor_instance.params
-    assert params[5] == RETRIEVED
-    assert params[6] == RETRIEVED + timedelta(days=7)
-    assert params[7] == ["522514093"]
+    params = connection.cursor_instance.calls[0][1]
+    assert params[3] == RETRIEVED
+    assert params[4] == RETRIEVED + timedelta(days=7)
+    assert params[2] == ["522514093"]
+
+
+def test_prospective_targets_require_exact_ledger_and_current_scheduled_snapshot_evidence(monkeypatch):
+    from types import SimpleNamespace
+
+    from scripts import phase2_capture_fivedollar_opening_odds as capture
+
+    monkeypatch.setattr(
+        capture, "_load_approval",
+        lambda connection, at: SimpleNamespace(competition_scope="3118717965"),
+    )
+
+    names = [
+        "id", "ledger_fixture_id", "provider_fixture_id", "competition_id",
+        "kickoff_at", "season_key", "crosswalk_version_id", "canonical_fixture_id",
+        "provider_home_team_id", "provider_away_team_id", "provider_competition_id",
+        "source_prediction_event_sha256", "prediction_cutoff_at",
+        "prediction_evidence_class", "prediction_point_in_time_certifiable",
+        "original_target_response_sha256", "original_target_manifest_sha256",
+        "current_snapshot_provider_response_id", "current_snapshot_request_id",
+        "current_snapshot_response_sha256", "current_snapshot_fetched_at",
+        "home_team_crosswalk_version_id", "home_team_evidence_observation_id",
+        "away_team_crosswalk_version_id", "away_team_evidence_observation_id",
+        "competition_crosswalk_version_id", "competition_evidence_observation_id",
+    ]
+    row = (
+        None, "5dollarfootballapi:1595172237", "1595172237", 1,
+        RETRIEVED + timedelta(days=3), None, None, None,
+        "1805143870", "2140840258", "3118717965",
+        "a" * 64, RETRIEVED - timedelta(hours=23), "PROSPECTIVE_OBSERVED_ONLY", False,
+        "b" * 64, "c" * 64, 123, "43767443333-3118717965-scheduled-1",
+        "d" * 64, RETRIEVED, 11, 432397, 12, 432397, 13, 432397,
+    )
+
+    class Cursor:
+        def __init__(self): self.calls = []; self.rows = []; self.description = ()
+        def __enter__(self): return self
+        def __exit__(self, exc_type, exc, traceback): return False
+        def execute(self, sql, params):
+            self.calls.append((sql, params))
+            if "COUNT(DISTINCT e.payload->>'target_source_fixture_id')" in sql:
+                self.rows = [(1,)]
+            else:
+                self.rows = [row]
+                self.description = [SimpleNamespace(name=name) for name in names]
+        def fetchone(self): return self.rows[0]
+        def fetchall(self): return self.rows
+
+    class Connection:
+        def __init__(self): self.cursor_instance = Cursor()
+        def cursor(self): return self.cursor_instance
+
+    connection = Connection()
+    targets = capture._load_targets(
+        connection, mode="prospective", lookback_days=90, future_days=7,
+        limit=25, now=RETRIEVED,
+    )
+    assert len(targets) == 1
+    target = targets[0]
+    assert target["id"] is None
+    assert target["canonical_fixture_id"] is None
+    assert target["ledger_fixture_id"] == "5dollarfootballapi:1595172237"
+    assert target["provider_fixture_id"] == "1595172237"
+    assert target["prediction_point_in_time_certifiable"] is False
+    assert target["current_snapshot_response_sha256"] == "d" * 64
+    assert len(connection.cursor_instance.calls) == 2
+    target_sql = connection.cursor_instance.calls[1][0]
+    for required in ("paper_ledger_events", "provider_responses", "jsonb_array_elements",
+                     "entity_crosswalk_versions", "source_observations"):
+        assert required in target_sql
 
 
 def test_capture_target_scope_uses_provider_competition_ids(monkeypatch):
