@@ -35,6 +35,8 @@ on:
       - "db/migrations/0011_odds_quote_observations.sql"
       - "veltrix_v2/providers/odds_api_v4/evidence.py"
       - "tests/providers/odds_api_v4/test_evidence.py"
+      - "tests/providers/odds_api_v4/test_parser.py"
+      - "docs/VELTRIX_V2_ODDS_QUOTE_EVIDENCE_CONTRACT_2026-11-15.md"
       - "scripts/db_acceptance.py"
       - "tests/veltrix_v2/test_full_migration_chain_postgres.py"
       - ".github/workflows/phase5-shadow-regression.yml"
