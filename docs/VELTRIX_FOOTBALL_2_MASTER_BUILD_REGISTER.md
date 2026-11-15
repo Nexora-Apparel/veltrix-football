@@ -35,7 +35,7 @@ The architecture retains the website, API/command-centre and Telegram delivery i
 | Website | V2 report/dashboard loaders, portable bundle preference, bounded fetch/cache, no legacy fallback and verifier-dependent fail-closed state | Code exists; without trusted runtime verifier and certified bundle, V2 predictions remain unavailable |
 | API/command centre | FastAPI publication-verifier injection, dashboard/report loaders and V2 command integration | Code exists; trusted production bootstrap/configuration is not accepted |
 | Telegram | V2 command router/renderer, certified-market-only output, locked value verdict, bundle-verifying dispatch adapter and durable at-most-once delivery claim/reconciliation design | Adapter and regression tests exist; live broadcast/runner remains disabled/unaccepted |
-| Scheduling/operations | Manual-only provider capture and settlement workflows, workflow guards, quota checks and operational audit tooling | No active daily schedule; dispatch availability depends on default-branch workflow exposure |
+| Scheduling/operations | Manual-only provider capture and settlement workflows, workflow guards, quota checks and operational audit tooling | No active daily schedule; bounded opening-odds workflow was safely triggered by integration-branch path-filtered push without merging PR #120 |
 | Database | Neon staging/rehearsal schema and migrations through 0011 in documented branches; read-only inspectors and acceptance tests | Staging only; verify exact target branch before any migration or write |
 | CI/quality | Foundation, PostgreSQL 16/18 acceptance/integration, Phase 5 shadow regression, historical audit and certification integrity checks | Many exact-head runs passed at recorded checkpoints; always recheck current PR head before asserting current CI status |
 
@@ -118,7 +118,7 @@ Captured scope described in the acquisition record: 2025 full-season JSON plus a
 
 A provider-scope predicate bug was fixed: approval competition IDs are provider competition IDs and must be compared with `provider_competition_id`, not the internal `competition_id`. Related commits: `58a7c79f052416f9a3fd14eb439b7b731bc7254d`, `4a9b41ca69c63932bc17184c6e7cb2be0a416233`, `c0ff02f2b021cf9afbe942056e011e59cc9cbc4a`.
 
-A read-only opening-odds staging audit found 763 eligible candidates, 763 scope matches, 763 resolved fixture crosswalks, and zero opening quote observations, endpoint responses or historical odds tick responses at that audit. 763 candidates are not odds coverage.
+A pre-capture read-only opening-odds staging audit found 763 eligible candidates, 763 scope matches, 763 resolved fixture crosswalks, and zero opening quote observations at that time. This historical zero-quote snapshot is superseded by the first bounded capture recorded below; 763 remains the fixture-universe denominator, not quote coverage.
 
 A separate bounded manual capture run [#43699365581](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43699365581) made 14 provider requests and persisted 671 raw first-observed result rows; 660 were converted observations. All 671 remained non-PIT with no source publication timestamp. Twenty-five upcoming fixtures were mapped to shadow forecast candidates. Duplicate protection prevented new ledger events because those fixture/model-version keys already existed. Subsequent fixes added duplicate-only status reporting and post-commit read-back verification of the ledger hash chain.
 
@@ -127,7 +127,7 @@ Rights-related personal-use checks were corrected to use `commercial=False` in:
 - `veltrix_v2/ledger/admission.py`
 - `veltrix_v2/data/provider_evidence_capture.py`
 
-These corrections remove a false commercial-permission prerequisite; they do not broaden the source purpose/scope or grant raw redistribution. Community rights approval/test reconciliation has now been implemented on the integration branch: source-specific record `docs/legal/5dollar-community-noncommercial-authorization-2026-11-15.md`, approval ID `approval-5dollar-community-fixture-result-benchmarking-2026-11-14`, `commercial_use_allowed=False`, and a focused regression test. The offline test has not yet been run; the bounded Community qualification remains NOT RUN pending test execution and safe workflow dispatch.
+These corrections remove a false commercial-permission prerequisite; they do not broaden the source purpose/scope or grant raw redistribution. Community rights approval/test reconciliation was verified by workflow #43726672957: 59 tests passed and the bounded Community qualification returned 2,505/2,505 importable fixture/result labels across seven competitions, 28/40 requests, read-only and non-PIT. Source-specific record `docs/legal/5dollar-community-noncommercial-authorization-2026-11-15.md` and approval ID `approval-5dollar-community-fixture-result-benchmarking-2026-11-14` remain controlling.
 
 ### 3.6 Other data and odds sources
 
@@ -343,10 +343,10 @@ The Stage 2 master ledger remains the operational queue. Preserve this order:
 1. Reconcile 5Dollar Community probe rights contract/tests against the current non-commercial approval and confirm the existing Community secret reference.
 2. Run the existing Community qualification in a bounded, read-only manner once safely dispatchable.
 3. Inspect existing OpenFootball and FootballData workflow artifacts and run their independent verifiers.
-4. Resolve any default-branch dispatch constraint without merging PR #120 merely to expose workflows.
-5. Run bounded 5Dollar opening-odds capture (maximum 25 fixture requests per run, no retries) only after safe dispatch and quota/rights guards are confirmed; reconcile persisted quotes.
-6. Crosswalk reconciliation passed for the 763-fixture 5Dollar universe (exactly one active resolved mapping per fixture); historical odds gates remain blocked as documented.
-7. Publish one definitive Stage 2 exit report.
+4. **COMPLETE:** Safe workflow availability resolved through an integration-branch path-filtered push; PR #120 was not merged.
+5. **PARTIAL:** First bounded 5Dollar opening-odds batch captured 25/25 quotes; 25/763 (3.28%) coverage, 738 outstanding. Each further run is capped at 25 requests with fresh quota preflight and no retries.
+6. **COMPLETE — CROSSWALK / BLOCKED — HISTORICAL ODDS:** 763/763 exact active resolved fixture crosswalks; historical tick entitlement remains unavailable and the 98% quote gate is unmet.
+7. **COMPLETE:** Definitive Stage 2 acquisition exit report issued at `docs/VELTRIX_V2_STAGE2_EXIT_REPORT_2026-11-15.md`; overall Stage 2 remains OPEN / NOT RELEASE-READY.
 
 Do not introduce new providers, architecture or unrelated features while closing Stage 2. After Stage 2, subsequent phases should append to this master register rather than create a competing source of truth.
 
@@ -399,3 +399,6 @@ At every continuation:
 - Crosswalk: all 763 eligible 90-day fixtures in the seven 5Dollar competitions have exactly one active RESOLVED fixture crosswalk. All 25 captured quotes match canonical fixture identity, bookmaker, market, prices and temporal order.
 - Coverage: 25/763 = 3.28%; 738 remain. 98% timestamped odds certification threshold is not met. 5Dollar historical ticks: 0. The Odds API: 3 catalogue-only responses; 0 event/historical odds responses. Historical tick/CLV reconstruction remains blocked.
 - **Stage 2 status: OPEN / NOT RELEASE-READY.** The acquisition exit report is issued, but historical odds coverage and entitlement gates remain open. No production writes, deployments, schedule activation, publication, Telegram sends or value betting unlock.
+
+
+Stage 2 acquisition exit report: `docs/VELTRIX_V2_STAGE2_EXIT_REPORT_2026-11-15.md`. This report closes the ordered audit/reconciliation task but explicitly leaves the 98% timestamped odds coverage and historical tick entitlement gates open.
