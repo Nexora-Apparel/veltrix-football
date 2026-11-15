@@ -47,6 +47,8 @@ on:
       - ".github/workflows/phase5-shadow-regression.yml"
       - "scripts/probe_fivedollar_status_only.py"
       - "tests/scripts/test_probe_fivedollar_status_only.py"
+      - "scripts/veltrix_v2/persist_openplay_feature_snapshots.py"
+      - "tests/scripts/test_persist_openplay_feature_snapshots.py"
       - ".github/workflows/phase2-5dollar-status-only-entitlement.yml"
       - "scripts/probe_fivedollar_status_only.py"
       - "tests/scripts/test_probe_fivedollar_status_only.py"
@@ -108,8 +110,8 @@ jobs:
           pip install -r requirements.txt
       - name: Compile and test isolated 5Dollar status-only probe
         run: |
-          python -m compileall -q scripts/probe_fivedollar_status_only.py tests/scripts/test_probe_fivedollar_status_only.py
-          python -m pytest --import-mode=importlib -q tests/scripts/test_probe_fivedollar_status_only.py
+          python -m compileall -q scripts/probe_fivedollar_status_only.py tests/scripts/test_probe_fivedollar_status_only.py scripts/veltrix_v2/persist_openplay_feature_snapshots.py tests/scripts/test_persist_openplay_feature_snapshots.py
+          python -m pytest --import-mode=importlib -q tests/scripts/test_probe_fivedollar_status_only.py tests/scripts/test_persist_openplay_feature_snapshots.py
       - name: Smoke-test installed Sigstore GitHub verifier CLI
         run: python -m sigstore verify github --help
       - name: Compile capture and regression test
