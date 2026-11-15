@@ -80,7 +80,7 @@ def _load_targets(cur, cutoff_at: datetime) -> list[dict[str, Any]]:
         """
         SELECT f.id,f.provider_fixture_id,f.competition_id,f.home_team_id,
                f.away_team_id,f.kickoff_at,c.name,ht.name,at.name,
-               fx.crosswalk_version_id
+               fx.crosswalk_version_id,fx.recorded_at
         FROM fixtures f
         JOIN competitions c ON c.id=f.competition_id
         JOIN teams ht ON ht.id=f.home_team_id
@@ -95,6 +95,7 @@ def _load_targets(cur, cutoff_at: datetime) -> list[dict[str, Any]]:
               AND x.mapping_status='RESOLVED'
               AND x.valid_from<=%s
               AND (x.valid_until IS NULL OR x.valid_until>%s)
+              AND x.recorded_at<=%s
             ORDER BY x.mapping_version DESC
             LIMIT 1
         ) fx ON fx.canonical_entity_key=f.id::text
@@ -103,12 +104,12 @@ def _load_targets(cur, cutoff_at: datetime) -> list[dict[str, Any]]:
           AND f.kickoff_at>%s
         ORDER BY f.kickoff_at,f.id
         """,
-        (cutoff_at, cutoff_at, cutoff_at),
+        (cutoff_at, cutoff_at, cutoff_at, cutoff_at),
     )
     rows = []
     for row in cur.fetchall():
-        fixture_id, provider_fixture_id, competition_id, home_id, away_id, kickoff, competition, home, away, crosswalk_id = row
-        if home_id == away_id or kickoff <= cutoff_at:
+        fixture_id, provider_fixture_id, competition_id, home_id, away_id, kickoff, competition, home, away, crosswalk_id, fixture_crosswalk_recorded_at = row
+        if home_id == away_id or kickoff <= cutoff_at or fixture_crosswalk_recorded_at > cutoff_at:
             continue
         rows.append({
             "fixture_id": int(fixture_id),
@@ -409,7 +410,7 @@ def persist(database_url: str, manifest_path: str | Path, output_path: str | Pat
             cur.execute(
                 """
                 SELECT count(DISTINCT fs.feature_snapshot_id),
-                       count(fsl.feature_snapshot_link_id),
+                       count(DISTINCT fsl.feature_snapshot_link_id),
                        count(DISTINCT fee.eligibility_event_id)
                 FROM feature_snapshots fs
                 LEFT JOIN feature_snapshot_links fsl ON fsl.feature_snapshot_id=fs.feature_snapshot_id
