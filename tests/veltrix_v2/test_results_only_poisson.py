@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
@@ -250,3 +251,42 @@ def test_dixon_coles_rejects_invalid_rho_and_nonpositive_tau():
         predict_match(sample_history(), competition_id="league", home_team_id="A",
                       away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF,
                       dixon_coles_rho=1.0)
+
+
+def test_collector_first_observed_history_is_prospective_only_not_historical_pit():
+    observed = [replace(
+        row,
+        point_in_time_certifiable=False,
+        availability_basis="collector_first_observed_v1",
+        payload_sha256="a" * 64,
+        rights_approval_id="approved-source",
+        evidence_manifest_sha256="b" * 64,
+        capture_evidence_sha256="c" * 64,
+    ) for row in sample_history(120)]
+    with pytest.raises(InsufficientHistoryError):
+        predict_match(observed, competition_id="league", home_team_id="A",
+                      away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF)
+    result = predict_match(
+        observed, competition_id="league", home_team_id="A", away_team_id="B",
+        kickoff_at=KICKOFF, cutoff_at=CUTOFF, allow_prospective_observed=True,
+    )
+    assert result.evidence_match_count == 120
+    assert result.publishable is False
+
+
+def test_prospective_observed_history_rejects_late_collector_recording():
+    observed = [replace(
+        row,
+        point_in_time_certifiable=False,
+        availability_basis="collector_first_observed_v1",
+        payload_sha256="a" * 64,
+        rights_approval_id="approved-source",
+        evidence_manifest_sha256="b" * 64,
+        capture_evidence_sha256="c" * 64,
+    ) for row in sample_history(120)]
+    observed[-1] = replace(observed[-1], recorded_at=CUTOFF + timedelta(seconds=1))
+    result = predict_match(
+        observed, competition_id="league", home_team_id="A", away_team_id="B",
+        kickoff_at=KICKOFF, cutoff_at=CUTOFF, allow_prospective_observed=True,
+    )
+    assert result.evidence_match_count == 119
