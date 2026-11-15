@@ -19,7 +19,7 @@ The existing 5Dollar parser uses provider_finished_status_conservative_4d and ma
 
 ## Rights handling
 
-The pipeline consumes the existing approved 5Dollar source approval. It does not ask the user for new manual evidence. Provider/source identity, exact competition scope, approval ID, commercial use, and permitted purposes are checked before a fixture enters the model.
+The pipeline consumes the existing approved 5Dollar source approval. It does not ask the user for new manual evidence. Provider/source identity, exact competition scope, approval ID, and permitted personal-use purposes are checked before a fixture enters the model. Commercial-use permission is not required for this personal-use pipeline.
 
 ## Safety
 
