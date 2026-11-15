@@ -188,6 +188,7 @@ def _approval():
     return {
         "status": "APPROVED",
         "effective_at": datetime(2026, 11, 15, 0, 0, tzinfo=UTC).isoformat(),
+        "valid_from": datetime(2026, 11, 15, 0, 0, tzinfo=UTC).isoformat(),
         "recorded_at": datetime(2026, 11, 15, 12, 37, 26, tzinfo=UTC).isoformat(),
         "approval_recorded_at": datetime(2026, 11, 15, 12, 37, 26, tzinfo=UTC).isoformat(),
         "evidence_sha256": "5e6bd00416f180109751e422521d76910da8b491c62507c4d9836e6700c38c46",
