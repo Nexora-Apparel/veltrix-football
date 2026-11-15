@@ -145,11 +145,16 @@ jobs:
           tests/veltrix_v2/test_telegram_v2_formatting.py
           tests/veltrix_v2/test_telegram_reconciliation.py
   postgres-integration:
+    name: PostgreSQL ${{ matrix.postgres-version }} integration
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres-version: ["16", "18"]
     services:
       postgres:
-        image: postgres:16
+        image: postgres:${{ matrix.postgres-version }}
         env:
           POSTGRES_DB: veltrix_reservation_test
           POSTGRES_USER: postgres
