@@ -1,0 +1,59 @@
+name: VELTRIX Stage 2 — OpenFootball PIT archive snapshot pack
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_requests:
+        description: "Hard maximum GitHub API/raw snapshot requests"
+        required: true
+        default: "500"
+        type: string
+      max_commits_per_source:
+        description: "Maximum commit-history entries per source path"
+        required: true
+        default: "100"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-stage2-openfootball-pit-snapshot-pack
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact VELTRIX branch
+        uses: actions/checkout@v4
+        with:
+          ref: integration/v2-report-bundle-wiring-20261114
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile collector and run isolated tests
+        run: |
+          python -m compileall -q scripts/veltrix_v2/collect_openfootball_pit_snapshots.py
+          pytest -q tests/veltrix_v2/test_openfootball_pit_snapshot_pack.py tests/providers/test_openfootball_archive.py
+
+      - name: Collect rights-scoped immutable source snapshots
+        env:
+          GITHUB_TOKEN: \${{ github.token }}
+        run: |
+          python scripts/veltrix_v2/collect_openfootball_pit_snapshots.py \
+            --output-dir artifacts/openfootball-pit-snapshot-pack \
+            --max-requests "\${{ inputs.max_requests }}" \
+            --max-commits-per-source "\${{ inputs.max_commits_per_source }}"
+
+      - name: Upload source snapshots, observation versions and manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-stage2-openfootball-pit-snapshot-pack
+          path: artifacts/openfootball-pit-snapshot-pack/
+          if-no-files-found: error
+          retention-days: 90
