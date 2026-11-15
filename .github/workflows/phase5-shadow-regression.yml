@@ -45,6 +45,12 @@ on:
       - "scripts/db_acceptance.py"
       - "tests/veltrix_v2/test_full_migration_chain_postgres.py"
       - ".github/workflows/phase5-shadow-regression.yml"
+      - "scripts/probe_fivedollar_status_only.py"
+      - "tests/scripts/test_probe_fivedollar_status_only.py"
+      - ".github/workflows/phase2-5dollar-status-only-entitlement.yml"
+      - "scripts/probe_fivedollar_status_only.py"
+      - "tests/scripts/test_probe_fivedollar_status_only.py"
+      - ".github/workflows/phase2-5dollar-status-only-entitlement.yml"
       - ".github/workflows/vercel-preview-runtime-publication-smoke.yml"
   pull_request:
     paths:
@@ -100,6 +106,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Compile and test isolated 5Dollar status-only probe
+        run: |
+          python -m compileall -q scripts/probe_fivedollar_status_only.py tests/scripts/test_probe_fivedollar_status_only.py
+          python -m pytest --import-mode=importlib -q tests/scripts/test_probe_fivedollar_status_only.py
       - name: Smoke-test installed Sigstore GitHub verifier CLI
         run: python -m sigstore verify github --help
       - name: Compile capture and regression test
