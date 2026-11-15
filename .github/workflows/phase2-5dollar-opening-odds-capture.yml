@@ -1,4 +1,4 @@
-# Bounded, manual-only prospective opening-quote capture; this push performs one 7-day batch.
+# Manual-only prospective opening-quote capture. The one-time push batch is complete; future runs require explicit workflow_dispatch.
 # Quotes are opening-only (not current or closing prices); no CLV or value-bet certification is implied.
 # workflow_dispatch remains unavailable until this workflow is on the default branch.
 name: VELTRIX Phase 2 — Manual 5Dollar Opening Odds Capture
@@ -47,6 +47,7 @@ concurrency:
 
 jobs:
   capture:
+    if: github.event_name == 'workflow_dispatch'
     name: Bounded non-commercial timestamped opening-odds capture
     runs-on: ubuntu-latest
     timeout-minutes: 10
