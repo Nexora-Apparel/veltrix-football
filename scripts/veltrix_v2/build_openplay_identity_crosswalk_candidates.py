@@ -155,7 +155,7 @@ def build_candidates(input_dir: str | Path, database_url: str) -> dict:
             "openplay_comp":str(comp),"competition":name,"region":region,
             "canonical_competition_key":target,"status":status,
             "source_evidence_observation_id":source_evidence["competitions.parquet"][0],
-            "source_asset_sha256":source_evidence["competitions.parquet"][2],
+            "source_asset_sha256":source_evidence["competitions.parquet"][4].get("asset_sha256"),
         })
 
     target_name_rows = defaultdict(list)
@@ -198,7 +198,7 @@ def build_candidates(input_dir: str | Path, database_url: str) -> dict:
             "candidate_canonical_entity_key":selected["canonical_entity_key"] if selected else None,
             "candidate_5dollar_team_id":selected["provider_entity_id"] if selected else None,
             "evidence_source_observation_id":source_evidence["teams.parquet"][0],
-            "source_asset_sha256":source_evidence["teams.parquet"][2],
+            "source_asset_sha256":source_evidence["teams.parquet"][4].get("asset_sha256"),
         })
 
     summary = {
