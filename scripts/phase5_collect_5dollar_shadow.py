@@ -241,7 +241,7 @@ def _build_public_summary(summary: dict[str, object]) -> dict[str, object]:
         "forecast_count", "admitted_shadow_predictions",
         "new_shadow_predictions_persisted", "persisted_capture_pages",
         "persisted_shadow_ledger_events", "duplicate_predictions_skipped",
-        "paper_ledger_persisted_to_staging", "paper_ledger_chain_verified",
+        "paper_ledger_persisted_to_staging", "paper_ledger_chain_verified",\n        "paper_ledger_post_commit_verified",
         "evidence_persisted_to_staging", "publication_status",
         "settlement_status", "database_writes",
     )
@@ -310,11 +310,12 @@ def _persist_fixture_snapshot_to_staging(
 def _persist_paper_predictions_to_staging(
     dsn: str, predictions: list
 ) -> dict[str, object]:
-    """Idempotently append one atomic batch to the allowlisted staging ledger."""
+    """Append idempotently, commit, then verify the ledger from a fresh connection."""
     validate_staging_dsn_target(dsn)
     import psycopg
 
     host = urlparse(dsn).hostname or ""
+    expected_keys = {(item.fixture_id, item.model_version) for item in predictions}
     with psycopg.connect(dsn, autocommit=False) as connection:
         identity = connection.execute(
             "SELECT current_database(), current_user"
@@ -337,15 +338,58 @@ def _persist_paper_predictions_to_staging(
             appended, duplicates = [], 0
         if not ledger.verify_chain():
             raise ValueError("PAPER_LEDGER_CHAIN_VERIFICATION_FAILED")
-        return {
+        transaction_result = {
             "events_appended": len(appended),
             "duplicate_predictions_skipped": duplicates,
             "ledger_event_count": len(ledger.events),
-            "ledger_head_sha256": (
-                ledger.events[-1].event_sha256 if ledger.events else None
-            ),
-            "chain_verified": True,
         }
+
+    # This connection is opened only after the write transaction has committed.
+    with psycopg.connect(dsn, autocommit=True) as verify_connection:
+        identity = verify_connection.execute(
+            "SELECT current_database(), current_user"
+        ).fetchone()
+        if identity != ("veltrix_football_staging", "neondb_owner"):
+            raise PermissionError("STAGING_DATABASE_ROLE_NOT_ALLOWLISTED")
+        verify_store = PostgresPaperLedgerStore(
+            verify_connection,
+            ledger_id="veltrix-v2-prospective-observed",
+            write_enabled=False,
+            environment="staging",
+            database_name=identity[0],
+            host=host,
+            role=identity[1],
+        )
+        persisted = verify_store.load()
+        if not persisted.verify_chain():
+            raise ValueError("PAPER_LEDGER_POST_COMMIT_CHAIN_VERIFICATION_FAILED")
+        persisted_keys = {
+            (event.fixture_id, event.model_version)
+            for event in persisted.events
+            if event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
+        }
+        if not expected_keys.issubset(persisted_keys):
+            raise RuntimeError("PAPER_LEDGER_POST_COMMIT_READBACK_MISMATCH")
+        if len(persisted.events) != transaction_result["ledger_event_count"]:
+            raise RuntimeError("PAPER_LEDGER_POST_COMMIT_COUNT_MISMATCH")
+        persisted_by_key = {
+            (event.fixture_id, event.model_version): event.event_sha256
+            for event in persisted.events
+            if event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
+        }
+        for event in appended:
+            if persisted_by_key.get((event.fixture_id, event.model_version)) != event.event_sha256:
+                raise RuntimeError("PAPER_LEDGER_POST_COMMIT_EVENT_HASH_MISMATCH")
+
+    return {
+        **transaction_result,
+        "ledger_event_count": len(persisted.events),
+        "ledger_head_sha256": (
+            persisted.events[-1].event_sha256 if persisted.events else None
+        ),
+        "chain_verified": True,
+        "post_commit_verified": True,
+    }
 
 
 def _persist_admitted_predictions_to_staging(dsn: str, admitted_predictions) -> dict[str, object]:
@@ -862,7 +906,7 @@ def run_capture(
         "admitted_shadow_predictions": len(admission.admitted),
         "persisted_shadow_ledger_events": int(staging_ledger.get("events_appended", 0)) if staging_ledger else 0,
         "new_shadow_predictions_persisted": int(staging_ledger.get("events_appended", 0)) if staging_ledger else 0,
-        "paper_ledger_chain_verified": bool(staging_ledger and staging_ledger.get("chain_verified") is True),
+        "paper_ledger_chain_verified": bool(staging_ledger and staging_ledger.get("chain_verified") is True),\n        "paper_ledger_post_commit_verified": bool(staging_ledger and staging_ledger.get("post_commit_verified") is True),
         "duplicate_predictions_skipped": int(staging_ledger.get("duplicate_predictions_skipped", 0)) if staging_ledger else 0,
         "rejected_admissions": [
             {"fixture_id": item.fixture_id, "reason_code": item.reason_code}
