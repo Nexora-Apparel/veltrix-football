@@ -18,6 +18,7 @@ on:
       - "veltrix_v2/evaluation/certification_manifest_builder.py"
       - "tests/veltrix_v2/test_certification_manifest_builder.py"
       - "scripts/veltrix_v2/build_verified_public_bundle.py"
+      - "scripts/veltrix_v2/verify_pre_attestation_report.py"
       - ".github/workflows/report-certification-attestation.yml"
       - "requirements.txt"
       - ".github/workflows/telegram-delivery-recovery.yml"
@@ -72,7 +73,7 @@ jobs:
           python -m compileall -q tests/veltrix_v2/test_provider_evidence_capture.py
           python -m compileall -q api/telegram.py
           python -m compileall -q tests/veltrix_v2/test_api_publication_verifier_injection.py
-          python -m compileall -q veltrix_v2/reporting/trusted_runtime.py scripts/veltrix_v2/build_verified_public_bundle.py
+          python -m compileall -q veltrix_v2/reporting/trusted_runtime.py scripts/veltrix_v2/build_verified_public_bundle.py scripts/veltrix_v2/verify_pre_attestation_report.py
           python -m compileall -q tests/veltrix_v2/test_trusted_runtime.py
       - name: Run provider and model evaluation contracts
         run: >-
