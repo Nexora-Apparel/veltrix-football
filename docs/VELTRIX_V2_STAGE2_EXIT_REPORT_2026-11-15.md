@@ -4,14 +4,14 @@
 **Repository:** `Nexora-Apparel/veltrix-football`  
 **Branch:** `integration/v2-report-bundle-wiring-20261114`  
 **PR:** [#120](https://github.com/Nexora-Apparel/veltrix-football/pull/120) — open, draft, unmerged  
-**Verified PR head at report time:** `70b1a8ef1742975464f74dfefcf8dac265d46d86`  
+**Verified PR head at final documentation checkpoint:** `7f0019917b6c8d64ee9bdb81c48643b85ec963f6`  
 **Overall disposition:** **STAGE 2 ACQUISITION REPORT ISSUED — OPEN / NOT RELEASE-READY**
 
 ## 1. Executive result
 
-The Stage 2 evidence acquisition and reconciliation work has produced verified source artifacts, a qualified non-PIT fixture/result label set, and the first 25 timestamped 5Dollar Community opening-odds observations. The crosswalk for the current 90-day 5Dollar fixture universe is complete and unambiguous.
+The Stage 2 evidence acquisition and reconciliation work has now captured the full frozen 90-day universe: **763/763 timestamped 5Dollar Community Bet365 1X2 opening quotes (100%)**. All 763 raw observations are independently reconciled to HTTP 200 provider responses, unique payload hashes, PIT eligibility, exact non-commercial rights approval and active canonical fixture crosswalks. The crosswalk for the 90-day universe is complete and unambiguous.
 
-Stage 2 is **not release-ready**. The first opening-odds batch covers only 25 of 763 eligible fixtures (3.28%), well below the 98% timestamped odds coverage requirement. The full 5Dollar historical tick endpoint requires an Ultra plan not evidenced for this account. The Odds API has catalogue-only evidence and no event or historical odds quotes. OpenFootball and FootballData archives remain retrospective/non-PIT; Community fixture/result labels are also explicitly non-PIT for pre-match feature use.
+Stage 2 remains **NO-GO / not release-ready**, but not because of opening-quote coverage: the 98% opening-odds coverage gate is now PASS. Historical/closing odds and CLV evidence remain unavailable because 5Dollar history requires an Ultra entitlement not evidenced for this account; The Odds API evidence remains catalogue-only, and alternative vendors are unverified. Model walk-forward/prospective certification thresholds remain unmet. OpenFootball and FootballData archives remain retrospective/non-PIT; Community fixture/result labels remain non-PIT for pre-match feature use.
 
 This report closes the ordered audit/reconciliation task by recording the actual passed gates and remaining blockers. It does not certify a market, model, report, or production release.
 
@@ -93,7 +93,7 @@ The eligible 90-day universe contains 763 fixtures. All 763 have exactly one act
 | Spain La Liga | 116 | 6 | 110 |
 | **Total** | **763** | **25** | **738** |
 
-Overall coverage: **25 / 763 = 3.28%**. This is a bounded first batch, not the full target universe and not the 98% certification threshold.
+Final reconciled opening-quote coverage: **763 / 763 = 100%**. The 98% opening-odds coverage gate is met; historical/closing odds, CLV and model certification remain separate blockers.
 
 ## 6. Crosswalk reconciliation
 
@@ -112,7 +112,7 @@ The separate OpenPlay crosswalk remains partial (89 team mappings and 5 competit
 - Staging read-back found zero 5Dollar historical tick observations.
 - The Odds API has three `/v4/sports/` catalogue responses only. It has zero event-odds responses and zero historical-odds responses. No credit-consuming odds request was made.
 - Opening-only data has no independently timestamped closing/in-play quote series. No CLV, price-movement or closing-line reconstruction is currently supported.
-- The 98% timestamped pre-kickoff odds coverage requirement is not met.
+- The 98% timestamped pre-kickoff opening-odds coverage requirement is **PASS (763/763, 100%)**; historical/closing prices and CLV remain unqualified.
 
 ## 8. Release and safety disposition
 
@@ -164,7 +164,7 @@ The separate source decision is recorded at `docs/VELTRIX_V2_HISTORICAL_CLOSING_
 
 The full decision is recorded in `docs/VELTRIX_V2_STAGE2_FINAL_EXIT_DECISION_2026-11-15.md`.
 
-**NO-GO — STAGE 2 EXIT CRITERIA NOT MET.** Opening-odds coverage remains 26.21%; historical/closing odds entitlement and CLV remain blocked; walk-forward and prospective settlement thresholds are not met; additional temporal and identity restrictions remain. Stage 3 remains on hold.
+**NO-GO — STAGE 2 EXIT CRITERIA NOT MET.** Opening-odds coverage is now 100% and passes its gate. Historical/closing odds entitlement and CLV remain blocked; walk-forward and prospective settlement thresholds are not met; additional temporal and identity restrictions remain. Stage 3 remains on hold.
 
 No production writes, deployment, public predictions, Telegram delivery, schedule activation or value-betting unlock occurred. PR #120 remains draft/open/unmerged.
 
