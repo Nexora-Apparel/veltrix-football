@@ -175,13 +175,17 @@ def test_settlement_event_round_trips_and_links_prediction(dsn):
             rights_approval_id="approval-test",
             rights_evidence_sha256="d" * 64,
             result_availability_basis="collector_first_observed_v1",
-            settlement_delay_basis="collector_first_observed",
+            settlement_delay_basis="collector_first_observed_v1",
+            result_response_sha256="e" * 64,
+            result_capture_manifest_sha256="f" * 64,
         )
         loaded = store.load()
         assert len(loaded.events) == 2
         assert loaded.events[0] == prediction
         assert loaded.events[1] == settlement
         assert settlement.payload["prediction_event_sha256"] == prediction.event_sha256
+        assert settlement.payload["result_response_sha256"] == "e" * 64
+        assert settlement.payload["result_capture_manifest_sha256"] == "f" * 64
         assert loaded.verify_chain()
 
 
