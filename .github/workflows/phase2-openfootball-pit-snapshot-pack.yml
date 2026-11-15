@@ -12,6 +12,10 @@ on:
       - "veltrix_v2/providers/football_data_cc0/parser.py"
       - "scripts/veltrix_v2/collect_football_data_cc0_snapshots.py"
       - "scripts/veltrix_v2/verify_football_data_cc0_snapshots.py"
+      - "tests/providers/test_openfootball_archive.py"
+      - "tests/scripts/test_export_openfootball_archive.py"
+      - "tests/veltrix_v2/test_openfootball_pit_snapshot_pack.py"
+      - "tests/veltrix_v2/test_football_data_cc0_snapshots.py"
   workflow_dispatch:
     inputs:
       max_requests:
