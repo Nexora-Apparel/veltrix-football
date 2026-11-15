@@ -161,7 +161,8 @@ def evaluate_quote_admission(*, quote: Any, crosswalk: FixtureCrosswalk | None,
             effective = _utc(rights.effective_at, "RIGHTS_EFFECTIVE_AT")
             recorded = _utc(rights.recorded_at, "RIGHTS_RECORDED_AT")
             until = _utc(rights.valid_until, "RIGHTS_VALID_UNTIL") if rights.valid_until else None
-            if (retrieved is None or effective > retrieved or recorded > retrieved\n                    or (until and until <= retrieved) or evaluated < retrieved):
+            if (retrieved is None or effective > retrieved or recorded > retrieved
+                    or (until and until <= retrieved) or evaluated < retrieved):
                 reasons.append("QUOTE_RIGHTS_NOT_VALID_AT_EVALUATION")
         except ValueError:
             reasons.append("QUOTE_RIGHTS_TIMESTAMP_INVALID")
