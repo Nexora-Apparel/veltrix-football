@@ -198,3 +198,14 @@ The earlier section 8 reported 369 unique source-to-canonical fixture candidates
 - Important correction: the 369 are independently verified candidate identities, not persisted or reviewer-approved RESOLVED crosswalks. The database contains file-level AI Midas evidence only; no match-level crosswalk records were written. All 369 candidates remain REVIEW_REQUIRED pending a recorded reviewer acceptance event.
 - Full report: docs/VELTRIX_V2_AIMIDAS_BRAZIL_SERIE_B_2026_IDENTITY_RECONCILIATION_2026-11-15.md.
 - AI Midas evidence remains non-PIT. It does not qualify historical closing odds, bookmaker-specific closing quotes or CLV. Value betting remains LOCKED.
+
+
+### Correction — AI Midas Série B team-stat integrity exception
+
+A deeper row-level check of the 738 CSV team rows found two exceptions in the Náutico 0–3 CRB match (source lines 8–9). The AI Midas Match label and canonical 5Dollar result both report 0–3, so the match-level fixture identity and score agreement remain verified. However, the CRB row records Goals=2 / Goals Conceded=0 and the Náutico row records Goals=0 / Goals Conceded=2. These values conflict with the match-label score orientation.
+
+- Team-row Goals / Goals Conceded checks: **736/738 pass; 2 fail**.
+- The two source rows are individually quarantined from advanced-stat feature admission. Their source IDs and row SHA-256 fingerprints are retained in the reconciliation artifact.
+- Do not alter either row, infer corrected statistics, or reject the verified match-level 0–3 identity solely because the separate team-stat fields disagree.
+- This supersedes the earlier 738/738 team-row consistency wording in the preceding Brazil Série B addendum. Match-level canonical score agreements remain 369/369.
+- Full discrepancy and disposition: docs/VELTRIX_V2_AIMIDAS_BRAZIL_SERIE_B_2026_IDENTITY_RECONCILIATION_2026-11-15.md.
