@@ -105,3 +105,10 @@ python scripts/phase5_settle_5dollar_shadow.py --execute
 ```
 
 Do not run `--execute` until target fixtures have actually kicked off. The collector itself checks eligibility and returns without provider requests when no unsettled target has kicked off. Provider calls are bounded to 14 pages maximum and paced; no retry loop is enabled.
+
+
+## Prospective scorecard
+
+`veltrix_v2/evaluation/prospective_settlement_metrics.py` scores only immutable settlements linked to their exact prediction event hash. It reports market-specific sample counts, distinct UTC kickoff dates, Brier score and log loss for 1X2, BTTS and totals where those probabilities were actually recorded. Missing market probabilities are omitted rather than inferred.
+
+ROI and CLV remain explicitly unavailable: the current prediction/settlement ledger does not contain a verified pre-kickoff selection plus timestamped odds evidence. The scorecard returns null ROI/CLV and a locked reason rather than deriving stake, price or expected value. Its certification status is always `NOT_CERTIFIED`; it is a measurement layer, not a release gate override.
