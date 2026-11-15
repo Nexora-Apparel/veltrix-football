@@ -71,3 +71,12 @@ Opening quotes are complete at 763/763 and remain a separate dataset. Until a pr
 3. Calculate exact quota usage from distinct snapshot times, regions and markets before bulk capture.
 4. If the probe passes, acquire closing snapshots in controlled batches and reconcile to all 763 fixtures.
 5. Recompute CLV and market-specific walk-forward/prospective certification. If entitlement or rights fail, retain NO-GO and evaluate another source without weakening the gates.
+
+
+### Quota and bookmaker benchmark refinement — 15 November 2026
+
+A read-only grouping of the frozen 763 fixtures found **589 distinct (competition, five-minute kickoff) snapshot buckets**. The Odds API's sport-level historical odds endpoint returns the event/bookmaker set for a requested snapshot and is documented at 10 credits per region per market. A planning estimate is therefore **5,890 credits for one region and the h2h market across the 589 buckets**, before any additional regions/markets or retries. This is an estimate only; final cost must be recomputed from actual snapshot timestamps and region coverage before purchase or execution. The published START 20K plan is 20,000 credits/month at US$30/month and includes historical odds.
+
+Bookmaker qualification is still unresolved. The public bookmaker list includes Pinnacle in the EU region and Betfair Exchange in UK/EU, but does not list Bet365 for soccer; the only Bet365 entry shown is Bet365 AU, limited to AFL/NRL h2h, spreads and totals. Therefore The Odds API cannot currently be assumed to supply a Bet365 soccer closing quote. A Pinnacle or Betfair close could be considered only as an explicitly declared benchmark, not same-bookmaker Bet365 CLV, and only after actual seven-competition event responses prove coverage.
+
+Sources: https://the-odds-api.com/historical-odds-data/ ; https://the-odds-api.com/sports-odds-data/bookmaker-apis.html ; https://the-odds-api.com/
