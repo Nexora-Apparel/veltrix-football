@@ -51,7 +51,7 @@ def test_candidate_reconciliation_requires_unique_fixture_and_score():
     registry = {
         "database": "veltrix_football_staging", "role": "neondb_owner",
         "transaction_read_only": "on",
-        "staging_evidence": {"source_observation_id": 1, "provider_response_id": 2},
+        "staging_evidence": {"source_observation_id": 1, "provider_response_id": 2, "response_sha256": "f" * 64},
         "teams": [
             {"id": 1, "provider_team_id": "goias", "name": "Goias"},
             {"id": 2, "provider_team_id": "ponte", "name": "Ponte Preta"},
@@ -94,7 +94,7 @@ def test_conflicting_fixture_candidates_fail_closed():
     }
     registry = {
         "database": "veltrix_football_staging", "role": "neondb_owner",
-        "transaction_read_only": "on", "staging_evidence": {"source_observation_id": 1, "provider_response_id": 2},
+        "transaction_read_only": "on", "staging_evidence": {"source_observation_id": 1, "provider_response_id": 2, "response_sha256": "f" * 64},
         "teams": [{"id": 1, "provider_team_id": "goias", "name": "Goias"},
                   {"id": 2, "provider_team_id": "ponte", "name": "Ponte Preta"}],
         "fixtures": [fixture, {**fixture, "fixture_id": 11, "provider_fixture_id": "fixture-11"}],
@@ -128,7 +128,7 @@ def test_team_stat_mismatch_is_quarantined_without_rejecting_match_identity():
     registry = {
         "database": "veltrix_football_staging", "role": "neondb_owner",
         "transaction_read_only": "on",
-        "staging_evidence": {"source_observation_id": 1, "provider_response_id": 2},
+        "staging_evidence": {"source_observation_id": 1, "provider_response_id": 2, "response_sha256": "f" * 64},
         "teams": [
             {"id": 1, "provider_team_id": "nautico", "name": "Nautico"},
             {"id": 2, "provider_team_id": "crb", "name": "CRB"},
