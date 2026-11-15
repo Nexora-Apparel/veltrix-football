@@ -291,6 +291,20 @@ def test_real_postgres_rejects_persisted_response_hash_mismatch(postgres_db):
         assert conn.execute("SELECT COUNT(*) FROM odds_quote_observations").fetchone()[0] == 0
 
 
+def test_real_postgres_rejects_capture_atomically_when_one_quote_fails_admission(postgres_db):
+    seed = seed_evidence(postgres_db)
+    capture = parsed()
+    invalid_second = replace(capture.observations[1], provider_event_id="unmapped-event")
+    mixed_capture = replace(
+        capture,
+        observations=(capture.observations[0], invalid_second),
+    )
+    result = store(postgres_db).write_capture(mixed_capture, write_context(seed))
+    assert (result.inserted, result.duplicates, result.rejected) == (0, 0, 1)
+    with psycopg.connect(postgres_db) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM odds_quote_observations").fetchone()[0] == 0
+
+
 def test_real_postgres_rolls_back_entire_capture_if_later_insert_fails(postgres_db):
     seed = seed_evidence(postgres_db)
     capture = parsed()
