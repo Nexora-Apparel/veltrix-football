@@ -30,7 +30,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt "psycopg[binary]>=3.2,<4"
       - name: Validate dry-run mode
-        run: python -m scripts.phase5_capture_odds_api_quota
+        run: python -m scripts.phase5_capture_odds_api_quota --persist-staging
       - name: Capture no-credit account and sport-entitlement evidence
         env:
           THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
