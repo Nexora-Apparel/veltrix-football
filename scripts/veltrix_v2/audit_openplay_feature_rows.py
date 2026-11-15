@@ -21,7 +21,7 @@ TABLES = {
         "key": ["match_id", "event_id", "event_id_sub"],
     },
     "formations.parquet": {
-        "key": ["match_id", "team_id", "period", "start_expanded_minute"],
+        "key": ["match_id", "team_id", "period", "start_expanded_minute", "formation_id", "sub_on_player_id", "sub_off_player_id"],
     },
     "cards.parquet": {
         "key": ["match_id", "event_id"],
@@ -76,7 +76,9 @@ def audit(input_dir: str | Path) -> dict:
                        count(*) FILTER (WHERE m.match_id IS NOT NULL
                            AND try_cast(m.scraped_at AS TIMESTAMPTZ) IS NOT NULL) AS timestamped_rows,
                        count(DISTINCT f.match_id) AS distinct_matches,
-                       count(*) FILTER (WHERE m.match_id IS NULL) AS orphan_rows
+                       count(*) FILTER (WHERE m.match_id IS NULL) AS orphan_rows,
+                       count(*) FILTER (WHERE m.xg_model IS NOT NULL) AS xg_model_rows,
+                       count(DISTINCT m.xg_model) AS xg_model_versions
                 FROM read_parquet(?) f
                 LEFT JOIN read_parquet(?) m USING(match_id)
             """, [path, matches_path]).fetchone()
@@ -86,6 +88,8 @@ def audit(input_dir: str | Path) -> dict:
                 "inherited_page_save_timestamp_rows": row[2],
                 "distinct_match_ids": row[3],
                 "orphan_rows": row[4],
+                "xg_model_rows": row[5] if filename in {"shots.parquet", "player_match_stats.parquet", "team_match_stats.parquet"} else None,
+                "xg_model_versions": row[6] if filename in {"shots.parquet", "player_match_stats.parquet", "team_match_stats.parquet"} else None,
                 "duplicate_natural_key_groups": duplicate_groups,
                 "duplicate_rows_quarantined": duplicate_rows,
                 "natural_key": spec["key"],
@@ -98,6 +102,7 @@ def audit(input_dir: str | Path) -> dict:
             if row["rows"] != row["matched_to_documented_match_page"]
             or row["rows"] != row["inherited_page_save_timestamp_rows"]
             or row["orphan_rows"] != 0
+            or (row["xg_model_rows"] is not None and row["xg_model_rows"] != row["rows"])
         ]
         if failed:
             raise RuntimeError("OPENPLAY_FEATURE_ROW_AUDIT_FAILED:" + ",".join(failed))
