@@ -143,6 +143,7 @@ def build_candidates(input_dir: str | Path, database_url: str) -> dict:
     for _id,name,canonical in competition_crosswalk:
         canonical_competitions[normalize_name(name)] = str(canonical)
     open_comp_to_canonical = {}
+    canonical_competition_regions = {}
     competition_rows = []
     for comp, name, region, comp_type, team_type in competitions:
         key = (normalize_name(region), normalize_name(name))
@@ -151,6 +152,7 @@ def build_candidates(input_dir: str | Path, database_url: str) -> dict:
         status = "EXACT_REGION_NAME_ALIAS" if target else "UNMAPPED_OR_UNSUPPORTED"
         if target:
             open_comp_to_canonical[str(comp)] = target
+            canonical_competition_regions[target] = normalize_name(region)
         competition_rows.append({
             "openplay_comp":str(comp),"competition":name,"region":region,
             "canonical_competition_key":target,"status":status,
@@ -184,8 +186,15 @@ def build_candidates(input_dir: str | Path, database_url: str) -> dict:
         else:
             candidate = candidates[0]
             overlap = open_comp_keys.intersection(target_comp_by_name.get(key, set()))
+            country_overlap = {
+                comp_key for comp_key in overlap
+                if canonical_competition_regions.get(comp_key) == normalize_name(country)
+            }
             if not overlap:
                 status = "NO_COMPETITION_OVERLAP"
+                selected = None
+            elif not country_overlap:
+                status = "COUNTRY_COMPETITION_REGION_MISMATCH"
                 selected = None
             else:
                 status = "EXACT_UNIQUE_NAME_AND_COMPETITION_OVERLAP"
@@ -194,6 +203,7 @@ def build_candidates(input_dir: str | Path, database_url: str) -> dict:
             "openplay_team_id":str(team_id),"team":name,"country":country,
             "openplay_comp_codes":codes,
             "mapped_openplay_competition_keys":sorted(open_comp_keys),
+            "country_verified_competition_keys":sorted(country_overlap) if key and candidates and len(candidates)==1 and open_name_counts[key]==1 else [],
             "status":status,
             "candidate_canonical_entity_key":selected["canonical_entity_key"] if selected else None,
             "candidate_5dollar_team_id":selected["provider_entity_id"] if selected else None,
@@ -209,6 +219,7 @@ def build_candidates(input_dir: str | Path, database_url: str) -> dict:
         "exact_unique_name_and_competition_overlap":sum(x["status"]=="EXACT_UNIQUE_NAME_AND_COMPETITION_OVERLAP" for x in team_rows),
         "ambiguous_name":sum(x["status"]=="AMBIGUOUS_NAME" for x in team_rows),
         "no_competition_overlap":sum(x["status"]=="NO_COMPETITION_OVERLAP" for x in team_rows),
+        "country_competition_region_mismatch":sum(x["status"]=="COUNTRY_COMPETITION_REGION_MISMATCH" for x in team_rows),
         "unmatched_name":sum(x["status"]=="UNMATCHED_NAME" for x in team_rows),
         "openplay_competitions":len(competition_rows),
         "mapped_competitions":sum(x["canonical_competition_key"] is not None for x in competition_rows),
