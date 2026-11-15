@@ -17,6 +17,8 @@ import time
 from urllib.parse import urlparse
 
 from veltrix_v2.data.fivedollar import parse_fixture_page
+from veltrix_v2.data.contracts import DataUsePurpose
+from veltrix_v2.data.rights import evaluate_source_use
 from veltrix_v2.ledger.postgres_store import PostgresPaperLedgerStore
 from veltrix_v2.ledger.settlement_reconciliation import reconcile_finished_fixtures
 
@@ -111,6 +113,19 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
             while True:
                 if request_count >= MAX_PAGES:
                     raise RuntimeError("SETTLEMENT_REQUEST_CAP_REACHED")
+                page_approval, rights_checked_at = _refresh_approval(staging_dsn)
+                approved_scope = {
+                    value.strip() for value in page_approval.competition_scope.split(",")
+                    if value.strip()
+                }
+                if not approved_scope or "*" in approved_scope or competition_id not in approved_scope:
+                    raise PermissionError("SETTLEMENT_COMPETITION_OUTSIDE_APPROVAL_SCOPE")
+                collection_right = evaluate_source_use(
+                    page_approval, DataUsePurpose.COLLECTION,
+                    at_utc=rights_checked_at, commercial=False,
+                )
+                if not collection_right.allowed:
+                    raise PermissionError(collection_right.reason_code)
                 raw, headers, params, requested, retrieved, status = _request_page(
                     api_key, competition_id=competition_id, status="finished",
                     start_at=start_at, end_at=end_at, page=page,
@@ -120,9 +135,18 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
                 request_count += 1
                 parsed = parse_fixture_page(
                     raw, headers=headers, retrieved_at_utc=retrieved,
-                    rights_approval_id=approval.approval_id,
+                    rights_approval_id=page_approval.approval_id,
                 )
                 recorded = datetime.now(timezone.utc)
+                snapshot_approval, storage_checked_at = _refresh_approval(staging_dsn)
+                if snapshot_approval.approval_id != page_approval.approval_id:
+                    raise PermissionError("SETTLEMENT_RIGHTS_APPROVAL_CHANGED_DURING_CAPTURE")
+                storage_right = evaluate_source_use(
+                    snapshot_approval, DataUsePurpose.STORAGE,
+                    at_utc=storage_checked_at, commercial=False,
+                )
+                if not storage_right.allowed:
+                    raise PermissionError(storage_right.reason_code)
                 # Retain every exact provider page before settlement. This is
                 # a staging snapshot, not a claim of provider publication time.
                 snapshot = _persist_fixture_snapshot_to_staging(
@@ -132,7 +156,7 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
                     retrieved_at=retrieved, recorded_at=recorded,
                     raw_response=raw, response_headers=headers,
                     http_status=status, competition_id=competition_id,
-                    fixture_count=len(parsed.fixtures), approval=approval,
+                    fixture_count=len(parsed.fixtures), approval=snapshot_approval,
                     status_filter="finished",
                 )
                 snapshots.append(snapshot)
