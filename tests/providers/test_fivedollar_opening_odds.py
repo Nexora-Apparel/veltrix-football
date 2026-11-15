@@ -130,6 +130,12 @@ def test_capture_target_scope_uses_provider_competition_ids(monkeypatch):
     class Cursor:
         description = ()
 
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
         def execute(self, sql, params):
             self.sql = sql
             self.params = params
