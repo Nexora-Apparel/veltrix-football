@@ -7,8 +7,8 @@ No production, publication, schedule, Telegram or value-bet action is possible.
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict, replace
 from datetime import datetime, timedelta, timezone
-from dataclasses import replace
 import json
 import os
 from pathlib import Path
@@ -20,6 +20,7 @@ from veltrix_v2.data.fivedollar import parse_fixture_page
 from veltrix_v2.data.contracts import DataUsePurpose
 from veltrix_v2.data.rights import evaluate_source_use
 from veltrix_v2.ledger.postgres_store import PostgresPaperLedgerStore
+from veltrix_v2.evaluation.prospective_settlement_metrics import evaluate_prospective_settlements
 from veltrix_v2.ledger.settlement_reconciliation import reconcile_finished_fixtures
 
 from scripts.phase5_collect_5dollar_shadow import (
@@ -214,6 +215,7 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
         if not verified.verify_chain():
             raise RuntimeError("PAPER_LEDGER_CHAIN_VERIFICATION_FAILED")
 
+    scorecard = evaluate_prospective_settlements(verified)
     result = {
         "status": "SETTLEMENT_RECONCILIATION_COMPLETE",
         "shadow_targets": len(targets),
@@ -226,6 +228,7 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
                              for fid, reason in quarantined],
         "ledger_events": len(verified.events),
         "ledger_chain_verified": True,
+        "prospective_scorecard": asdict(scorecard),
         "publication": False,
         "telegram": False,
         "schedule": False,
