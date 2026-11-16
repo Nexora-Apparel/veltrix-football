@@ -269,7 +269,13 @@ class ProspectivePaperLedger:
                           feature_set_sha256: str | None = None,
                           eligibility_evidence_sha256: str | None = None,
                           forecast_evidence_sha256: str | None = None,
-                          model_artifact_sha256: str | None = None) -> PaperLedgerEvent:
+                          model_artifact_sha256: str | None = None,
+                          canonical_competition_id: str | None = None,
+                          canonical_home_team_id: str | None = None,
+                          canonical_away_team_id: str | None = None,
+                          provider_competition_id: str | None = None,
+                          provider_home_team_id: str | None = None,
+                          provider_away_team_id: str | None = None) -> PaperLedgerEvent:
         prediction = next((e for e in self._events
                            if e.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
                            and e.fixture_id == fixture_id
@@ -306,6 +312,8 @@ class ProspectivePaperLedger:
         feature_link_values = (
             prediction_feature_link_sha256, feature_snapshot_id, eligibility_event_id, feature_set_sha256,
             eligibility_evidence_sha256, forecast_evidence_sha256, model_artifact_sha256,
+            canonical_competition_id, canonical_home_team_id, canonical_away_team_id,
+            provider_competition_id, provider_home_team_id, provider_away_team_id,
         )
         if model_version == V2_PIT_MODEL_VERSION:
             if prediction.event_type != "PREDICTION" or prediction.payload.get("evidence_class") != "PIT_CERTIFIED":
