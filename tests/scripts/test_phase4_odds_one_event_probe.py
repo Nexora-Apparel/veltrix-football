@@ -14,9 +14,9 @@ from scripts.phase4_odds_one_event_probe import (
 KICKOFF = datetime(2026, 11, 21, 15, 0, tzinfo=timezone.utc)
 
 
-def _fixture(home="Chelsea", away="Leeds"):
+def _fixture(home="Chelsea", away="Leeds", fixture_id=2502):
     return {
-        "fixture_id": 2502,
+        "fixture_id": fixture_id,
         "home": home,
         "away": away,
         "kickoff_at": KICKOFF,
