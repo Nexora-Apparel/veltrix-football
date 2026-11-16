@@ -101,3 +101,22 @@ def test_decimal_odds_must_be_greater_than_one_and_below_upper_bound():
     }]), sport_key="soccer", retrieved_at=NOW)
     assert not parsed.observations
     assert [item.code for item in parsed.diagnostics] == ["PRICE_INVALID", "PRICE_INVALID"]
+
+
+def test_event_odds_parses_all_requested_markets_for_exact_event():
+    raw = body([
+        {"key": "h2h", "last_update": "2026-11-13T11:00:00Z",
+         "outcomes": [{"name": "Home", "price": 2.1},
+                      {"name": "Draw", "price": 3.2},
+                      {"name": "Away", "price": 3.6}]},
+        {"key": "totals", "last_update": "2026-11-13T11:01:00Z",
+         "outcomes": [{"name": "Over", "price": 1.9, "point": 2.5},
+                      {"name": "Under", "price": 1.9, "point": 2.5}]},
+        {"key": "btts", "last_update": "2026-11-13T11:02:00Z",
+         "outcomes": [{"name": "Yes", "price": 1.8},
+                      {"name": "No", "price": 2.0}]},
+    ])
+    parsed = parse_event_odds(raw, sport_key="soccer_test", event_id="event-1", retrieved_at=NOW)
+    assert {item.market_key for item in parsed.observations} == {"h2h", "totals", "btts"}
+    assert len(parsed.observations) == 7
+    assert all(item.eligible_timestamp for item in parsed.observations)
