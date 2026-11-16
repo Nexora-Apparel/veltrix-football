@@ -511,9 +511,24 @@ class ProspectivePaperLedger:
                         value=event.payload.get(field)
                         if not isinstance(value,str) or len(value)!=64 or any(ch not in "0123456789abcdef" for ch in value):
                             raise ValueError("PAPER_LEDGER_V2_SETTLEMENT_FEATURE_LINK_HASH_INVALID")
+                    if any(not isinstance(event.payload.get(field),str) or not event.payload[field].strip()
+                           for field in (
+                               "canonical_competition_id","canonical_home_team_id","canonical_away_team_id",
+                               "provider_competition_id","provider_home_team_id","provider_away_team_id",
+                           )):
+                        raise ValueError("PAPER_LEDGER_V2_SETTLEMENT_FIXTURE_IDENTITY_LINK_INVALID")
+                    if (
+                        event.payload.get("canonical_competition_id") != prediction.payload.get("competition_id")
+                        or event.payload.get("canonical_home_team_id") != prediction.payload.get("home_team_id")
+                        or event.payload.get("canonical_away_team_id") != prediction.payload.get("away_team_id")
+                        or event.payload.get("provider_competition_id") != prediction.payload.get("target_provider_competition_id")
+                    ):
+                        raise ValueError("PAPER_LEDGER_V2_SETTLEMENT_CANONICAL_IDENTITY_MISMATCH")
                 elif any(event.payload.get(field) is not None for field in (
                     "prediction_feature_link_sha256","feature_snapshot_id","eligibility_event_id","feature_set_sha256",
                     "eligibility_evidence_sha256","forecast_evidence_sha256","model_artifact_sha256",
+                    "canonical_competition_id","canonical_home_team_id","canonical_away_team_id",
+                    "provider_competition_id","provider_home_team_id","provider_away_team_id",
                 )):
                     raise ValueError("PAPER_LEDGER_NON_V2_SETTLEMENT_HAS_FEATURE_LINK")
                 if "market_outcomes" in event.payload:
