@@ -172,10 +172,11 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
             """
             SELECT COUNT(*),COUNT(*) FILTER (WHERE feature_status='PRESENT'),
                    COUNT(*) FILTER (WHERE source_published_at IS NULL OR retrieved_at IS NULL
-                                     OR rights_approval_id IS NULL)
+                                     OR rights_approval_id IS NULL
+                                     OR source_published_at >= %s OR retrieved_at >= %s)
             FROM feature_snapshot_links WHERE feature_snapshot_id=%s
             """,
-            (item["feature_snapshot_id"],),
+            (item["forecast_cutoff_at"],item["forecast_cutoff_at"],item["feature_snapshot_id"]),
         ).fetchone()
         if (
             int(link_counts[0])!=item["feature_count"]
