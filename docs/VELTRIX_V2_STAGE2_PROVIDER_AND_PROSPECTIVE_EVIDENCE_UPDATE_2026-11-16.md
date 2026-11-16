@@ -76,6 +76,29 @@ The first successful prospective series is recorded under the independent model 
 
 These are PIT-eligible research forecasts, not certified performance evidence. The 18 ineligible fixtures remain excluded. No predictions were published, no Telegram messages sent, no schedules activated, and value betting remains LOCKED.
 
+## 4.1 First prospective timestamped odds capture — committed
+
+The exact-match event discovery was expanded from EPL-only to the seven already-admitted V2 forecast fixtures across their four represented approved competitions. The first exact event match was **Como vs Cagliari**, Italy Serie A.
+
+- Workflow: [run 43780096811](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43780096811)
+- Canonical fixture ID: `2508`; provider event ID: `9e8d72c6c27c1667be7b88416a36ca80`
+- Kickoff: `2026-11-21T14:00:00Z`
+- One event-odds request, one region (UK), markets `h2h`, `totals`, `btts`; no retries.
+- Preflight quota: 226 used / 274 remaining / last cost 0.
+- Postflight quota headers: 229 used / 271 remaining / last cost 3.
+- **3 credits consumed**, within the hard per-event cap; no upgrade or purchase.
+- Raw provider response ID 1297; capture manifest 160; capture request 888; resolved exact-name-and-kickoff crosswalk 3169; supporting source observation 433133.
+- Raw response SHA-256: `3271ea3f90613ff9c065a525dc73625af84a4b52fef5a16b54e8a10d49eeabf5`.
+- **95 quote observations inserted**, 0 duplicates, 0 rejected, 0 missing/invalid timestamps.
+  - 1X2: 63 quotes from 21 bookmakers.
+  - BTTS: 22 quotes from 11 bookmakers.
+  - Totals: 10 quotes from 5 bookmakers.
+- Every quote has a provider market timestamp and retrieval timestamp. Source timestamps range from `2026-11-16T00:21:08Z` to `2026-11-16T00:24:01Z`; retrieval was `2026-11-16T00:24:05.284Z`. All 95 were retrieved before the 21 November kickoff.
+- The capture state chain reached `COMMITTED`; fresh-connection post-commit verification passed.
+- This is an early prospective market snapshot, **not a closing-odds archive**. Closing-line qualification still requires later near-kickoff observations and bookmaker-specific history evidence.
+
+The other six V2 forecast fixtures still have no Odds API quote observations. The 18 fixtures excluded from the first V2 forecast series remain quarantined for incomplete PIT feature history/identity. No schedule was activated.
+
 ## 5. Historical odds provider qualification — no purchase
 
 Public documentation reviewed on 2026-11-16:
@@ -109,12 +132,12 @@ No alternative currently qualifies the full seven-competition bookmaker-specific
 
 Current staging state after the successful workflows:
 
-- `odds_quote_observations`: 0.
+- `odds_quote_observations`: 95, all timestamped, for one V2 fixture (Como vs Cagliari), 21 bookmakers, all three markets.
 - New V2 `PREDICTION` events: 7.
 - Legacy `SHADOW_PREDICTION` events: 25, model version `veltrix-results-poisson-v1`; keep separate and do not reuse as V2.
 - Settlement events: 0.
 - All 25 future target fixtures remain SCHEDULED; no genuine V2 target has finished. Do not settle future or legacy targets as part of this new series.
-- Prospective timestamped odds capture remains pending.
+- Prospective timestamped odds capture is PARTIAL: one of seven V2 forecast fixtures has 95 committed timestamped quotes; six remain uncaptured.
 - All market certification thresholds remain unchanged and unmet. Value betting remains LOCKED.
 
 ## 7. CI and release boundary
