@@ -48,6 +48,9 @@ DECLARE
     snapshot feature_snapshots%ROWTYPE;
     eligibility feature_snapshot_eligibility_events%ROWTYPE;
     canonical_fixture_id BIGINT;
+    canonical_competition_id BIGINT;
+    canonical_home_team_id BIGINT;
+    canonical_away_team_id BIGINT;
 BEGIN
     SELECT * INTO prediction
     FROM paper_ledger_events
@@ -63,7 +66,8 @@ BEGIN
         RAISE EXCEPTION 'V2_PREDICTION_EVENT_EVIDENCE_LINK_INVALID';
     END IF;
 
-    SELECT f.id INTO canonical_fixture_id
+    SELECT f.id,f.competition_id,f.home_team_id,f.away_team_id
+    INTO canonical_fixture_id,canonical_competition_id,canonical_home_team_id,canonical_away_team_id
     FROM fixtures f
     WHERE f.provider = '5DollarFootballAPI'
       AND f.provider_fixture_id::text = split_part(prediction.fixture_id, ':', 2)
@@ -71,6 +75,13 @@ BEGIN
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'V2_PREDICTION_CANONICAL_FIXTURE_NOT_RESOLVED';
+    END IF;
+
+    IF (prediction.payload->>'competition_id')::BIGINT IS DISTINCT FROM canonical_competition_id
+       OR (prediction.payload->>'home_team_id')::BIGINT IS DISTINCT FROM canonical_home_team_id
+       OR (prediction.payload->>'away_team_id')::BIGINT IS DISTINCT FROM canonical_away_team_id
+    THEN
+        RAISE EXCEPTION 'V2_PREDICTION_CANONICAL_TEAM_OR_COMPETITION_IDENTITY_MISMATCH';
     END IF;
 
     SELECT * INTO snapshot
