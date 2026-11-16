@@ -149,10 +149,10 @@ def settle_from_verified_fixture(
     ):
         raise ValueError("SETTLEMENT_FIXTURE_IDENTITY_MISMATCH")
 
-    observed_only = prediction.payload.get("evidence_class") == "PROSPECTIVE_OBSERVED_ONLY"
-    if observed_only:
-        # The provider publication clock is unknown. Use the exact time this
-        # collector first observed the finished result, never the old proxy.
+    result_first_observed = fixture.availability_basis == "collector_first_observed_v1"
+    if result_first_observed:
+        if fixture.available_at_utc != fixture.retrieved_at_utc:
+            raise ValueError("SETTLEMENT_FIRST_OBSERVED_CLOCK_MISMATCH")
         result_available_at = fixture.retrieved_at_utc
         result_retrieved_at = fixture.retrieved_at_utc
         result_basis = "collector_first_observed_v1"
@@ -176,7 +176,8 @@ def settle_from_verified_fixture(
         rights_approval_id=approval.approval_id,
         rights_evidence_sha256=approval.evidence_sha256,
         result_availability_basis=result_basis,
-        settlement_delay_basis=fixture.availability_basis if observed_only else None,
+        settlement_delay_basis=fixture.availability_basis if result_first_observed else None,
+        **feature_link_fields,
         result_response_sha256=fixture.response_sha256,
         result_capture_manifest_sha256=fixture.capture_manifest_sha256,
     )
