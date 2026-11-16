@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define the controlled, staging-only settlement procedure for V2 shadow predictions. This process appends immutable settlement events to the existing prospective paper ledger. It never edits prediction events and never publishes forecasts.
+Define the controlled, staging-only settlement procedure for observed shadow predictions and PIT-certified V2 prospective forecasts. This process appends immutable settlement events to the existing prospective paper ledger. It never edits prediction events and never publishes forecasts.
 
 ## Current ledger baseline
 
@@ -11,9 +11,10 @@ At the 2026-11-15 audit:
 - Database: `veltrix_football_staging`
 - Neon project: `withered-sky-75161174`
 - Staging branch: `br-silent-violet-bc5de88s`
-- Shadow predictions: 25 across 25 distinct fixtures
-- Settlements: 0
-- The 25 target kickoffs fall between 2026-11-18 22:30 UTC and 2026-11-21 15:00 UTC.
+- Observed shadow predictions: 25 across 25 distinct fixtures
+- New PIT-certified V2 predictions: 7 across the separately admitted V2 forecast series
+- Eligible settlements: 0
+- The 25 shadow target kickoffs were between 2026-11-18 22:30 UTC and 2026-11-21 15:00 UTC; the seven V2 targets are also future fixtures at the 2026-11-16 audit.
 
 No target is eligible for settlement before its kickoff and a provider-observed FINISHED result. A future fixture is not to be marked as settled based on a scheduled status, estimated finish time, external score page, or inferred score.
 
@@ -60,6 +61,22 @@ The first-observed clock must be at or after kickoff and no later than the datab
 - Verify the complete chain after each committed batch.
 - A failed batch must roll back atomically.
 
+
+## V2 PIT forecast settlement requirements
+
+The settlement runner also recognises V2 events where all of the following hold:
+- event type is PREDICTION and model version is veltrix-openplay-xg-poisson-v1;
+- evidence class is PIT_CERTIFIED and point_in_time_certifiable is true;
+- target source is 5DollarFootballAPI and exact provider fixture, competition and kickoff fields are present;
+- a row exists in prediction_feature_snapshot_links for the exact prediction event hash;
+- the link binds the same forecast evidence hash, immutable feature snapshot, ELIGIBLE feature-admission event, model artifact, canonical competition/team IDs and provider competition/team IDs.
+
+Migration 0012 creates the append-only prediction_feature_snapshot_links sidecar. It does not update prediction or feature snapshot rows. The separate backfill workflow reads the two original immutable forecast/admission artifacts and appends only exact verified links. A missing or mismatched link prevents V2 settlement.
+
+For V2, provider fixture IDs are resolved through the canonical fixture registry and compared against the link's canonical IDs and provider IDs. Do not compare canonical numeric IDs to provider-prefixed IDs, and do not infer the mapping from names. The settlement event retains the feature-link hash, snapshot and eligibility IDs, feature-set and evidence hashes, model artifact hash, and canonical/provider identity fields.
+
+The V2 link table migration and seven-link backfill are not yet applied to staging because Neon currently returns HTTP 402 for the staging project quota. No purchase or upgrade is permitted. Until the staging database is available and both workflows complete with fresh-connection verification, V2 settlement remains blocked. The runner defers its V2 link-table dependency until an eligible V2 target is genuinely due; if no target has kicked off, it returns without provider calls or settlement writes.
+
 ## Metrics and certification
 
 After settlements exist, compute market metrics only from eligible prediction/settlement pairs:
@@ -87,7 +104,7 @@ This procedure is staging-only. It must not:
 
 The in-memory settlement validator and PostgreSQL append-only store adapter exist. The personal-use rights check is corrected to evaluate approved collection, storage and benchmarking permissions with `commercial=False`. Regression coverage verifies that a personal-use-only approval can settle a paper result.
 
-The first implementation of the operational collector/reconciler now exists in `scripts/phase5_settle_5dollar_shadow.py` and `veltrix_v2/ledger/settlement_reconciliation.py`. It defaults to a no-I/O dry run; `--execute` is required for bounded provider requests and staging-only writes. It queries only competitions represented by eligible unsettled targets, caps provider pages at 14, preserves each exact finished-response page and manifest in staging, links the response and manifest SHA-256 values into each immutable settlement event, re-resolves rights immediately before settlement, performs exact source fixture/competition/team/kickoff matching (including each eligible model version), and appends settlement events under the PostgreSQL ledger lock. It quarantines mismatches and duplicates, verifies the ledger hash chain after append, and has no production/publication/Telegram/schedule/value-bet path. At the 2026-11-15 audit all 25 target kickoffs are still in the future, so the collector returns `NO_ELIGIBLE_FINISHED_TARGETS` without making provider requests or writing settlements. The exact-head CI regression passed 158 provider/model/settlement tests, 165 publication/bundle/delivery boundary tests and 36 PostgreSQL integration tests (including paper-ledger settlement response/manifest persistence); foundation, PostgreSQL 16/18 acceptance, certification-evidence and audit checks also passed. The daily prediction workflow was skipped intentionally.
+The operational collector/reconciler now exists in `scripts/phase5_settle_5dollar_shadow.py` and `veltrix_v2/ledger/settlement_reconciliation.py`. It handles observed shadow predictions and V2 PIT predictions with immutable feature links. It defaults to a no-I/O dry run; `--execute` is required for bounded provider requests and staging-only writes. It queries only competitions represented by eligible unsettled targets, caps provider pages at 14, preserves each exact finished-response page and manifest in staging, links the response and manifest SHA-256 values into each immutable settlement event, re-resolves rights immediately before settlement, performs exact source fixture/competition/team/kickoff matching (including each eligible model version), and appends settlement events under the PostgreSQL ledger lock. It quarantines mismatches and duplicates, verifies the ledger hash chain after append, and has no production/publication/Telegram/schedule/value-bet path. At the 2026-11-16 audit all 25 shadow targets and seven V2 PIT targets are still in the future, so the collector returns `NO_ELIGIBLE_FINISHED_TARGETS` without making provider requests or writing settlements. The exact-head CI regression passed 158 provider/model/settlement tests, 165 publication/bundle/delivery boundary tests and 36 PostgreSQL integration tests (including paper-ledger settlement response/manifest persistence); foundation, PostgreSQL 16/18 acceptance, certification-evidence and audit checks also passed. The daily prediction workflow was skipped intentionally.
 
 
 ## Operator invocation
@@ -115,7 +132,7 @@ ROI and CLV remain explicitly unavailable: the current prediction/settlement led
 
 ## Manual GitHub Actions runner
 
-The staging-only manual workflow is committed on the integration branch:
+The staging-only manual workflow is committed on the integration branch and now handles both shadow and linked V2 PIT predictions:
 `https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase5-5dollar-shadow-settlement.yml`
 
 GitHub requires a `workflow_dispatch` workflow file to exist on the default branch before it can be manually dispatched. This workflow is therefore not dispatchable yet: PR #120 remains draft/unmerged because production release gates are still open. Do not merge solely to expose this runner. Until controlled promotion is authorized, execute the CLI from a controlled runner after kickoff using the documented `FIVEDOLLARFOOTBALL_API_KEY` and staging-only `VELTRIX_STAGING_DATABASE_URL` environment variables. The workflow, once promoted, performs a no-I/O dry-run before execution, has no schedule trigger, production database target, publication path or Telegram delivery path, and uploads only `settlement_public_summary.json`.
