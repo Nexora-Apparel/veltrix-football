@@ -7,11 +7,15 @@ def test_public_settlement_summary_excludes_row_level_fixture_identity():
     summary = _public_summary({
         "status": "SETTLEMENT_RECONCILIATION_COMPLETE",
         "shadow_targets": 25,
+        "v2_pit_targets": 7,
+        "v2_pit_feature_links_available": 7,
         "eligible_unsettled_targets": 3,
         "provider_requests": 2,
         "provider_pages_persisted": 2,
         "finished_rows_observed": 60,
         "settlements_appended": 3,
+        "shadow_settlements_appended": 2,
+        "v2_pit_settlements_appended": 1,
         "quarantined_rows": [{"fixture_id": "private-fixture", "reason": "mismatch"}],
         "ledger_events": 28,
         "ledger_chain_verified": True,
@@ -20,6 +24,9 @@ def test_public_settlement_summary_excludes_row_level_fixture_identity():
     })
     rendered = repr(summary)
     assert summary["settlements_appended"] == 3
+    assert summary["v2_pit_targets"] == 7
+    assert summary["v2_pit_feature_links_available"] == 7
+    assert summary["v2_pit_settlements_appended"] == 1
     assert summary["ledger_post_commit_verified"] is True
     assert summary["quarantined_count"] == 1
     assert summary["publication"] is False
