@@ -884,3 +884,19 @@ See the detailed evidence and provider comparison in [Stage 2 Provider and Prosp
 - **Odds and settlement:** zero `odds_quote_observations`; zero settlement events. All 25 future fixtures remain SCHEDULED. The 25 legacy `veltrix-results-poisson-v1` shadow events remain separate and are not V2. No future or legacy fixture was settled.
 - **Provider qualification:** no external provider currently satisfies the complete seven-competition bookmaker-specific closing archive and rights requirements without further conditions. Odds-API.io, StrikerAPI, SockOdds, OddsIntel, OddsRelay and OddsPapi findings are recorded in the linked update. No purchase or upgrade.
 - **Release controls:** PR #120 remains OPEN / DRAFT / UNMERGED. At HEAD `2f4a85cb1e885e786c189caef5d38ee7240a072c`, required checks passed and Daily Fixture Predictions remained SKIPPED. Value betting remains LOCKED; no publication, Telegram delivery, schedule activation, production deployment or merge.
+
+
+## 2026-11-16 — first prospective timestamped odds capture committed
+
+Detailed evidence: [Stage 2 Provider and Prospective Evidence Update](VELTRIX_V2_STAGE2_PROVIDER_AND_PROSPECTIVE_EVIDENCE_UPDATE_2026-11-16.md).
+
+- The isolated 5Dollar status-only check still confirms Community, not Ultra. No odds-history endpoint call or upgrade.
+- The Odds API no-credit catalogue and four no-credit event-discovery requests passed. The exact-match search selected the existing V2 forecast fixture Como vs Cagliari (Italy Serie A), canonical fixture 2508.
+- Workflow [43780096811](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43780096811) completed SUCCESS. One event-odds request only; no retries. Three credits consumed; quota moved from 226 used / 274 remaining to 229 used / 271 remaining.
+- Persisted response 1297; manifest 160; request 888; fixture crosswalk 3169; source observation 433133. Response SHA-256 `3271ea3f90613ff9c065a525dc73625af84a4b52fef5a16b54e8a10d49eeabf5`.
+- 95 quote rows committed with 95/95 provider timestamps, 21 bookmakers, and all three markets (1X2 63; BTTS 22; totals 10). Source timestamps and retrieval timestamps are distinct and pre-kickoff. Fresh-connection post-commit verification and capture state chain passed.
+- This is one early prospective snapshot, not a bookmaker closing archive. Six other V2 forecast fixtures remain without Odds API quotes. The 18 fixtures not admitted to V2 forecasts remain quarantined.
+- V2 prospective ledger remains seven predictions and zero settlements. All seven fixtures remain SCHEDULED. Do not settle until a genuine FINISHED result with verified identity and result evidence is available.
+- The 95 quotes are quote observations, not 95 settled selections; certification sample counts remain below the unchanged thresholds. Value betting remains LOCKED.
+- PR #120 remains OPEN / DRAFT / UNMERGED. At HEAD `3576c255ff75b9cbed708d2aca8001614065157c`, Historical Model Audit, AI Midas Brazil Série B reconciliation, Phase 5 Shadow Regression, Certification Evidence Integrity, Phase 2 Data Foundation, PostgreSQL 16/18 acceptance all passed; Daily Fixture Predictions remained SKIPPED. No production deploy, publication, Telegram delivery or schedule activation.
+
