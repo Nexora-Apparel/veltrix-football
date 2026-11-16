@@ -334,6 +334,18 @@ class ProspectivePaperLedger:
                     raise ValueError("PAPER_SETTLEMENT_V2_FEATURE_EVIDENCE_HASH_INVALID")
             if prediction.payload.get("evidence_sha256") != forecast_evidence_sha256:
                 raise ValueError("PAPER_SETTLEMENT_V2_FORECAST_EVIDENCE_MISMATCH")
+            if any(not isinstance(value,str) or not value.strip() for value in (
+                canonical_competition_id,canonical_home_team_id,canonical_away_team_id,
+                provider_competition_id,provider_home_team_id,provider_away_team_id,
+            )):
+                raise ValueError("PAPER_SETTLEMENT_V2_FIXTURE_IDENTITY_LINK_REQUIRED")
+            if (
+                prediction.payload.get("competition_id") != canonical_competition_id
+                or prediction.payload.get("home_team_id") != canonical_home_team_id
+                or prediction.payload.get("away_team_id") != canonical_away_team_id
+                or prediction.payload.get("target_provider_competition_id") != provider_competition_id
+            ):
+                raise ValueError("PAPER_SETTLEMENT_V2_CANONICAL_IDENTITY_MISMATCH")
         elif any(value is not None for value in feature_link_values):
             raise ValueError("PAPER_SETTLEMENT_FEATURE_LINK_ONLY_VALID_FOR_V2_MODEL")
         for value in (result_response_sha256, result_capture_manifest_sha256):
@@ -384,6 +396,12 @@ class ProspectivePaperLedger:
             "eligibility_evidence_sha256": eligibility_evidence_sha256,
             "forecast_evidence_sha256": forecast_evidence_sha256,
             "model_artifact_sha256": model_artifact_sha256,
+            "canonical_competition_id": canonical_competition_id,
+            "canonical_home_team_id": canonical_home_team_id,
+            "canonical_away_team_id": canonical_away_team_id,
+            "provider_competition_id": provider_competition_id,
+            "provider_home_team_id": provider_home_team_id,
+            "provider_away_team_id": provider_away_team_id,
         }
         return self._append("SETTLEMENT", fixture_id, model_version, recorded_at, payload)
 
