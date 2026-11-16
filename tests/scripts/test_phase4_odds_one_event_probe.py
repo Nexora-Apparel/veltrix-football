@@ -23,10 +23,10 @@ def _fixture(home="Chelsea", away="Leeds", fixture_id=2502):
     }
 
 
-def _event(event_id="evt-1", home="Chelsea", away="Leeds", kickoff="2026-11-21T15:00:00Z"):
+def _event(event_id="evt-1", home="Chelsea", away="Leeds", kickoff="2026-11-21T15:00:00Z", sport_key=SPORT):
     return {
         "id": event_id,
-        "sport_key": SPORT,
+        "sport_key": sport_key,
         "home_team": home,
         "away_team": away,
         "commence_time": kickoff,
@@ -98,3 +98,13 @@ def test_quota_reconciliation_rejects_missing_headers_and_non_200():
     after = SimpleNamespace(status_code=403, quota_evidence=_quota(226, 274, 0))
     with pytest.raises(ValueError, match="ODDS_API_ODDS_RESPONSE_NOT_SUCCESSFUL"):
         reconcile_quota(before, after)
+
+
+def test_select_exact_fixture_accepts_another_explicitly_approved_sport_key():
+    fixture = _fixture(home="Como", away="Cagliari")
+    event = _event(home="Como", away="Cagliari", sport_key="soccer_italy_serie_a")
+    selected = select_exact_fixture(
+        [fixture], [event], sport_key="soccer_italy_serie_a"
+    )
+    assert selected is not None
+    assert selected[1]["id"] == "evt-1"
