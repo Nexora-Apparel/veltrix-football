@@ -167,10 +167,13 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
         snapshot=conn.execute(
             """
             SELECT fs.fixture_id,fs.feature_set_sha256,fs.prediction_cutoff_at,fs.created_at,
-                   f.provider_fixture_id::text,f.competition_id::text,
-                   f.home_team_id::text,f.away_team_id::text
+                   f.provider_fixture_id::text,f.competition_id,f.home_team_id,f.away_team_id,
+                   c.provider_competition_id,ht.provider_team_id,at.provider_team_id
             FROM feature_snapshots fs
             JOIN fixtures f ON f.id=fs.fixture_id
+            JOIN competitions c ON c.id=f.competition_id AND c.provider=f.provider
+            JOIN teams ht ON ht.id=f.home_team_id AND ht.provider=f.provider
+            JOIN teams at ON at.id=f.away_team_id AND at.provider=f.provider
             WHERE fs.feature_snapshot_id=%s AND f.provider='5DollarFootballAPI'
             """,
             (item["feature_snapshot_id"],),
@@ -224,6 +227,12 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
             "prediction_event_sha256":str(event[2]).strip(),
             "feature_snapshot_id":item["feature_snapshot_id"],
             "eligibility_event_id":int(eligibility[0]),
+            "canonical_competition_id":int(snapshot[5]),
+            "canonical_home_team_id":int(snapshot[6]),
+            "canonical_away_team_id":int(snapshot[7]),
+            "provider_competition_id":str(snapshot[8]),
+            "provider_home_team_id":str(snapshot[9]),
+            "provider_away_team_id":str(snapshot[10]),
             "feature_set_sha256":item["feature_set_sha256"],
             "eligibility_evidence_sha256":item["eligibility_evidence_sha256"],
             "forecast_evidence_sha256":item["forecast_evidence_sha256"],
@@ -247,7 +256,9 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
 def _existing_match(existing, link: dict) -> bool:
     columns=(
         "ledger_id","prediction_sequence","prediction_event_sha256","feature_snapshot_id",
-        "eligibility_event_id","feature_set_sha256","eligibility_evidence_sha256",
+        "eligibility_event_id","canonical_competition_id","canonical_home_team_id",
+        "canonical_away_team_id","provider_competition_id","provider_home_team_id",
+        "provider_away_team_id","feature_set_sha256","eligibility_evidence_sha256",
         "forecast_evidence_sha256","model_artifact_sha256","forecast_cutoff_at",
         "feature_snapshot_cutoff_at","artifact_run_id","forecast_summary_sha256",
         "feature_admission_summary_sha256","link_sha256",
@@ -281,7 +292,9 @@ def link(*, forecast_path: str | Path, admission_path: str | Path, apply: bool=F
             existing=conn.execute(
                 """
                 SELECT ledger_id,prediction_sequence,prediction_event_sha256,
-                       feature_snapshot_id,eligibility_event_id,feature_set_sha256,
+                       feature_snapshot_id,eligibility_event_id,canonical_competition_id,
+                       canonical_home_team_id,canonical_away_team_id,provider_competition_id,
+                       provider_home_team_id,provider_away_team_id,feature_set_sha256,
                        eligibility_evidence_sha256,forecast_evidence_sha256,
                        model_artifact_sha256,forecast_cutoff_at,feature_snapshot_cutoff_at,
                        artifact_run_id,forecast_summary_sha256,feature_admission_summary_sha256,
@@ -314,14 +327,18 @@ def link(*, forecast_path: str | Path, admission_path: str | Path, apply: bool=F
                 """
                 INSERT INTO prediction_feature_snapshot_links(
                     ledger_id,prediction_sequence,prediction_event_sha256,
-                    feature_snapshot_id,eligibility_event_id,feature_set_sha256,
+                    feature_snapshot_id,eligibility_event_id,canonical_competition_id,
+                    canonical_home_team_id,canonical_away_team_id,provider_competition_id,
+                    provider_home_team_id,provider_away_team_id,feature_set_sha256,
                     eligibility_evidence_sha256,forecast_evidence_sha256,
                     model_artifact_sha256,forecast_cutoff_at,feature_snapshot_cutoff_at,
                     artifact_run_id,forecast_summary_sha256,
                     feature_admission_summary_sha256,link_sha256
                 ) VALUES (
                     %(ledger_id)s,%(prediction_sequence)s,%(prediction_event_sha256)s,
-                    %(feature_snapshot_id)s,%(eligibility_event_id)s,%(feature_set_sha256)s,
+                    %(feature_snapshot_id)s,%(eligibility_event_id)s,%(canonical_competition_id)s,
+                    %(canonical_home_team_id)s,%(canonical_away_team_id)s,%(provider_competition_id)s,
+                    %(provider_home_team_id)s,%(provider_away_team_id)s,%(feature_set_sha256)s,
                     %(eligibility_evidence_sha256)s,%(forecast_evidence_sha256)s,
                     %(model_artifact_sha256)s,%(forecast_cutoff_at)s,%(feature_snapshot_cutoff_at)s,
                     %(artifact_run_id)s,%(forecast_summary_sha256)s,
@@ -350,8 +367,14 @@ def link(*, forecast_path: str | Path, admission_path: str | Path, apply: bool=F
                 row is None or str(row[0]).strip()!=item["link_sha256"]
                 or int(row[1])!=item["feature_snapshot_id"]
                 or int(row[2])!=item["eligibility_event_id"]
-                or str(row[3]).strip()!=item["prediction_event_sha256"]
-                or str(row[4]).strip()!=item["feature_set_sha256"]
+                or int(row[3])!=item["canonical_competition_id"]
+                or int(row[4])!=item["canonical_home_team_id"]
+                or int(row[5])!=item["canonical_away_team_id"]
+                or str(row[6])!=item["provider_competition_id"]
+                or str(row[7])!=item["provider_home_team_id"]
+                or str(row[8])!=item["provider_away_team_id"]
+                or str(row[9]).strip()!=item["prediction_event_sha256"]
+                or str(row[10]).strip()!=item["feature_set_sha256"]
             ):
                 raise RuntimeError("V2_PREDICTION_FEATURE_LINK_POST_COMMIT_VERIFICATION_FAILED")
             verified+=1
