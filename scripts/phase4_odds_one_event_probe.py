@@ -460,6 +460,7 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
         return {
             "status":"BLOCKED_PREFLIGHT",
             "odds_request_dispatched":False,
+            "odds_request_count":0,
             "reason_codes":list(decision.reason_codes),
             "estimated_credits":decision.estimated_credits,
         }
@@ -537,6 +538,7 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
         return {
             "status":"PARSE_REJECTED_EVENT_IDENTITY_MISMATCH",
             "odds_request_dispatched":True,
+            "odds_request_count":1,
             "actual_credits":actual_credits,
             "quota_remaining":envelope.quota_evidence.requests_remaining,
             "response_sha256":response.response_sha256,
