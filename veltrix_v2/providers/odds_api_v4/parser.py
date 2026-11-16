@@ -208,4 +208,4 @@ def parse_event_odds(raw_body: bytes, *, sport_key: str, event_id: str, retrieve
     if not isinstance(event_id, str) or not event_id:
         raise ValueError("EVENT_ID_REQUIRED")
     return _parse(raw_body, sport_key=sport_key, retrieved_at=retrieved_at,
-                  expected_event_id=event_id, allowed_markets=frozenset({"btts"}))
+                  expected_event_id=event_id, allowed_markets=frozenset({"h2h", "totals", "btts"}))
