@@ -900,3 +900,42 @@ Detailed evidence: [Stage 2 Provider and Prospective Evidence Update](VELTRIX_V2
 - The 95 quotes are quote observations, not 95 settled selections; certification sample counts remain below the unchanged thresholds. Value betting remains LOCKED.
 - PR #120 remains OPEN / DRAFT / UNMERGED. At HEAD `3576c255ff75b9cbed708d2aca8001614065157c`, Historical Model Audit, AI Midas Brazil Série B reconciliation, Phase 5 Shadow Regression, Certification Evidence Integrity, Phase 2 Data Foundation, PostgreSQL 16/18 acceptance all passed; Daily Fixture Predictions remained SKIPPED. No production deploy, publication, Telegram delivery or schedule activation.
 
+
+
+## 2026-11-16 — PIT evidence-link hardening and no-purchase odds provider requalification
+
+Detailed provider desk review: [Historical Odds Provider Requalification](VELTRIX_V2_HISTORICAL_ODDS_PROVIDER_REQUALIFICATION_2026-11-16.md).
+
+### New V2 forecast provenance bridge
+
+- Added migration 0012, an append-only sidecar linking each V2 prospective PREDICTION event to its exact PIT feature snapshot and ELIGIBLE feature-admission event.
+- The link records both immutable artifact hashes, model artifact hash, forecast and feature cutoffs, canonical competition/team IDs, provider competition/team IDs, prediction event hash, feature-set hash, eligibility evidence hash, and a deterministic link hash.
+- Database triggers enforce V2 model/event identity, canonical fixture and provider-ID alignment, snapshot identity and cutoff order, eligible evidence identity, and append-only mutation protection. Existing ledger events and feature snapshots are not rewritten.
+- Added staging-only migration runner with hard allowlist, read-only dry-run, explicit apply guard, before/after evidence-count comparison, and fresh-connection verification.
+- Added a manual dry-run-first workflow for migration 0012 and a manual dry-run-first workflow to append seven forecast-to-feature links using the original immutable workflow artifact.
+- Fixed the migration-chain acceptance test and database catalog expectations for migration 0012. The SQL migration was rewritten after the first CI run exposed a malformed SQL literal; the collector-first-observed settlement regression fixture was also corrected to actually declare the collector-first-observed basis.
+
+### CI evidence and outstanding environment blockers
+
+- Phase 5 Shadow Regression at commit `5c500ddd59132be5aaa5ec2d7e6d48174200f36a`: PASS on PostgreSQL 16 and PostgreSQL 18, including isolated V2 evidence-link contracts and settlement regression tests. Run [43815241046](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43815241046).
+- Historical Model Audit Tests and Certification Evidence Integrity passed at the same commit.
+- The subsequent PostgreSQL 16/18 acceptance run confirmed migration 0012 applies cleanly and is idempotent, but its final catalog script still expected 11 migrations. That assertion was updated to 12 in commit `d8e7aabe42729f5761818a6809b251b0199b3ff3`; re-run is pending.
+- Neon staging remains unavailable: direct Neon queries and the AI Midas read-only reconciliation job returned HTTP 402 / “account or project has exceeded the quota”. This is a provider-account quota block, not a migration SQL failure. No paid upgrade was purchased, no retry loop was run, and no staging write was made. Staging migration 0012 and the seven PIT evidence links remain NOT APPLIED.
+- The Phase 2 foundation and AI Midas reconciliation workflows remain blocked by the Neon quota because they require a live staging connection. Do not mark the 369-match reconciliation or staging acceptance complete until a fresh read-only verification succeeds.
+
+### Historical odds provider qualification — no purchase
+
+- 5Dollar status-only evidence remains Community, not Ultra. Do not call the Ultra-only odds-history endpoint and do not purchase an upgrade.
+- The Odds API remains the approved prospective timestamp source; its historical snapshot endpoint is paid-plan only. Continue only within existing credits and the bounded one-event capture guard.
+- AI Midas remains authorized for historical statistics and additional odds, including Brazil Série B where available. Its average 1X2 fields and Brazil Série B advanced-stat CSV do not by themselves establish bookmaker-specific timestamped closing odds.
+- Desk review added SockOdds, Sportmonks Premium Odds and iSportsAPI as conditional research candidates only. No keys or endpoints were used, no paid add-ons were activated, and none was admitted as a qualified complete seven-competition historical closing archive.
+- The first prospective The Odds API capture remains Como vs Cagliari: 95 timestamped quotes, 21 bookmakers, 1X2/BTTS/totals, 3 credits consumed. It is an early snapshot, not closing odds. Six other admitted forecast fixtures remain uncaptured.
+- Seven V2 prospective predictions remain recorded; zero eligible V2 settlements were added. Do not settle fixtures before verified FINISHED results and exact identity evidence.
+
+### Release controls
+
+- PR #120 remains OPEN / DRAFT / UNMERGED.
+- No production deployment, publication, Telegram delivery, schedule activation, value-betting unlock, plan upgrade or provider top-up occurred.
+- Certification thresholds remain unchanged. Value betting remains LOCKED.
+- Next staging steps require Neon quota recovery: run the staging migration dry-run first, then the explicitly guarded migration workflow; afterward run the seven-link dry-run and append workflow with its explicit confirmation. No migration or link write is attempted while Neon returns 402.
+
