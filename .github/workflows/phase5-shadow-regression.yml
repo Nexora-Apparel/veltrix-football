@@ -60,6 +60,7 @@ on:
       - "scripts/phase4_odds_one_event_probe.py"
       - "scripts/phase5_prediction_feature_link_migration.py"
       - "scripts/link_v2_prediction_feature_snapshots.py"
+      - ".github/workflows/phase5-v2-prediction-feature-evidence-link.yml"
       - "tests/test_link_v2_prediction_feature_snapshots.py"
       - "tests/test_phase5_prediction_feature_link_migration.py"
       - "db/migrations/0012_prediction_feature_snapshot_links.sql"
