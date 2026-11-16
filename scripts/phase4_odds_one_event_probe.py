@@ -585,7 +585,26 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
             ),
         )
         if write_result.rejected:
-            raise RuntimeError("ODDS_QUOTE_WRITER_REJECTED_ELIGIBLE_TIMESTAMPED_QUOTES")
+            now = datetime.now(timezone.utc)
+            _append_state_chain(store,capture_request_id,request_id,[
+                ("PREFLIGHT_APPROVED",created_at,"RIGHTS_QUOTA_AND_EXACT_EVENT_PREFLIGHT",manifest.manifest_sha256),
+                ("CREDIT_RESERVED",requested_at,"THREE_CREDIT_ONE_REQUEST_LOCAL_GUARD",manifest.manifest_sha256),
+                ("REQUEST_STARTED",requested_at,"SINGLE_EVENT_ODDS_REQUEST_DISPATCHED",manifest.request_fingerprint),
+                ("RESPONSE_RECEIVED",retrieved_at,"HTTP_200_RAW_RESPONSE_PERSISTED",response.response_sha256),
+                ("PARSE_REJECTED",now,"QUOTE_ADMISSION_REJECTED_CAPTURE_AS_A_UNIT",response.response_sha256),
+                ("QUOTA_RECONCILED",now,"PROVIDER_QUOTA_COUNTERS_MATCHED_EXACTLY",response.response_sha256),
+                ("COMMITTED",now,"REJECTED_QUOTES_NOT_PERSISTED_RAW_EVIDENCE_RETAINED",response.response_sha256),
+            ])
+            return {
+                "status":"PARSE_REJECTED_QUOTE_ADMISSION",
+                "odds_request_dispatched":True,
+                "actual_credits":actual_credits,
+                "response_sha256":response.response_sha256,
+                "provider_response_id":response_id,
+                "capture_request_id":capture_request_id,
+                "quotes_persisted":0,
+                "quotes_rejected":write_result.rejected,
+            }
 
     # Verify the exact response/request linkage and committed quote count.
     import psycopg
