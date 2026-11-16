@@ -260,10 +260,14 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
             SELECT eligibility_event_id,eligibility_status,evidence_sha256,recorded_at
             FROM feature_snapshot_eligibility_events
             WHERE feature_snapshot_id=%s AND eligibility_status='ELIGIBLE'
-              AND evidence_sha256=%s
+              AND evidence_sha256=%s AND recorded_at <= %s
             ORDER BY recorded_at DESC,eligibility_event_id DESC LIMIT 1
             """,
-            (item["feature_snapshot_id"],item["eligibility_evidence_sha256"]),
+            (
+                item["feature_snapshot_id"],
+                item["eligibility_evidence_sha256"],
+                _aware(item["forecast_cutoff_at"]),
+            ),
         ).fetchone()
         if (
             eligibility is None or eligibility[1]!="ELIGIBLE"
