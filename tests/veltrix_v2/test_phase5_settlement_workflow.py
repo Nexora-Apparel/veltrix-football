@@ -93,7 +93,7 @@ def test_v2_feature_link_loader_does_not_touch_database_when_no_v2_targets():
     class NoQueryConnection:
         def execute(self, *_args, **_kwargs):
             raise AssertionError("database query must not run without V2 targets")
-    assert _load_v2_feature_links(NoQueryConnection(), []) == ()
+    assert _load_v2_feature_links(NoQueryConnection(), []) == {}
 
 
 def test_v2_feature_link_loader_requires_exact_append_only_link_row():
