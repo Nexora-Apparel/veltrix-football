@@ -4,14 +4,14 @@ Status: READY FOR BOUNDED RESEARCH PROBE SUBJECT TO FRESH QUOTA PREFLIGHT
 
 ## Objective
 
-Measure actual bookmaker coverage and market availability for one upcoming English Premier League event in the UK region, preserve source quote timestamps separately from retrieval timestamps, and assess whether the returned odds data adds measurable value to prediction research (market baselines, calibration comparisons, closing-line research and odds coverage). This is a bounded research probe for the personal-use VELTRIX project.
+Measure actual bookmaker coverage and market availability for one upcoming fixture already admitted into the new V2 prospective forecast series, across the four approved competitions represented in that series (England Premier League, Spain La Liga, Italy Serie A and France Ligue 1). Preserve source quote timestamps separately from retrieval timestamps and assess whether the returned odds data adds measurable value to prediction research (market baselines, calibration comparisons, closing-line research and odds coverage). This is a bounded research probe for the personal-use VELTRIX project.
 
 This probe does not activate recurring odds collection, model training on its own, prediction publication, Telegram delivery or value betting. It is not a commercial billing or subscription verification exercise.
 
 ## Fixed probe envelope
 
 - Provider: The Odds API v4
-- Sport key: `soccer_epl` (must be returned by a fresh no-credit sports catalogue response)
+- Sport key: selected dynamically from the four forecast competitions, and must be present in the fresh no-credit sports catalogue response
 - Event count: exactly 1 upcoming event
 - Region: `uk`
 - Markets: `h2h`, `totals`, `btts`
@@ -33,7 +33,7 @@ The provider documents live odds cost as one credit per region per market. Its e
 2. Refresh `GET /v4/sports/?all=true`. Require HTTP 200, all three quota headers and `x-requests-last=0`. Persist the exact response and retrieval timestamp. This is a no-credit access/quota observation.
 3. Confirm the observed remaining quota is sufficient for the capped request (at least 3 credits) and record the observation time, response hash and quota headers. Do not infer a monthly allowance or billing period from `used + remaining`; neither is required for this research probe.
 4. Set an immutable per-run guard: maximum 3 credits, request-count cap exactly 1, no retries, timeout 15 seconds, staging-only persistence. The guard is a usage-safety limit, not a model-quality gate. Do not require invoices, billing documents, commercial account evidence, proof of a business subscription, billing-period records or monthly allowance paperwork.
-5. Select one future event from the zero-credit `/v4/sports/soccer_epl/events` endpoint. Confirm the event identity, competition, teams and kickoff are valid and kickoff is after the prediction cutoff.
+5. Load only the seven upcoming fixtures already recorded under `veltrix-openplay-xg-poisson-v1`. Query the zero-credit `/v4/sports/{sportKey}/events` endpoint for each competition represented by those fixtures. Require exact normalized home/away labels and kickoff within 60 seconds. Choose the earliest exact match deterministically. If no exact match exists, stop before the odds endpoint and preserve only sanitized kickoff-only candidates for later alias review.
 6. Build and persist the immutable request manifest. Record the expected maximum cost and exact request parameters before dispatch.
 7. Require a single attempt, no retry, no emergency stop, authorized operator dispatch and successful prior-attempt reconciliation.
 
@@ -44,7 +44,7 @@ If any access, rights, event-identity or quota-safety check fails, stop before t
 Use the event-specific endpoint:
 
 ```
-GET /v4/sports/soccer_epl/events/{eventId}/odds
+GET /v4/sports/{sportKey}/events/{eventId}/odds
     ?regions=uk
     &markets=h2h,totals,btts
     &dateFormat=iso
@@ -68,9 +68,10 @@ Send the API key in the `x-api-key` header, not in a logged URL. Capture the raw
 
 ## Current verified state
 
-- The last persisted no-credit sports-catalogue probe returned HTTP 200, all five configured soccer keys, `x-requests-used=205`, `x-requests-remaining=295` and `x-requests-last=0` at 2026-11-14T23:12:29.755Z. This is historical evidence, not a fresh preflight for a later request.
-- The staging database currently contains one The Odds API response: the sports catalogue. It contains zero `/odds` responses and zero event-odds responses.
-- No bookmaker market response or timestamped quote has yet been captured.
+- The latest no-credit sports-catalogue probe returned HTTP 200, all five approved soccer keys, `x-requests-used=226`, `x-requests-remaining=274` and `x-requests-last=0` at 2026-11-16T00:18:36Z. This is historical evidence only; the live probe refreshes quota immediately before any odds request.
+- The first exact-match pass over the EPL fixtures found no exact provider event; it stopped before the odds endpoint and consumed zero odds credits.
+- The next pass searches only the seven already-admitted V2 forecast fixtures across their four represented, already-approved competitions. It does not use aliases or fuzzy matching.
+- The staging database still contains zero event-odds responses and zero timestamped `odds_quote_observations`.
 - A fresh no-credit quota/access observation is required immediately before the single credit-consuming request. Commercial billing documentation and monthly allowance proof are not required.
 
 ## Release boundary
