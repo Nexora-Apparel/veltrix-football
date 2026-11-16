@@ -955,3 +955,15 @@ The settlement operations runbook now documents the separate V2 link prerequisit
 
 PR #120 remains OPEN / DRAFT / UNMERGED at the latest verified head before this ledger update. No production deploy, prediction publication, Telegram delivery, schedule activation, or value-betting unlock occurred.
 
+
+
+## 2026-11-16 — latest acceptance verification and manual status-only action
+
+- PR #120 verified OPEN / DRAFT / UNMERGED at HEAD `4af692d536616164b60baf0ad11cf8e6f2e92a38` before this ledger append.
+- PostgreSQL 16 and PostgreSQL 18 full migration acceptance both passed at that head, including migration 0012, catalog table/index/trigger checks and migration count 12. Run [43815949518](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43815949518).
+- Historical Model Audit Tests and Certification Evidence Integrity passed at the same head. Phase 5 Shadow Regression main job passed; the separate exact code regression run [43815851690](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43815851690) completed SUCCESS across shadow tests and PostgreSQL 16/18 integration.
+- Neon-backed Phase 2 AI Midas reconciliation remains blocked by the staging project quota (HTTP 402). Its 369-match read-only reconciliation did not complete; no data was reconciled or imported during this attempt. The foundation job still requires final completion evidence.
+- **Fresh Ultra verification is not complete.** The status-only workflow is ready but requires a manual GitHub Actions dispatch because no workflow-dispatch tool is available in this session. Direct link: [5Dollar status-only entitlement check](https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase2-5dollar-status-only-entitlement.yml). Run on branch `integration/v2-report-bundle-wiring-20261114`, no inputs. It makes one authenticated GET /v1/status request only; expected artifact is `veltrix-5dollar-status-only-<run-id>`. No odds-history endpoint is called.
+- Staging migration and seven-link backfill workflows remain manual and blocked until Neon staging is reachable without purchasing an upgrade. No writes are attempted while Neon returns 402.
+- V2 settlement runner now requires immutable PIT feature links and exact canonical/provider identity for V2 predictions. Current seven V2 target fixtures remain future-dated; no V2 settlement has been appended.
+
