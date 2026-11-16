@@ -486,15 +486,15 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
 
     rights_at = datetime.now(timezone.utc)
     created_at = datetime.now(timezone.utc)
-    request_id = f"{run_id}-epl-one-event-odds"
+    request_id = f"{run_id}-{sport_key}-one-event-odds"
     request = CaptureRequest(
         request_id=request_id,
         run_id=str(run_id),
         provider=PROVIDER,
         api_version="v4",
         endpoint_class="event_odds",
-        sport_key=SPORT,
-        competition_keys=(SPORT,),
+        sport_key=sport_key,
+        competition_keys=(sport_key,),
         fixture_boundaries=(FixtureBoundary(
             fixture_id=str(fixture["fixture_id"]),
             provider_event_id=event["id"],
@@ -539,14 +539,14 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
         expected_database="veltrix_football_staging",
     )
     manifest_id = store.persist_capture_manifest(manifest)
-    endpoint = f"{API_BASE}{ENDPOINT_PATH}/{event['id']}/odds"
+    endpoint = f"{API_BASE}/sports/{sport_key}/events/{event['id']}/odds"
     request_url = endpoint + "?regions=uk&markets=h2h%2Ctotals%2Cbtts&dateFormat=iso&oddsFormat=decimal"
     requested_at, retrieved_at, raw_body, quota_headers, envelope, payload = _fetch_json(request_url, api_key)
 
     response = ProviderResponse(
         provider=PROVIDER,
         source_id=SOURCE_ID,
-        endpoint=f"{ENDPOINT_PATH}/{event['id']}/odds",
+        endpoint=f"/sports/{sport_key}/events/{event['id']}/odds",
         request_id=request_id,
         request_params={
             "regions":REGION,
@@ -615,7 +615,7 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
             "quotes_persisted":0,
         }
 
-    parsed = parse_event_odds(raw_body,sport_key=SPORT,event_id=event["id"],retrieved_at=retrieved_at)
+    parsed = parse_event_odds(raw_body,sport_key=sport_key,event_id=event["id"],retrieved_at=retrieved_at)
     timestamped = tuple(
         quote for quote in parsed.observations
         if quote.eligible_timestamp and quote.source_published_at is not None
@@ -639,6 +639,7 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
             fixture=fixture,
             retrieved_at=retrieved_at,
             approval_id=approval.approval_id,
+            sport_key=sport_key,
         )
         write_result = PostgresOddsQuoteStore(
             lambda: __import__("psycopg").connect(staging_dsn)
@@ -713,7 +714,7 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
         "odds_request_dispatched":True,
         "odds_request_count":1,
         "provider":"the_odds_api",
-        "sport_key":SPORT,
+        "sport_key":sport_key,
         "fixture_id":fixture["fixture_id"],
         "provider_event_id":event["id"],
         "home_team":fixture["home"],
