@@ -521,7 +521,7 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
         and _normalize_team(str(event_payload.get("home_team",""))) == _normalize_team(fixture["home"])
         and _normalize_team(str(event_payload.get("away_team",""))) == _normalize_team(fixture["away"])
         and response_kickoff is not None
-        and abs((response_kickoff - kickoff).total_seconds()) <= 60
+        and abs((response_kickoff - provider_event_kickoff).total_seconds()) <= 1
     )
     if not identity_valid:
         now = datetime.now(timezone.utc)
