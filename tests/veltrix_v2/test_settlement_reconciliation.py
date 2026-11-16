@@ -6,7 +6,10 @@ from veltrix_v2.data.contracts import (
     ApprovalStatus, DataUsePurpose, FixtureStatus, HistoricalFixture, SourceApproval,
 )
 from veltrix_v2.ledger.paper_predictions import PaperPrediction, ProspectivePaperLedger
-from veltrix_v2.ledger.settlement_reconciliation import reconcile_finished_fixtures
+from veltrix_v2.ledger.settlement_reconciliation import (
+    reconcile_finished_fixtures,
+    reconcile_v2_finished_fixtures,
+)
 
 UTC = timezone.utc
 NOW = datetime(2026, 11, 22, 12, 0, tzinfo=UTC)
@@ -140,4 +143,97 @@ def test_ignores_unrelated_finished_provider_rows():
     )
     assert appended == ()
     assert quarantined == ()
+    assert len(ledger.events) == 1
+
+
+def make_v2_ledger():
+    kickoff = NOW - timedelta(days=1)
+    ledger = ProspectivePaperLedger()
+    ledger.append_prediction(PaperPrediction(
+        fixture_id="5dollarfootballapi:777",
+        competition_id="1001",
+        home_team_id="1002",
+        away_team_id="1003",
+        kickoff_at=kickoff,
+        prediction_cutoff_at=kickoff - timedelta(hours=2),
+        forecasted_at=kickoff - timedelta(hours=1),
+        recorded_at=kickoff - timedelta(minutes=30),
+        model_version="veltrix-openplay-xg-poisson-v1",
+        home_probability=0.48, draw_probability=0.27, away_probability=0.25,
+        evidence_sha256="b" * 64,
+        point_in_time_certifiable=True,
+        evidence_class="PIT_CERTIFIED",
+        target_provider="5DollarFootballAPI",
+        target_source_id="5dollarfootballapi",
+        target_source_fixture_id="777",
+        target_provider_competition_id="101",
+        target_payload_sha256="c" * 64,
+        target_response_sha256="d" * 64,
+        target_capture_manifest_sha256="e" * 64,
+    ))
+    prediction = ledger.events[0]
+    link = {
+        "prediction_event_sha256": prediction.event_sha256,
+        "link_sha256": "f" * 64,
+        "feature_snapshot_id": 15,
+        "eligibility_event_id": 25,
+        "feature_set_sha256": "1" * 64,
+        "eligibility_evidence_sha256": "2" * 64,
+        "forecast_evidence_sha256": prediction.payload["evidence_sha256"],
+        "model_artifact_sha256": "3" * 64,
+        "forecast_cutoff_at": kickoff - timedelta(hours=2),
+        "feature_snapshot_cutoff_at": kickoff - timedelta(hours=3),
+        "recorded_at": kickoff - timedelta(minutes=20),
+        "canonical_competition_id": "1001",
+        "canonical_home_team_id": "1002",
+        "canonical_away_team_id": "1003",
+        "provider_competition_id": "101",
+        "provider_home_team_id": "11",
+        "provider_away_team_id": "22",
+    }
+    return ledger, {prediction.event_sha256: link}
+
+
+def test_reconciles_v2_pit_prediction_only_with_exact_immutable_feature_link():
+    ledger, links = make_v2_ledger()
+    fixture = make_fixture(response_sha256="d" * 64, capture_manifest_sha256="e" * 64)
+    appended, quarantined = reconcile_v2_finished_fixtures(
+        ledger, [fixture], make_approval(),
+        v2_feature_links=links, recorded_at=NOW,
+    )
+    assert len(appended) == 1
+    assert quarantined == ()
+    settlement = appended[0]
+    assert settlement.event_type == "SETTLEMENT"
+    assert settlement.model_version == "veltrix-openplay-xg-poisson-v1"
+    assert settlement.payload["prediction_feature_link_sha256"] == "f" * 64
+    assert settlement.payload["feature_snapshot_id"] == 15
+    assert settlement.payload["eligibility_event_id"] == 25
+    assert settlement.payload["canonical_competition_id"] == "1001"
+    assert settlement.payload["provider_competition_id"] == "101"
+    assert settlement.payload["result_availability_basis"] == "collector_first_observed_v1"
+    assert ledger.verify_chain()
+
+
+def test_quarantines_v2_pit_prediction_when_feature_link_is_missing():
+    ledger, _ = make_v2_ledger()
+    fixture = make_fixture()
+    appended, quarantined = reconcile_v2_finished_fixtures(
+        ledger, [fixture], make_approval(), v2_feature_links={}, recorded_at=NOW,
+    )
+    assert appended == ()
+    assert quarantined == (("777", "V2_SETTLEMENT_FEATURE_EVIDENCE_LINK_MISSING_OR_MISMATCHED"),)
+    assert len(ledger.events) == 1
+
+
+def test_quarantines_v2_pit_prediction_when_provider_identity_disagrees_with_link():
+    ledger, links = make_v2_ledger()
+    event_hash = next(iter(links))
+    links[event_hash]["provider_home_team_id"] = "wrong-team"
+    fixture = make_fixture()
+    appended, quarantined = reconcile_v2_finished_fixtures(
+        ledger, [fixture], make_approval(), v2_feature_links=links, recorded_at=NOW,
+    )
+    assert appended == ()
+    assert quarantined == (("777", "SETTLEMENT_FIXTURE_IDENTITY_MISMATCH"),)
     assert len(ledger.events) == 1
