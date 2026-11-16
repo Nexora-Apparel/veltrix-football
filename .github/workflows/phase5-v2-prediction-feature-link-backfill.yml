@@ -9,6 +9,8 @@ on:
       - "scripts/link_v2_prediction_feature_snapshots.py"
       - "tests/test_link_v2_prediction_feature_snapshots.py"
       - "db/migrations/0012_prediction_feature_snapshot_links.sql"
+      - "scripts/phase5_prediction_feature_link_migration.py"
+      - "tests/test_phase5_prediction_feature_link_migration.py"
   workflow_dispatch:
     inputs:
       apply:
@@ -17,7 +19,7 @@ on:
         default: false
         type: boolean
       confirmation:
-        description: "Type LINK_V2_FORECASTS_TO_PIT_FEATURE_EVIDENCE"
+        description: "Type LINK_V2_FORECASTS_TO_PIT_FEATURE_EVIDENCE when apply is true"
         required: false
         default: ""
         type: string
@@ -36,13 +38,14 @@ jobs:
       (github.event_name == 'push' &&
        contains(github.event.head_commit.message, '[v2-evidence-link]')) ||
       (github.event_name == 'workflow_dispatch' &&
-       inputs.apply == true &&
-       inputs.confirmation == 'LINK_V2_FORECASTS_TO_PIT_FEATURE_EVIDENCE')
+       (inputs.apply == false ||
+        (inputs.apply == true &&
+         inputs.confirmation == 'LINK_V2_FORECASTS_TO_PIT_FEATURE_EVIDENCE')))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
-      VELTRIX_ENABLE_PHASE5_V2_PREDICTION_FEATURE_LINKS: "YES"
+      VELTRIX_ENABLE_PHASE5_V2_PREDICTION_FEATURE_LINKS: ${{ inputs.apply && 'YES' || 'NO' }}
     steps:
       - name: Checkout integration branch
         uses: actions/checkout@v4
@@ -81,14 +84,22 @@ jobs:
             > /tmp/v2-feature-links-dry-run.json
           python -c 'import json; d=json.load(open("/tmp/v2-feature-links-dry-run.json")); assert d["status"] == "DRY_RUN_READY" and d["forecasts"] == 7 and d["database"] == "veltrix_football_staging" and d["writes_performed"] is False'
 
-      - name: Append seven immutable evidence links and verify after commit
+      - name: Dry-run or append seven immutable evidence links
         run: |
           mkdir -p artifacts/v2-prediction-feature-links
-          python -m scripts.link_v2_prediction_feature_snapshots \
-            --forecast-summary artifacts/source/openplay-v2-forecasts/summary.json \
-            --feature-admission-summary artifacts/source/openplay-feature-snapshot-admission/summary.json \
-            --apply > artifacts/v2-prediction-feature-links/summary.json
-          python -c 'import json; d=json.load(open("artifacts/v2-prediction-feature-links/summary.json")); assert d["status"] == "PASS_V2_PREDICTION_FEATURE_EVIDENCE_LINKS" and d["links_verified"] == 7 and d["fresh_connection_post_commit_verified"] is True'
+          if [ "${{ inputs.apply }}" = "true" ]; then
+            python -m scripts.link_v2_prediction_feature_snapshots \
+              --forecast-summary artifacts/source/openplay-v2-forecasts/summary.json \
+              --feature-admission-summary artifacts/source/openplay-feature-snapshot-admission/summary.json \
+              --apply > artifacts/v2-prediction-feature-links/summary.json
+            python -c 'import json; d=json.load(open("artifacts/v2-prediction-feature-links/summary.json")); assert d["status"] == "PASS_V2_PREDICTION_FEATURE_EVIDENCE_LINKS" and d["links_verified"] == 7 and d["fresh_connection_post_commit_verified"] is True'
+          else
+            python -m scripts.link_v2_prediction_feature_snapshots \
+              --forecast-summary artifacts/source/openplay-v2-forecasts/summary.json \
+              --feature-admission-summary artifacts/source/openplay-feature-snapshot-admission/summary.json \
+              > artifacts/v2-prediction-feature-links/summary.json
+            python -c 'import json; d=json.load(open("artifacts/v2-prediction-feature-links/summary.json")); assert d["status"] == "DRY_RUN_READY" and d["forecasts"] == 7 and d["writes_performed"] is False'
+          fi
 
       - name: Upload evidence-link verification summary
         if: always()
