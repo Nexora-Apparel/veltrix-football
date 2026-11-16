@@ -619,7 +619,9 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
             "SELECT count(*) FROM odds_quote_observations WHERE response_id=%s AND capture_request_id=%s",
             (response_id,capture_request_id),
         ).fetchone()[0]
-    expected_quotes = write_result.inserted + write_result.duplicates if write_result else 0
+    # Duplicate quote keys remain linked to their original capture request; only
+    # newly inserted rows should be linked to this request in the post-commit count.
+    expected_quotes = write_result.inserted if write_result else 0
     if int(persisted_quotes) != expected_quotes:
         raise RuntimeError("ODDS_QUOTE_POST_COMMIT_VERIFICATION_FAILED")
 
