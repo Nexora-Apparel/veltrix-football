@@ -60,6 +60,8 @@ def _public_summary(result: dict) -> dict:
         "provider_pages_persisted": result.get("provider_pages_persisted", 0),
         "finished_rows_observed": result.get("finished_rows_observed", 0),
         "settlements_appended": result.get("settlements_appended", 0),
+        "shadow_settlements_appended": result.get("shadow_settlements_appended", 0),
+        "v2_pit_settlements_appended": result.get("v2_pit_settlements_appended", 0),
         "quarantined_count": len(result.get("quarantined_rows", ())),
         "ledger_events": result.get("ledger_events", 0),
         "ledger_chain_verified": result.get("ledger_chain_verified", False),
