@@ -6,7 +6,7 @@
 
 ## Decision summary
 
-- **5DollarFootballAPI Ultra:** NOT VERIFIED. The latest persisted account evidence is Community. The dedicated status-only probe is the only permitted Ultra preflight; do not call the Ultra-only odds-history endpoint unless a fresh status response explicitly proves the entitlement.
+- **5DollarFootballAPI Ultra:** NOT AVAILABLE on the current account. Fresh status-only run [43816256678](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43816256678) returned HTTP 200 at 2026-11-16T06:22:09Z with exact plan value community, 300 requests/hour and 299 remaining. One GET /v1/status request only; odds-history requests 0. The raw response SHA-256 is 3e9d45a8a605349357ffe0911eea10ecbdc8da98eacdbc7457b49ed0b02e1b48. Do not call the Ultra-only odds-history endpoint.
 - **No upgrade or credit purchase:** No provider upgrade, paid add-on, wallet top-up, or new subscription is authorized or performed.
 - **The Odds API:** Retain as the already-approved prospective bookmaker benchmark. It has real provider timestamps on current odds and a paid historical snapshot API. The existing account is used only within its current quota and the one-event/three-credit capture guard. Historical archive snapshots are not fetched on the current plan.
 - **AI Midas:** Remains an authorized historical-statistics and additional-odds source, including Brazil Série B where available. Its authorization is not proof of a bookmaker-specific, point-in-time closing archive. Continue source-level identity, timestamp, coverage and rights qualification without assuming closing-line eligibility.
@@ -33,7 +33,7 @@
 
 ## Next no-purchase actions
 
-- Keep the 5Dollar status-only entitlement workflow isolated; rerun only when a fresh status observation is needed. Do not call /odds/history without explicit Ultra evidence.
+- Keep the 5Dollar status-only entitlement workflow isolated; the fresh 2026-11-16 status result confirms Community. Rerun only when a later fresh status observation is needed. Do not call /odds/history without explicit Ultra evidence.
 - Continue The Odds API prospective event capture for the remaining already-admitted V2 forecast fixtures, one exact-match fixture per bounded workflow run, only when staging persistence is available and provider quota is checked first.
 - Request no new provider credentials or paid plan. If an existing authorized AI Midas credential is already configured, qualify only documented history/odds endpoints with a bounded, read-only schema-and-timestamp probe after checking current quota and account access.
 - For each candidate, require a fixture-by-fixture matrix for the seven competitions, bookmaker IDs, market IDs, source timestamp semantics, retention, historical start date, gaps, corrections, result linkage, and accepted rights before admitting any rows.
