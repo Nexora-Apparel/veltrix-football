@@ -50,7 +50,7 @@ MARKETS = ("h2h", "totals", "btts")
 APPROVAL_ID = "approval-the-odds-api-v4-owner-authorized-2026-11-14"
 API_BASE = "https://api.the-odds-api.com/v4"
 MAX_CREDITS = 3
-MAX_REQUESTS = 1  # One provider odds request per workflow execution; no retry path.
+MAX_REQUESTS = 1  # One provider odds request per workflow execution; no retry path. [V2-FORECAST-SCOPE]
 TIMEOUT_SECONDS = 15
 USER_AGENT = "VELTRIX-FOOTBALL-2.0-ONE-EVENT-ODDS-PROBE/1.0"
 
