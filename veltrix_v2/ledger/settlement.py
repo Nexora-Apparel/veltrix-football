@@ -56,6 +56,8 @@ def settle_from_verified_fixture(
             "eligibility_event_id","feature_set_sha256","eligibility_evidence_sha256",
             "forecast_evidence_sha256","model_artifact_sha256",
             "forecast_cutoff_at","feature_snapshot_cutoff_at","recorded_at",
+            "canonical_competition_id","canonical_home_team_id","canonical_away_team_id",
+            "provider_competition_id","provider_home_team_id","provider_away_team_id",
         )
         if any(field not in prediction_feature_link for field in required_link_fields):
             raise ValueError("SETTLEMENT_V2_FEATURE_EVIDENCE_LINK_INCOMPLETE")
@@ -95,6 +97,12 @@ def settle_from_verified_fixture(
             or link_recorded > recorded_at
         ):
             raise ValueError("SETTLEMENT_V2_FEATURE_EVIDENCE_CLOCK_INVALID")
+        for field in (
+            "canonical_competition_id","canonical_home_team_id","canonical_away_team_id",
+            "provider_competition_id","provider_home_team_id","provider_away_team_id",
+        ):
+            if not isinstance(prediction_feature_link[field],str) or not prediction_feature_link[field].strip():
+                raise ValueError("SETTLEMENT_V2_FIXTURE_IDENTITY_LINK_INVALID")
         feature_link_fields={
             "prediction_feature_link_sha256":prediction_feature_link["link_sha256"],
             "feature_snapshot_id":prediction_feature_link["feature_snapshot_id"],
@@ -103,6 +111,12 @@ def settle_from_verified_fixture(
             "eligibility_evidence_sha256":prediction_feature_link["eligibility_evidence_sha256"],
             "forecast_evidence_sha256":prediction_feature_link["forecast_evidence_sha256"],
             "model_artifact_sha256":prediction_feature_link["model_artifact_sha256"],
+            "canonical_competition_id":prediction_feature_link["canonical_competition_id"],
+            "canonical_home_team_id":prediction_feature_link["canonical_home_team_id"],
+            "canonical_away_team_id":prediction_feature_link["canonical_away_team_id"],
+            "provider_competition_id":prediction_feature_link["provider_competition_id"],
+            "provider_home_team_id":prediction_feature_link["provider_home_team_id"],
+            "provider_away_team_id":prediction_feature_link["provider_away_team_id"],
         }
     elif prediction_feature_link is not None:
         raise ValueError("SETTLEMENT_FEATURE_EVIDENCE_LINK_ONLY_FOR_V2_PREDICTION")
@@ -141,12 +155,28 @@ def settle_from_verified_fixture(
             raise ValueError(decision.reason_code)
 
     payload = prediction.payload
-    if (
-        payload.get("competition_id") != f"{fixture.source_id}:{fixture.provider_competition_id}"
-        or payload.get("home_team_id") != f"{fixture.source_id}:{fixture.provider_home_team_id}"
-        or payload.get("away_team_id") != f"{fixture.source_id}:{fixture.provider_away_team_id}"
-        or payload.get("kickoff_at") != fixture.kickoff_at_utc.isoformat()
-    ):
+    if is_v2_pit_prediction:
+        identity_matches = (
+            payload.get("target_provider") == fixture.provider
+            and payload.get("target_source_id") == fixture.source_id
+            and payload.get("target_source_fixture_id") == fixture.provider_fixture_id
+            and payload.get("target_provider_competition_id") == fixture.provider_competition_id
+            and payload.get("competition_id") == prediction_feature_link["canonical_competition_id"]
+            and payload.get("home_team_id") == prediction_feature_link["canonical_home_team_id"]
+            and payload.get("away_team_id") == prediction_feature_link["canonical_away_team_id"]
+            and prediction_feature_link["provider_competition_id"] == fixture.provider_competition_id
+            and prediction_feature_link["provider_home_team_id"] == fixture.provider_home_team_id
+            and prediction_feature_link["provider_away_team_id"] == fixture.provider_away_team_id
+            and payload.get("kickoff_at") == fixture.kickoff_at_utc.isoformat()
+        )
+    else:
+        identity_matches = (
+            payload.get("competition_id") == f"{fixture.source_id}:{fixture.provider_competition_id}"
+            and payload.get("home_team_id") == f"{fixture.source_id}:{fixture.provider_home_team_id}"
+            and payload.get("away_team_id") == f"{fixture.source_id}:{fixture.provider_away_team_id}"
+            and payload.get("kickoff_at") == fixture.kickoff_at_utc.isoformat()
+        )
+    if not identity_matches:
         raise ValueError("SETTLEMENT_FIXTURE_IDENTITY_MISMATCH")
 
     result_first_observed = fixture.availability_basis == "collector_first_observed_v1"
