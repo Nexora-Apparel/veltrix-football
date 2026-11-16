@@ -35,8 +35,9 @@ jobs:
       (github.event_name == 'push' &&
        contains(github.event.head_commit.message, '[v2-evidence-link-migration]')) ||
       (github.event_name == 'workflow_dispatch' &&
-       inputs.apply == true &&
-       inputs.confirmation == 'APPLY_V2_FEATURE_LINK_MIGRATION_TO_STAGING')
+       (inputs.apply == false ||
+        (inputs.apply == true &&
+         inputs.confirmation == 'APPLY_V2_FEATURE_LINK_MIGRATION_TO_STAGING')))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -44,7 +45,7 @@ jobs:
       VELTRIX_EXPECTED_DATABASE: veltrix_football_staging
       VELTRIX_EXPECTED_DATABASE_HOST: ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech
       VELTRIX_EXPECTED_DATABASE_ROLE: neondb_owner
-      VELTRIX_ENABLE_PHASE5_PREDICTION_FEATURE_LINK_MIGRATION: "YES"
+      VELTRIX_ENABLE_PHASE5_PREDICTION_FEATURE_LINK_MIGRATION: ${{ inputs.apply && 'YES' || 'NO' }}
     steps:
       - name: Checkout integration branch
         uses: actions/checkout@v4
@@ -71,11 +72,16 @@ jobs:
           python -m scripts.phase5_prediction_feature_link_migration > /tmp/v2-feature-link-dry-run.json
           python -c 'import json; d=json.load(open("/tmp/v2-feature-link-dry-run.json")); assert d["status"] == "DRY_RUN_READY" and d["database"] == "veltrix_football_staging" and d["user"] == "neondb_owner" and d["pending"] == ["0012_prediction_feature_snapshot_links"] and d["writes_performed"] is False'
 
-      - name: Apply migration 0012 and verify staging preservation
+      - name: Apply migration 0012 or record dry-run evidence
         run: |
           mkdir -p artifacts/v2-prediction-feature-link-migration
-          python -m scripts.phase5_prediction_feature_link_migration --apply > artifacts/v2-prediction-feature-link-migration/summary.json
-          python -c 'import json; d=json.load(open("artifacts/v2-prediction-feature-link-migration/summary.json")); assert d["status"] == "APPLIED_AND_VERIFIED" and d["applied_now"] == 1 and d["verification"]["prediction_feature_snapshot_links"] == 0'
+          if [ "${{ inputs.apply }}" = "true" ]; then
+            python -m scripts.phase5_prediction_feature_link_migration --apply > artifacts/v2-prediction-feature-link-migration/summary.json
+            python -c 'import json; d=json.load(open("artifacts/v2-prediction-feature-link-migration/summary.json")); assert d["status"] == "APPLIED_AND_VERIFIED" and d["applied_now"] == 1 and d["verification"]["prediction_feature_snapshot_links"] == 0'
+          else
+            python -m scripts.phase5_prediction_feature_link_migration > artifacts/v2-prediction-feature-link-migration/summary.json
+            python -c 'import json; d=json.load(open("artifacts/v2-prediction-feature-link-migration/summary.json")); assert d["status"] == "DRY_RUN_READY" and d["pending"] == ["0012_prediction_feature_snapshot_links"] and d["writes_performed"] is False'
+          fi
 
       - name: Upload migration evidence
         if: always()
