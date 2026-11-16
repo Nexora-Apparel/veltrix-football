@@ -967,3 +967,9 @@ PR #120 remains OPEN / DRAFT / UNMERGED at the latest verified head before this 
 - Staging migration and seven-link backfill workflows remain manual and blocked until Neon staging is reachable without purchasing an upgrade. No writes are attempted while Neon returns 402.
 - V2 settlement runner now requires immutable PIT feature links and exact canonical/provider identity for V2 predictions. Current seven V2 target fixtures remain future-dated; no V2 settlement has been appended.
 
+
+
+## Dispatchability correction — manual workflows remain branch-only
+
+The status-only 5Dollar workflow, migration 0012 workflow, V2 feature-link backfill workflow and V2 settlement workflow currently exist only on PR #120's integration branch. GitHub Actions requires a workflow_dispatch file to exist on the repository default branch before its UI can dispatch it. PR #120 remains draft/unmerged, so the direct workflow URLs are prepared references, not currently runnable UI actions. Do not merge the PR solely to expose these workflows. Do not substitute the older multi-endpoint 5Dollar entitlement workflow for the isolated status-only check. Live Ultra verification, staging migration/backfill and live settlement remain blocked pending an authorized promotion path and Neon quota recovery.
+
