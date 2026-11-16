@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Mapping
 
 from veltrix_v2.data.contracts import (
     ApprovalStatus, DataUsePurpose, FixtureStatus, HistoricalFixture, SourceApproval,
 )
 from veltrix_v2.data.rights import evaluate_source_use
-from veltrix_v2.ledger.paper_predictions import PaperLedgerEvent, ProspectivePaperLedger
+from veltrix_v2.ledger.paper_predictions import (
+    V2_PIT_MODEL_VERSION, PaperLedgerEvent, ProspectivePaperLedger,
+)
 
 
 def settle_from_verified_fixture(
@@ -17,6 +20,7 @@ def settle_from_verified_fixture(
     *,
     recorded_at: datetime,
     model_version: str | None = None,
+    prediction_feature_link: Mapping[str, object] | None = None,
 ) -> PaperLedgerEvent:
     """Settle one paper prediction from an exact, rights-approved final result."""
     if not isinstance(ledger, ProspectivePaperLedger):
