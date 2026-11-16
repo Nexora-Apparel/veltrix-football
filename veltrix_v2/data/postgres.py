@@ -464,6 +464,26 @@ class PostgresHistoryStore:
         finally:
             conn.close()
 
+    def persist_provider_response(self, response: ProviderResponse) -> int:
+        """Persist one successful raw provider response before parsing its payload.
+
+        The response is immutable, hash-bound and restricted to the explicitly
+        allowlisted non-production database by the store's write guard.
+        """
+        if not isinstance(response, ProviderResponse):
+            raise ValueError("PROVIDER_RESPONSE_TYPE_INVALID")
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            response_id = self._persist_provider_response(cur, response)
+            conn.commit()
+            return response_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
     def _persist_provider_response(self, cur, response: ProviderResponse) -> int:
         sensitive = {"authorization", "x-api-key", "api-key", "cookie", "set-cookie"}
         if any(str(key).casefold() in sensitive for key in response.response_headers):
