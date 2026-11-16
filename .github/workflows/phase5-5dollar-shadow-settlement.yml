@@ -1,4 +1,4 @@
-name: VELTRIX Phase 5 — Manual 5Dollar Shadow Settlement
+name: VELTRIX Phase 5 — Manual 5Dollar prospective settlement (shadow + V2 PIT)
 
 on:
   workflow_dispatch:
