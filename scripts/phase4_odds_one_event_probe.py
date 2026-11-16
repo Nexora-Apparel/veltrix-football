@@ -231,7 +231,7 @@ def _load_rights_evidence(dsn: str, approval) -> RightsEvidence:
 
 
 def _append_state_chain(store, capture_request_id: int, request_id: str,
-                        transitions: list[tuple[str, str, datetime, str, str]]):
+                        transitions: list[tuple[str, datetime, str, str]]):
     previous = None
     current = "PLANNED"
     for sequence, (target, occurred_at, reason, evidence_hash) in enumerate(transitions, 1):
@@ -387,7 +387,7 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
     if not fixtures:
         return {"status":"BLOCKED_NO_UPCOMING_EPL_FIXTURES","odds_request_dispatched":False}
 
-    events_url = f"{API_BASE}{ENDPOINT_PATH}/?dateFormat=iso"
+    events_url = f"{API_BASE}{ENDPOINT_PATH}?dateFormat=iso"
     _, events_retrieved, events_body, _, events_envelope, events_payload = _fetch_json(events_url, api_key)
     if (
         not isinstance(events_payload, list)
