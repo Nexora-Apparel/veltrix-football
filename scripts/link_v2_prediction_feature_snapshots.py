@@ -217,9 +217,19 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
                           OR fsl.source_published_at >= %s
                           OR fsl.retrieved_at >= %s
                           OR fsl.crosswalk_version_id IS NULL
+                          OR x.crosswalk_version_id IS NULL
+                          OR x.mapping_status IS DISTINCT FROM 'RESOLVED'
+                          OR x.provider IS DISTINCT FROM %s
+                          OR x.source_id IS DISTINCT FROM %s
+                          OR x.entity_type NOT IN ('TEAM','COMPETITION','FIXTURE')
+                          OR x.provider_entity_id IS DISTINCT FROM so.provider_entity_id
+                          OR x.evidence_observation_id IS DISTINCT FROM so.id
+                          OR x.valid_from > %s
+                          OR (x.valid_until IS NOT NULL AND x.valid_until <= %s)
                    )
             FROM feature_snapshot_links fsl
             LEFT JOIN source_observations so ON so.id=fsl.source_observation_id
+            LEFT JOIN entity_crosswalk_versions x ON x.crosswalk_version_id=fsl.crosswalk_version_id
             WHERE fsl.feature_snapshot_id=%s
             """,
             (
@@ -228,6 +238,10 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
                 EXPECTED_OPENPLAY_SOURCE_ID,
                 EXPECTED_OPENPLAY_RIGHTS_APPROVAL_ID,
                 _aware(item["forecast_cutoff_at"]),
+                _aware(item["forecast_cutoff_at"]),
+                _aware(item["forecast_cutoff_at"]),
+                EXPECTED_OPENPLAY_PROVIDER,
+                EXPECTED_OPENPLAY_SOURCE_ID,
                 _aware(item["forecast_cutoff_at"]),
                 _aware(item["forecast_cutoff_at"]),
                 _aware(item["forecast_cutoff_at"]),
