@@ -973,3 +973,15 @@ PR #120 remains OPEN / DRAFT / UNMERGED at the latest verified head before this 
 
 The status-only 5Dollar workflow, migration 0012 workflow, V2 feature-link backfill workflow and V2 settlement workflow currently exist only on PR #120's integration branch. GitHub Actions requires a workflow_dispatch file to exist on the repository default branch before its UI can dispatch it. PR #120 remains draft/unmerged, so the direct workflow URLs are prepared references, not currently runnable UI actions. Do not merge the PR solely to expose these workflows. Do not substitute the older multi-endpoint 5Dollar entitlement workflow for the isolated status-only check. Live Ultra verification, staging migration/backfill and live settlement remain blocked pending an authorized promotion path and Neon quota recovery.
 
+
+
+## 2026-11-16 06:22 UTC — live 5Dollar status-only entitlement verified
+
+- Workflow [43816256678](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43816256678) completed SUCCESS on the integration branch.
+- Exactly one authenticated GET /v1/status request; HTTP 200; response schema valid; exact provider plan field `plan=community`.
+- Quota headers: 300/hour limit, 299 remaining at check. No leagues, fixtures, odds or odds-history endpoint was called.
+- `ultra_confirmed=false`; decision: `ULTRA_NOT_CONFIRMED_DO_NOT_CALL_ODDS_HISTORY`.
+- Raw response SHA-256: `3e9d45a8a605349357ffe0911eea10ecbdc8da98eacdbc7457b49ed0b02e1b48`; evidence SHA-256: `3542b21c0538727dcdb61efed45f0a8dbb2a67d39d8a52a0cbb9a6175f323252`.
+- Side effects all zero: no odds/history/fixture/league requests, database writes, prediction writes or Telegram messages. No upgrade purchased.
+- This is fresh account evidence, not an inference from rate limits. Ultra remains unavailable; no history call is permitted.
+
