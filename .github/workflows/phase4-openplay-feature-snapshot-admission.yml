@@ -51,7 +51,7 @@ jobs:
 
       - name: One-time 5Dollar entitlement status-only probe
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[status-check]')
-        continue-on-error: true
+        # Fail closed if the one-request status check cannot be completed.
         env:
           FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
         run: python -m scripts.probe_fivedollar_status_only --output artifacts/5dollar-status/evidence.json
