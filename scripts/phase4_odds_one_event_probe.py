@@ -599,6 +599,8 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
             return {
                 "status":"PARSE_REJECTED_QUOTE_ADMISSION",
                 "odds_request_dispatched":True,
+                "odds_request_count":1,
+                "odds_request_dispatched":True,
                 "actual_credits":actual_credits,
                 "response_sha256":response.response_sha256,
                 "provider_response_id":response_id,
@@ -636,6 +638,8 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
     ])
     return {
         "status":"PASS_ONE_EVENT_ODDS_CAPTURE" if expected_quotes else "PASS_CAPTURE_NO_TIMESTAMPED_QUOTES",
+        "odds_request_dispatched":True,
+        "odds_request_count":1,
         "provider":"the_odds_api",
         "sport_key":SPORT,
         "fixture_id":fixture["fixture_id"],
