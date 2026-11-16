@@ -29,6 +29,7 @@ def test_prediction_feature_link_migration_has_composite_prediction_and_pit_evid
         "forecast_summary_sha256",
         "feature_admission_summary_sha256",
         "validate_prediction_feature_snapshot_link",
+        "V2_PREDICTION_CANONICAL_TEAM_OR_COMPETITION_IDENTITY_MISMATCH",
         "PREDICTION_FEATURE_SNAPSHOT_LINKS_APPEND_ONLY",
         "BEFORE UPDATE OR DELETE",
         "BEFORE TRUNCATE",
