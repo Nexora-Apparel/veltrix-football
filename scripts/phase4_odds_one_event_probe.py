@@ -37,6 +37,7 @@ from veltrix_v2.providers.odds_api_v4.transport_contract import (
 PROVIDER = "the_odds_api"
 SOURCE_ID = "odds_api_v4"
 SPORT = "soccer_epl"
+TARGET_COMPETITION = "England Premier League"
 SPORTS_BY_COMPETITION = {
     "England Premier League": "soccer_epl",
     "Spain La Liga": "soccer_spain_la_liga",
@@ -70,6 +71,14 @@ def _utc(value: str) -> datetime:
 def _normalize_team(value: str) -> str:
     normalized = unicodedata.normalize("NFKC", value or "")
     return " ".join(normalized.casefold().split())
+
+
+def filter_epl_probe_fixtures(fixtures: list[dict]) -> list[dict]:
+    """Keep the authorized one-event research probe strictly within the EPL."""
+    return [
+        item for item in fixtures
+        if item.get("competition") == TARGET_COMPETITION and item.get("sport_key") == SPORT
+    ]
 
 
 def select_exact_fixture(fixtures: list[dict], events: list[dict], *, sport_key: str = SPORT, tolerance_seconds: int = 60):
@@ -400,16 +409,16 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
         }
 
     cutoff = datetime.now(timezone.utc)
-    fixtures = _load_v2_forecast_fixtures(staging_dsn, cutoff)
+    fixtures = filter_epl_probe_fixtures(_load_v2_forecast_fixtures(staging_dsn, cutoff))
     if not fixtures:
         return {
-            "status":"BLOCKED_NO_UPCOMING_V2_FORECAST_FIXTURES",
+            "status":"BLOCKED_NO_UPCOMING_EPL_V2_FORECAST_FIXTURES",
             "odds_request_dispatched":False,
             "odds_request_count":0,
         }
 
-    # Event discovery is quota-free. Search only competitions represented by
-    # the seven already-admitted V2 forecasts; never broaden to generic fixtures.
+    # Event discovery is quota-free. The fixture filter above enforces England
+    # Premier League / soccer_epl only; never fall back to another competition.
     events_hashes = {}
     events_counts = {}
     exact_matches = []

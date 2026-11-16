@@ -4,7 +4,7 @@ Status: READY FOR BOUNDED RESEARCH PROBE SUBJECT TO FRESH QUOTA PREFLIGHT
 
 ## Objective
 
-Measure actual bookmaker coverage and market availability for one upcoming fixture already admitted into the new V2 prospective forecast series, across the four approved competitions represented in that series (England Premier League, Spain La Liga, Italy Serie A and France Ligue 1). Preserve source quote timestamps separately from retrieval timestamps and assess whether the returned odds data adds measurable value to prediction research (market baselines, calibration comparisons, closing-line research and odds coverage). This is a bounded research probe for the personal-use VELTRIX project.
+Measure actual bookmaker coverage and market availability for exactly one upcoming England Premier League fixture already admitted into the new V2 prospective forecast series. Do not select a fixture from Spain La Liga, Germany Bundesliga, Italy Serie A or France Ligue 1. Preserve source quote timestamps separately from retrieval timestamps and assess whether the returned odds data adds measurable value to prediction research (market baselines, calibration comparisons, closing-line research and odds coverage). This is a bounded research probe for the personal-use VELTRIX project.
 
 This probe does not activate recurring odds collection, model training on its own, prediction publication, Telegram delivery or value betting. It is not a commercial billing or subscription verification exercise.
 
@@ -68,11 +68,12 @@ Send the API key in the `x-api-key` header, not in a logged URL. Capture the raw
 
 ## Current verified state
 
-- The latest no-credit sports-catalogue probe returned HTTP 200, all five approved soccer keys, `x-requests-used=226`, `x-requests-remaining=274` and `x-requests-last=0` at 2026-11-16T00:18:36Z. This is historical evidence only; the live probe refreshes quota immediately before any odds request.
-- The first exact-match pass over the EPL fixtures found no exact provider event; it stopped before the odds endpoint and consumed zero odds credits.
-- The next pass searches only the seven already-admitted V2 forecast fixtures across their four represented, already-approved competitions. It does not use aliases or fuzzy matching.
-- The staging database still contains zero event-odds responses and zero timestamped `odds_quote_observations`.
-- A fresh no-credit quota/access observation is required immediately before the single credit-consuming request. Commercial billing documentation and monthly allowance proof are not required.
+- The last recorded no-credit sports-catalogue probe returned HTTP 200, all five approved soccer keys, `x-requests-used=226`, `x-requests-remaining=274` and `x-requests-last=0` at 2026-11-16T00:18:36Z. This is historical evidence only.
+- The subsequent accepted event-odds capture, run [43780096811](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43780096811), selected Como vs Cagliari (Italy Serie A): 95 quote rows, 95/95 provider timestamps, 21 bookmakers, h2h 63 / btts 22 / totals 10, one request and 3 credits. Quota moved from 226 used / 274 remaining to 229 used / 271 remaining. Persisted response 1297, manifest 160, request 888, fixture crosswalk 3169 and source observation 433133. Raw response SHA-256: `3271ea3f90613ff9c065a525dc73625af84a4b52fef5a16b54e8a10d49eeabf5`.
+- Como–Cagliari is an early Italy Serie A snapshot, not a closing archive and not the currently authorized EPL-only probe. Six other admitted forecast fixtures remain without Odds API quotes.
+- The earlier exact-match discovery pass over EPL fixtures found no exact provider event and stopped before the odds endpoint. The next probe is now strictly restricted to upcoming V2 forecasts in England Premier League (`soccer_epl`); it must not fall back to another competition or use aliases/fuzzy matching. If no exact future EPL event is found, stop before the odds endpoint.
+- Current staging table counts cannot be re-read: Neon staging returns HTTP 402. The existing Como–Cagliari capture remains the last accepted Odds API event evidence; no new EPL event request was made in this monitor pass.
+- A new no-credit quota/access observation is mandatory immediately before any future credit-consuming request and must show at least 3 credits remaining. Enforce one credit-consuming request maximum, 3-credit cap, no retries, and staging-only persistence. Do not infer a monthly allowance. Commercial billing documentation and monthly allowance proof are not required.
 
 ## Release boundary
 
@@ -103,3 +104,11 @@ The provider's official historical-data documentation states:
 Official source: https://the-odds-api.com/historical-odds-data/ (accessed 2026-11-15).
 
 No historical request is authorized by the three-credit live-probe cap. Historical collection requires a fresh quota preflight, confirmed paid-plan historical endpoint entitlement, a separate immutable credit reservation sized to the exact request, and an explicit operator-run workflow. Until then, the historical odds capture path remains disabled.
+
+
+## 2026-11-16 — EPL-only scope lock and execution blockers
+
+- The owner’s current authorization is for one eligible future EPL event only, UK region, markets `h2h`, `totals`, `btts`, one credit-consuming request, maximum 3 credits, one attempt and no retries.
+- The collector now filters eligible V2 forecasts to `competition=England Premier League` and `sport_key=soccer_epl` before event discovery. It returns `BLOCKED_NO_UPCOMING_EPL_V2_FORECAST_FIXTURES` when no eligible future EPL V2 forecast exists; it never falls back to another competition.
+- The connected GitHub integration exposes no workflow-dispatch action. The Neon staging branch `br-silent-violet-bc5de88s`, database `veltrix_football_staging`, returns HTTP 402 for database reads/writes. No new preflight or odds request is attempted until the required staging evidence can be persisted and a fresh quota observation is available.
+- This is a provider/platform access guard, not a model-quality criterion. No invoice, commercial subscription evidence or monthly allowance paperwork is required.

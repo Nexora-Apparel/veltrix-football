@@ -6,6 +6,8 @@ import pytest
 from scripts.phase4_odds_one_event_probe import (
     MAX_CREDITS,
     SPORT,
+    TARGET_COMPETITION,
+    filter_epl_probe_fixtures,
     reconcile_quota,
     select_exact_fixture,
 )
@@ -31,6 +33,26 @@ def _event(event_id="evt-1", home="Chelsea", away="Leeds", kickoff="2026-11-21T1
         "away_team": away,
         "commence_time": kickoff,
     }
+
+
+def test_probe_fixture_filter_is_strictly_epl_only():
+    epl = {
+        **_fixture(),
+        "competition": TARGET_COMPETITION,
+        "sport_key": SPORT,
+    }
+    serie_a = {
+        **_fixture(home="Como", away="Cagliari", fixture_id=2504),
+        "competition": "Italy Serie A",
+        "sport_key": "soccer_italy_serie_a",
+    }
+    bundesliga = {
+        **_fixture(home="Bayern", away="Dortmund", fixture_id=2505),
+        "competition": "Germany Bundesliga",
+        "sport_key": "soccer_germany_bundesliga",
+    }
+    assert filter_epl_probe_fixtures([serie_a, epl, bundesliga]) == [epl]
+    assert filter_epl_probe_fixtures([serie_a, bundesliga]) == []
 
 
 def test_select_exact_fixture_accepts_only_exact_names_and_kickoff():
