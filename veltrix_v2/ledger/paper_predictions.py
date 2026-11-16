@@ -265,6 +265,7 @@ class ProspectivePaperLedger:
                           result_capture_manifest_sha256: str | None = None,
                           prediction_feature_link_sha256: str | None = None,
                           feature_snapshot_id: int | None = None,
+                          eligibility_event_id: int | None = None,
                           feature_set_sha256: str | None = None,
                           eligibility_evidence_sha256: str | None = None,
                           forecast_evidence_sha256: str | None = None,
@@ -303,7 +304,7 @@ class ProspectivePaperLedger:
         if (result_response_sha256 is None) != (result_capture_manifest_sha256 is None):
             raise ValueError("PAPER_SETTLEMENT_CAPTURE_EVIDENCE_PAIR_REQUIRED")
         feature_link_values = (
-            prediction_feature_link_sha256, feature_snapshot_id, feature_set_sha256,
+            prediction_feature_link_sha256, feature_snapshot_id, eligibility_event_id, feature_set_sha256,
             eligibility_evidence_sha256, forecast_evidence_sha256, model_artifact_sha256,
         )
         if model_version == V2_PIT_MODEL_VERSION:
@@ -313,6 +314,8 @@ class ProspectivePaperLedger:
                 raise ValueError("PAPER_SETTLEMENT_V2_FEATURE_EVIDENCE_LINK_REQUIRED")
             if not isinstance(feature_snapshot_id, int) or isinstance(feature_snapshot_id, bool) or feature_snapshot_id <= 0:
                 raise ValueError("PAPER_SETTLEMENT_V2_FEATURE_SNAPSHOT_ID_INVALID")
+            if not isinstance(eligibility_event_id, int) or isinstance(eligibility_event_id, bool) or eligibility_event_id <= 0:
+                raise ValueError("PAPER_SETTLEMENT_V2_ELIGIBILITY_EVENT_ID_INVALID")
             for value in (
                 prediction_feature_link_sha256, feature_set_sha256,
                 eligibility_evidence_sha256, forecast_evidence_sha256, model_artifact_sha256,
@@ -368,6 +371,7 @@ class ProspectivePaperLedger:
             "prediction_event_sha256": prediction.event_sha256,
             "prediction_feature_link_sha256": prediction_feature_link_sha256,
             "feature_snapshot_id": feature_snapshot_id,
+            "eligibility_event_id": eligibility_event_id,
             "feature_set_sha256": feature_set_sha256,
             "eligibility_evidence_sha256": eligibility_evidence_sha256,
             "forecast_evidence_sha256": forecast_evidence_sha256,
@@ -469,8 +473,11 @@ class ProspectivePaperLedger:
                     ):
                         raise ValueError("PAPER_LEDGER_V2_SETTLEMENT_EVIDENCE_CLASS_INVALID")
                     feature_snapshot_id = event.payload.get("feature_snapshot_id")
+                    eligibility_event_id = event.payload.get("eligibility_event_id")
                     if not isinstance(feature_snapshot_id,int) or isinstance(feature_snapshot_id,bool) or feature_snapshot_id <= 0:
                         raise ValueError("PAPER_LEDGER_V2_SETTLEMENT_FEATURE_SNAPSHOT_ID_INVALID")
+                    if not isinstance(eligibility_event_id,int) or isinstance(eligibility_event_id,bool) or eligibility_event_id <= 0:
+                        raise ValueError("PAPER_LEDGER_V2_SETTLEMENT_ELIGIBILITY_EVENT_ID_INVALID")
                     for field in (
                         "prediction_feature_link_sha256","feature_set_sha256",
                         "eligibility_evidence_sha256","forecast_evidence_sha256","model_artifact_sha256",
@@ -479,7 +486,7 @@ class ProspectivePaperLedger:
                         if not isinstance(value,str) or len(value)!=64 or any(ch not in "0123456789abcdef" for ch in value):
                             raise ValueError("PAPER_LEDGER_V2_SETTLEMENT_FEATURE_LINK_HASH_INVALID")
                 elif any(event.payload.get(field) is not None for field in (
-                    "prediction_feature_link_sha256","feature_snapshot_id","feature_set_sha256",
+                    "prediction_feature_link_sha256","feature_snapshot_id","eligibility_event_id","feature_set_sha256",
                     "eligibility_evidence_sha256","forecast_evidence_sha256","model_artifact_sha256",
                 )):
                     raise ValueError("PAPER_LEDGER_NON_V2_SETTLEMENT_HAS_FEATURE_LINK")
