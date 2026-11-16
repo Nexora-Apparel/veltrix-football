@@ -191,6 +191,7 @@ def settle_verified_fixture_to_store(
     *,
     recorded_at: datetime,
     model_version: str | None = None,
+    prediction_feature_link: Mapping[str, object] | None = None,
 ) -> PaperLedgerEvent:
     """Verify settlement rights and source identity, then persist through a ledger store.
 
@@ -210,6 +211,7 @@ def settle_verified_fixture_to_store(
         approval,
         recorded_at=recorded_at,
         model_version=model_version,
+        prediction_feature_link=prediction_feature_link,
     )
     payload = verified.payload
     persisted = store.append_settlement(
@@ -230,6 +232,13 @@ def settle_verified_fixture_to_store(
         settlement_delay_basis=payload["settlement_delay_basis"],
         result_response_sha256=payload.get("result_response_sha256"),
         result_capture_manifest_sha256=payload.get("result_capture_manifest_sha256"),
+        prediction_feature_link_sha256=payload.get("prediction_feature_link_sha256"),
+        feature_snapshot_id=payload.get("feature_snapshot_id"),
+        eligibility_event_id=payload.get("eligibility_event_id"),
+        feature_set_sha256=payload.get("feature_set_sha256"),
+        eligibility_evidence_sha256=payload.get("eligibility_evidence_sha256"),
+        forecast_evidence_sha256=payload.get("forecast_evidence_sha256"),
+        model_artifact_sha256=payload.get("model_artifact_sha256"),
     )
     if persisted.event_sha256 != verified.event_sha256:
         raise RuntimeError("PAPER_LEDGER_PERSISTED_SETTLEMENT_HASH_MISMATCH")
