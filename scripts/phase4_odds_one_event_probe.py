@@ -37,11 +37,18 @@ from veltrix_v2.providers.odds_api_v4.transport_contract import (
 PROVIDER = "the_odds_api"
 SOURCE_ID = "odds_api_v4"
 SPORT = "soccer_epl"
+SPORTS_BY_COMPETITION = {
+    "England Premier League": "soccer_epl",
+    "Spain La Liga": "soccer_spain_la_liga",
+    "Germany Bundesliga": "soccer_germany_bundesliga",
+    "Italy Serie A": "soccer_italy_serie_a",
+    "France Ligue 1": "soccer_france_ligue_one",
+}
+APPROVED_SPORTS = tuple(sorted(SPORTS_BY_COMPETITION.values()))
 REGION = "uk"
 MARKETS = ("h2h", "totals", "btts")
 APPROVAL_ID = "approval-the-odds-api-v4-owner-authorized-2026-11-14"
 API_BASE = "https://api.the-odds-api.com/v4"
-ENDPOINT_PATH = f"/sports/{SPORT}/events"
 MAX_CREDITS = 3
 MAX_REQUESTS = 1  # One provider odds request per workflow execution; no retry path.
 TIMEOUT_SECONDS = 15
@@ -65,12 +72,12 @@ def _normalize_team(value: str) -> str:
     return " ".join(normalized.casefold().split())
 
 
-def select_exact_fixture(fixtures: list[dict], events: list[dict], *, tolerance_seconds: int = 60):
+def select_exact_fixture(fixtures: list[dict], events: list[dict], *, sport_key: str = SPORT, tolerance_seconds: int = 60):
     """Require exact home/away labels and near-identical UTC kickoff; never fuzzy-match."""
     matches = []
     for fixture in fixtures:
         for event in events:
-            if not isinstance(event, dict) or event.get("sport_key") != SPORT:
+            if not isinstance(event, dict) or event.get("sport_key") != sport_key:
                 continue
             if not isinstance(event.get("id"), str) or not event["id"].strip():
                 continue
@@ -156,7 +163,8 @@ def _fetch_json(url: str, api_key: str, *, timeout: int = TIMEOUT_SECONDS):
     return requested_at, retrieved_at, body, headers, envelope_decision.envelope, payload
 
 
-def _load_epl_fixtures(dsn: str, cutoff: datetime) -> list[dict]:
+def _load_v2_forecast_fixtures(dsn: str, cutoff: datetime) -> list[dict]:
+    """Load only upcoming fixtures that already have an eligible V2 forecast."""
     import psycopg
     validate_staging_dsn_target(dsn)
     with psycopg.connect(dsn) as conn:
@@ -166,28 +174,37 @@ def _load_epl_fixtures(dsn: str, cutoff: datetime) -> list[dict]:
                 raise PermissionError("STAGING_DATABASE_ROLE_NOT_ALLOWLISTED")
             cur.execute(
                 """
-                SELECT f.id,f.kickoff_at,ht.name,at.name
-                FROM fixtures f
+                SELECT f.id,f.kickoff_at,ht.name,at.name,c.name
+                FROM paper_ledger_events p
+                JOIN fixtures f
+                  ON p.fixture_id='5dollarfootballapi:' || f.provider_fixture_id::text
                 JOIN competitions c ON c.id=f.competition_id
                 JOIN teams ht ON ht.id=f.home_team_id
                 JOIN teams at ON at.id=f.away_team_id
-                WHERE f.provider='5DollarFootballAPI'
+                WHERE p.event_type='PREDICTION'
+                  AND p.model_version='veltrix-openplay-xg-poisson-v1'
+                  AND f.provider='5DollarFootballAPI'
                   AND f.status='SCHEDULED'
                   AND f.kickoff_at>%s
-                  AND c.name='England Premier League'
+                GROUP BY f.id,f.kickoff_at,ht.name,at.name,c.name
                 ORDER BY f.kickoff_at,f.id
                 """,
                 (cutoff,),
             )
-            return [
-                {
-                    "fixture_id": int(row[0]),
-                    "kickoff_at": row[1].astimezone(timezone.utc),
-                    "home": row[2],
-                    "away": row[3],
-                }
-                for row in cur.fetchall()
-            ]
+            rows=[]
+            for row in cur.fetchall():
+                sport_key=SPORTS_BY_COMPETITION.get(row[4])
+                if sport_key is None:
+                    continue
+                rows.append({
+                    "fixture_id":int(row[0]),
+                    "kickoff_at":row[1].astimezone(timezone.utc),
+                    "home":row[2],
+                    "away":row[3],
+                    "competition":row[4],
+                    "sport_key":sport_key,
+                })
+            return rows
 
 
 def _load_rights_evidence(dsn: str, approval) -> RightsEvidence:
@@ -212,8 +229,8 @@ def _load_rights_evidence(dsn: str, approval) -> RightsEvidence:
     competition_scope = tuple(
         sorted(item.strip() for item in approval.competition_scope.split(",") if item.strip())
     )
-    if SPORT not in competition_scope:
-        raise PermissionError("ODDS_API_EPL_OUTSIDE_APPROVED_SCOPE")
+    if not set(APPROVED_SPORTS).issubset(set(competition_scope)):
+        raise PermissionError("ODDS_API_APPROVED_COMPETITION_SCOPE_INCOMPLETE")
     return RightsEvidence(
         provider=PROVIDER,
         status=event[0],
@@ -254,14 +271,14 @@ def _append_state_chain(store, capture_request_id: int, request_id: str,
 
 
 def _persist_event_crosswalk(dsn: str, *, response_id: int, response_hash: str,
-                             endpoint: str, event: dict, fixture: dict,
+                             endpoint: str, event: dict, fixture: dict, sport_key: str,
                              retrieved_at: datetime, approval_id: str) -> int:
     import psycopg
     from psycopg.types.json import Jsonb
 
     identity_payload = {
         "event_id": event["id"],
-        "sport_key": SPORT,
+        "sport_key": sport_key,
         "home_team": event["home_team"],
         "away_team": event["away_team"],
         "commence_time": event["commence_time"],
