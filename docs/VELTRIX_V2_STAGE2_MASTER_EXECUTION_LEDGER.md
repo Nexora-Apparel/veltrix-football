@@ -871,3 +871,16 @@ Further unresolved identities:
 - AI Midas remains authorised for historical statistics/additional odds, but the 14 archive assets have unknown source timestamp basis and remain non-PIT-certified. The seven V2 forecasts do not use AI Midas.
 
 **No new forecast events, no provider odds calls, no settlement, no paid upgrade, no publication, no Telegram send, no schedule activation and no value-bet unlock in this follow-up.**
+
+
+## 2026-11-16 — status-only entitlement verified; first PIT V2 forecast series persisted
+
+See the detailed evidence and provider comparison in [Stage 2 Provider and Prospective Evidence Update](VELTRIX_V2_STAGE2_PROVIDER_AND_PROSPECTIVE_EVIDENCE_UPDATE_2026-11-16.md).
+
+- **5DollarFootballAPI:** isolated `GET /v1/status` run 43778306708 succeeded with one request, HTTP 200, schema valid, plan `community`, Ultra false. No league/fixture/odds/history calls. Do not call the Ultra-only odds-history route; no upgrade purchased. Evidence SHA-256 `9c586e49def7fde463217bca8792f75900cacf51d6a888edc20c9a005ceb9051`.
+- **The Odds API:** no-credit `GET /v4/sports/?all=true` run 43778624089 succeeded; 187 sports returned; all five approved soccer competition keys found; 0 credits used; 226 used / 274 remaining. Persisted response ID 1293 and entitlement observation ID 6. Plan and exact billing period remain undisclosed; no provider credit budget snapshot exists, so no odds request was dispatched.
+- **Upcoming fixtures/PIT:** 25 future 5Dollar fixtures are reconciled. Latest admission considers all 25, admits 7 with five eligible match rows per team, and quarantines 18 due missing eligible team history. Current staging inventory: 42 snapshots, 420 feature links. Latest run reused seven snapshots and 70 links, with fresh-connection post-commit verification.
+- **New V2 prospective forecasts:** first series successfully appended seven predictions under `veltrix-openplay-xg-poisson-v1`, referencing feature snapshot IDs 15–21 at a cutoff strictly before each target kickoff. The forecast ledger chain and post-commit verification passed. This is a PIT-eligible research series, not a certified model. Later reruns skip all seven as duplicates.
+- **Odds and settlement:** zero `odds_quote_observations`; zero settlement events. All 25 future fixtures remain SCHEDULED. The 25 legacy `veltrix-results-poisson-v1` shadow events remain separate and are not V2. No future or legacy fixture was settled.
+- **Provider qualification:** no external provider currently satisfies the complete seven-competition bookmaker-specific closing archive and rights requirements without further conditions. Odds-API.io, StrikerAPI, SockOdds, OddsIntel, OddsRelay and OddsPapi findings are recorded in the linked update. No purchase or upgrade.
+- **Release controls:** PR #120 remains OPEN / DRAFT / UNMERGED. At HEAD `2f4a85cb1e885e786c189caef5d38ee7240a072c`, required checks passed and Daily Fixture Predictions remained SKIPPED. Value betting remains LOCKED; no publication, Telegram delivery, schedule activation, production deployment or merge.
