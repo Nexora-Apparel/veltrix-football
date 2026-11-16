@@ -26,7 +26,11 @@ from veltrix_v2.data.contracts import DataUsePurpose
 from veltrix_v2.data.rights import evaluate_source_use
 from veltrix_v2.ledger.postgres_store import PostgresPaperLedgerStore
 from veltrix_v2.evaluation.prospective_settlement_metrics import evaluate_prospective_settlements
-from veltrix_v2.ledger.settlement_reconciliation import reconcile_finished_fixtures
+from veltrix_v2.ledger.settlement_reconciliation import (
+    reconcile_finished_fixtures,
+    reconcile_v2_finished_fixtures,
+)
+from veltrix_v2.ledger.paper_predictions import V2_PIT_MODEL_VERSION
 
 from scripts.phase5_collect_5dollar_shadow import (
     MAX_REQUESTS,
@@ -49,6 +53,8 @@ def _public_summary(result: dict) -> dict:
     summary = {
         "status": result.get("status"),
         "shadow_targets": result.get("shadow_targets", 0),
+        "v2_pit_targets": result.get("v2_pit_targets", 0),
+        "v2_pit_feature_links_available": result.get("v2_pit_feature_links_available", 0),
         "eligible_unsettled_targets": result.get("eligible_unsettled_targets", 0),
         "provider_requests": result.get("provider_requests", 0),
         "provider_pages_persisted": result.get("provider_pages_persisted", 0),
@@ -81,10 +87,18 @@ def _write_summaries(out_dir: Path, result: dict) -> None:
 def _targets(ledger):
     rows = []
     for event in ledger.events:
-        if event.event_type != "SHADOW_PREDICTION":
-            continue
         payload = event.payload
-        if payload.get("evidence_class") != "PROSPECTIVE_OBSERVED_ONLY":
+        is_shadow = (
+            event.event_type == "SHADOW_PREDICTION"
+            and payload.get("evidence_class") == "PROSPECTIVE_OBSERVED_ONLY"
+        )
+        is_v2_pit = (
+            event.event_type == "PREDICTION"
+            and event.model_version == V2_PIT_MODEL_VERSION
+            and payload.get("evidence_class") == "PIT_CERTIFIED"
+            and payload.get("point_in_time_certifiable") is True
+        )
+        if not (is_shadow or is_v2_pit):
             continue
         if payload.get("target_provider") != "5DollarFootballAPI":
             continue
@@ -95,6 +109,60 @@ def _targets(ledger):
             raise ValueError("SETTLEMENT_TARGET_PROVENANCE_INCOMPLETE")
         rows.append(event)
     return rows
+
+
+def _load_v2_feature_links(connection, targets) -> dict[str, dict[str, object]]:
+    """Read immutable V2 PIT feature links; never infer or reconstruct missing links."""
+    v2_events = [
+        event for event in targets
+        if event.event_type == "PREDICTION" and event.model_version == V2_PIT_MODEL_VERSION
+    ]
+    if not v2_events:
+        return {}
+    exists = connection.execute(
+        "SELECT to_regclass('public.prediction_feature_snapshot_links') IS NOT NULL"
+    ).fetchone()[0]
+    if not exists:
+        raise RuntimeError("V2_SETTLEMENT_FEATURE_LINK_MIGRATION_NOT_APPLIED")
+    hashes = [event.event_sha256 for event in v2_events]
+    rows = connection.execute(
+        """
+        SELECT prediction_event_sha256,link_sha256,feature_snapshot_id,
+               eligibility_event_id,feature_set_sha256,eligibility_evidence_sha256,
+               forecast_evidence_sha256,model_artifact_sha256,
+               forecast_cutoff_at,feature_snapshot_cutoff_at,recorded_at,
+               canonical_competition_id,canonical_home_team_id,canonical_away_team_id,
+               provider_competition_id,provider_home_team_id,provider_away_team_id
+        FROM prediction_feature_snapshot_links
+        WHERE prediction_event_sha256 = ANY(%s)
+        """,
+        (hashes,),
+    ).fetchall()
+    links = {}
+    for row in rows:
+        event_hash = str(row[0]).strip()
+        if event_hash in links:
+            raise RuntimeError("V2_SETTLEMENT_FEATURE_LINK_NOT_UNIQUE")
+        links[event_hash] = {
+            "prediction_event_sha256":event_hash,
+            "link_sha256":str(row[1]).strip(),
+            "feature_snapshot_id":int(row[2]),
+            "eligibility_event_id":int(row[3]),
+            "feature_set_sha256":str(row[4]).strip(),
+            "eligibility_evidence_sha256":str(row[5]).strip(),
+            "forecast_evidence_sha256":str(row[6]).strip(),
+            "model_artifact_sha256":str(row[7]).strip(),
+            "forecast_cutoff_at":row[8],
+            "feature_snapshot_cutoff_at":row[9],
+            "recorded_at":row[10],
+            "canonical_competition_id":str(row[11]),
+            "canonical_home_team_id":str(row[12]),
+            "canonical_away_team_id":str(row[13]),
+            "provider_competition_id":str(row[14]),
+            "provider_home_team_id":str(row[15]),
+            "provider_away_team_id":str(row[16]),
+        }
+    return links
 
 
 def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
@@ -116,6 +184,9 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
         )
         ledger = store.load()
         targets = _targets(ledger)
+        shadow_targets = [e for e in targets if e.event_type == "SHADOW_PREDICTION"]
+        v2_pit_targets = [e for e in targets if e.event_type == "PREDICTION"]
+        v2_feature_links = _load_v2_feature_links(connection, v2_pit_targets)
         now = datetime.now(timezone.utc)
         eligible = [event for event in targets
                     if datetime.fromisoformat(event.payload["kickoff_at"]) <= now
@@ -127,7 +198,9 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
             scorecard = evaluate_prospective_settlements(ledger)
             result = {
                 "status": "NO_ELIGIBLE_FINISHED_TARGETS",
-                "shadow_targets": len(targets),
+                "shadow_targets": len(shadow_targets),
+                "v2_pit_targets": len(v2_pit_targets),
+                "v2_pit_feature_links_available": len(v2_feature_links),
                 "eligible_unsettled_targets": 0,
                 "provider_requests": 0,
                 "settlements_appended": 0,
@@ -235,9 +308,16 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
         # Reconciliation appends to a verified in-memory copy first. Only then
         # are its exact settlement payloads appended under the DB advisory lock.
         current = store.load()
-        preview, quarantined = reconcile_finished_fixtures(
+        shadow_preview, shadow_quarantined = reconcile_finished_fixtures(
             current, all_fixtures, approval, recorded_at=recorded_at,
         )
+        v2_preview, v2_quarantined = reconcile_v2_finished_fixtures(
+            current, all_fixtures, approval,
+            v2_feature_links=v2_feature_links,
+            recorded_at=recorded_at,
+        )
+        preview = tuple(shadow_preview) + tuple(v2_preview)
+        quarantined = tuple(shadow_quarantined) + tuple(v2_quarantined)
         persisted = []
         with connection.transaction():
             for event in preview:
@@ -257,6 +337,19 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
                     settlement_delay_basis=payload["settlement_delay_basis"],
                     result_response_sha256=payload.get("result_response_sha256"),
                     result_capture_manifest_sha256=payload.get("result_capture_manifest_sha256"),
+                    prediction_feature_link_sha256=payload.get("prediction_feature_link_sha256"),
+                    feature_snapshot_id=payload.get("feature_snapshot_id"),
+                    eligibility_event_id=payload.get("eligibility_event_id"),
+                    feature_set_sha256=payload.get("feature_set_sha256"),
+                    eligibility_evidence_sha256=payload.get("eligibility_evidence_sha256"),
+                    forecast_evidence_sha256=payload.get("forecast_evidence_sha256"),
+                    model_artifact_sha256=payload.get("model_artifact_sha256"),
+                    canonical_competition_id=payload.get("canonical_competition_id"),
+                    canonical_home_team_id=payload.get("canonical_home_team_id"),
+                    canonical_away_team_id=payload.get("canonical_away_team_id"),
+                    provider_competition_id=payload.get("provider_competition_id"),
+                    provider_home_team_id=payload.get("provider_home_team_id"),
+                    provider_away_team_id=payload.get("provider_away_team_id"),
                 )
                 if persisted_event.event_sha256 != event.event_sha256:
                     raise RuntimeError("PAPER_LEDGER_SETTLEMENT_HASH_MISMATCH")
@@ -299,12 +392,16 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
     scorecard = evaluate_prospective_settlements(verified)
     result = {
         "status": "SETTLEMENT_RECONCILIATION_COMPLETE",
-        "shadow_targets": len(targets),
+        "shadow_targets": len(shadow_targets),
+        "v2_pit_targets": len(v2_pit_targets),
+        "v2_pit_feature_links_available": len(v2_feature_links),
         "eligible_unsettled_targets": len(eligible),
         "provider_requests": request_count,
         "provider_pages_persisted": len(snapshots),
         "finished_rows_observed": len(all_fixtures),
         "settlements_appended": len(persisted),
+        "shadow_settlements_appended": sum(e.model_version != V2_PIT_MODEL_VERSION for e in persisted),
+        "v2_pit_settlements_appended": sum(e.model_version == V2_PIT_MODEL_VERSION for e in persisted),
         "quarantined_rows": [{"fixture_id": fid, "reason": reason}
                              for fid, reason in quarantined],
         "ledger_events": len(verified.events),
