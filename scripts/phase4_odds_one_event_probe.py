@@ -400,38 +400,89 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
         }
 
     cutoff = datetime.now(timezone.utc)
-    fixtures = _load_epl_fixtures(staging_dsn, cutoff)
+    fixtures = _load_v2_forecast_fixtures(staging_dsn, cutoff)
     if not fixtures:
-        return {"status":"BLOCKED_NO_UPCOMING_EPL_FIXTURES","odds_request_dispatched":False}
-
-    events_url = f"{API_BASE}{ENDPOINT_PATH}?dateFormat=iso"
-    _, events_retrieved, events_body, _, events_envelope, events_payload = _fetch_json(events_url, api_key)
-    if (
-        not isinstance(events_payload, list)
-        or not events_envelope.quota_evidence.complete
-        or events_envelope.quota_evidence.requests_last != 0
-        or events_envelope.quota_evidence.requests_used != account["quota_requests_used"]
-        or events_envelope.quota_evidence.requests_remaining != account["quota_requests_remaining"]
-    ):
         return {
-            "status":"BLOCKED_EVENT_DISCOVERY_QUOTA_MISMATCH",
+            "status":"BLOCKED_NO_UPCOMING_V2_FORECAST_FIXTURES",
             "odds_request_dispatched":False,
-            "events_response_sha256":hashlib.sha256(events_body).hexdigest(),
+            "odds_request_count":0,
         }
 
-    selected = select_exact_fixture(fixtures, events_payload)
-    if selected is None:
+    # Event discovery is quota-free. Search only competitions represented by
+    # the seven already-admitted V2 forecasts; never broaden to generic fixtures.
+    events_hashes = {}
+    events_counts = {}
+    exact_matches = []
+    kickoff_only_candidates = []
+    for sport_key in sorted({item["sport_key"] for item in fixtures}):
+        events_url = f"{API_BASE}/sports/{sport_key}/events?dateFormat=iso"
+        _, events_retrieved, events_body, _, events_envelope, events_payload = _fetch_json(events_url, api_key)
+        if (
+            not isinstance(events_payload, list)
+            or not events_envelope.quota_evidence.complete
+            or events_envelope.quota_evidence.requests_last != 0
+            or events_envelope.quota_evidence.requests_used != account["quota_requests_used"]
+            or events_envelope.quota_evidence.requests_remaining != account["quota_requests_remaining"]
+        ):
+            return {
+                "status":"BLOCKED_EVENT_DISCOVERY_QUOTA_MISMATCH",
+                "odds_request_dispatched":False,
+                "odds_request_count":0,
+                "sport_key":sport_key,
+                "events_response_sha256":hashlib.sha256(events_body).hexdigest(),
+            }
+        events_hashes[sport_key]=hashlib.sha256(events_body).hexdigest()
+        events_counts[sport_key]=len(events_payload)
+        for fixture_candidate in [item for item in fixtures if item["sport_key"]==sport_key]:
+            match=select_exact_fixture([fixture_candidate],events_payload,sport_key=sport_key)
+            if match is not None:
+                exact_matches.append(match)
+            for provider_event in events_payload:
+                if not isinstance(provider_event,dict):
+                    continue
+                try:
+                    event_kickoff=_utc(str(provider_event["commence_time"]))
+                except (KeyError,TypeError,ValueError):
+                    continue
+                if abs((event_kickoff-fixture_candidate["kickoff_at"]).total_seconds())<=300:
+                    kickoff_only_candidates.append({
+                        "fixture_id":fixture_candidate["fixture_id"],
+                        "sport_key":sport_key,
+                        "canonical_home":fixture_candidate["home"],
+                        "canonical_away":fixture_candidate["away"],
+                        "provider_event_id":provider_event.get("id"),
+                        "provider_home":provider_event.get("home_team"),
+                        "provider_away":provider_event.get("away_team"),
+                        "provider_commence_time":provider_event.get("commence_time"),
+                    })
+
+    # Multiple distinct exact matches are safe; choose the earliest kickoff.
+    # Duplicate event or fixture identities remain quarantined.
+    if not exact_matches:
         return {
             "status":"BLOCKED_NO_UNAMBIGUOUS_EXACT_EVENT_MATCH",
             "odds_request_dispatched":False,
-            "sport_key":SPORT,
-            "canonical_epl_fixtures_considered":len(fixtures),
-            "provider_events_returned":len(events_payload),
-            "events_response_sha256":hashlib.sha256(events_body).hexdigest(),
+            "odds_request_count":0,
+            "canonical_v2_forecast_fixtures_considered":len(fixtures),
+            "provider_events_returned_by_sport":events_counts,
+            "events_response_sha256_by_sport":events_hashes,
+            "kickoff_only_candidates":kickoff_only_candidates,
             "matching_policy":"exact normalized home/away labels and kickoff within 60 seconds; no aliases or fuzzy matching",
         }
-    fixture, event, provider_event_kickoff = selected
-    kickoff = fixture["kickoff_at"]
+    if (
+        len({event["id"] for _,event,_ in exact_matches}) != len(exact_matches)
+        or len({fixture["fixture_id"] for fixture,_,_ in exact_matches}) != len(exact_matches)
+    ):
+        return {
+            "status":"BLOCKED_AMBIGUOUS_EXACT_EVENT_CROSSWALK",
+            "odds_request_dispatched":False,
+            "odds_request_count":0,
+            "events_response_sha256_by_sport":events_hashes,
+        }
+    exact_matches.sort(key=lambda item:(item[0]["kickoff_at"],item[0]["fixture_id"]))
+    fixture,event,provider_event_kickoff=exact_matches[0]
+    sport_key=fixture["sport_key"]
+    kickoff=fixture["kickoff_at"]
 
     rights_at = datetime.now(timezone.utc)
     created_at = datetime.now(timezone.utc)
