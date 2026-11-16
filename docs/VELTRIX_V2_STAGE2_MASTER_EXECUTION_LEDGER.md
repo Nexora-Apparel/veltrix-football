@@ -939,3 +939,19 @@ Detailed provider desk review: [Historical Odds Provider Requalification](VELTRI
 - Certification thresholds remain unchanged. Value betting remains LOCKED.
 - Next staging steps require Neon quota recovery: run the staging migration dry-run first, then the explicitly guarded migration workflow; afterward run the seven-link dry-run and append workflow with its explicit confirmation. No migration or link write is attempted while Neon returns 402.
 
+
+
+## 2026-11-16 — V2 PIT settlement path extended and regression verified
+
+- Extended the existing manual-only 5Dollar settlement runner to discover both observed shadow predictions and PIT-certified V2 PREDICTION events.
+- V2 settlement is blocked unless the exact prediction event hash has an immutable prediction_feature_snapshot_links row. The runner loads the linked snapshot/eligibility hashes and canonical/provider competition/team IDs; it passes those through to the settlement event.
+- Updated V2 result reconciliation to compare canonical IDs against the link and provider IDs against the exact 5Dollar fixture. It does not compare canonical numeric IDs to provider-prefixed IDs or guess from names.
+- The settlement runner defers reading the V2 link table until a V2 target is actually due. If no target has kicked off, it exits with NO_ELIGIBLE_FINISHED_TARGETS without provider requests or settlement writes. Only provider status FINISHED with verified exact identity, scores, rights and first-observed retrieval time can be settled.
+- Added tests for V2 PIT settlement with a valid immutable link, missing link, mismatched provider identity, target discovery, and safe link loading. The settlement workflow is now labelled for both shadow and V2 PIT targets.
+- Phase 5 Shadow Regression run [43815851690](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43815851690) passed: shadow regression, provider/model/settlement contracts, isolated 5Dollar status-only probe tests, publication/bundle/delivery boundaries, and both PostgreSQL 16/18 integration jobs were progressing; the shadow-regression job itself completed SUCCESS. The 5Dollar test step is offline regression, not a fresh provider status call.
+- The seven V2 fixtures remain future-dated as of 2026-11-16. No V2 settlement has been appended. Staging migration 0012 and the seven feature-evidence links remain unapplied because Neon staging continues to return HTTP 402. No upgrade was purchased.
+
+The settlement operations runbook now documents the separate V2 link prerequisites and staging-quota blocker. Historical provider requalification was corrected to mark SockOdds Brazil league coverage as unverified (not absent); its public docs state that leagues not in the extended-history table began recording on 2026-10-08, but that does not prove target-competition coverage.
+
+PR #120 remains OPEN / DRAFT / UNMERGED at the latest verified head before this ledger update. No production deploy, prediction publication, Telegram delivery, schedule activation, or value-betting unlock occurred.
+
