@@ -1,0 +1,111 @@
+name: VELTRIX Phase 5 — Link V2 Forecasts to PIT Feature Evidence
+
+on:
+  push:
+    branches:
+      - integration/v2-report-bundle-wiring-20261114
+    paths:
+      - ".github/workflows/phase5-v2-prediction-feature-link-backfill.yml"
+      - "scripts/link_v2_prediction_feature_snapshots.py"
+      - "tests/test_link_v2_prediction_feature_snapshots.py"
+      - "db/migrations/0012_prediction_feature_snapshot_links.sql"
+      - "scripts/phase5_prediction_feature_link_migration.py"
+      - "tests/test_phase5_prediction_feature_link_migration.py"
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Append the seven validated forecast-to-feature links to staging"
+        required: true
+        default: false
+        type: boolean
+      confirmation:
+        description: "Type LINK_V2_FORECASTS_TO_PIT_FEATURE_EVIDENCE when apply is true"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: veltrix-v2-prediction-feature-link-backfill
+  cancel-in-progress: false
+
+jobs:
+  link:
+    if: >
+      (github.event_name == 'push' &&
+       contains(github.event.head_commit.message, '[v2-evidence-link]')) ||
+      (github.event_name == 'workflow_dispatch' &&
+       (inputs.apply == false ||
+        (inputs.apply == true &&
+         inputs.confirmation == 'LINK_V2_FORECASTS_TO_PIT_FEATURE_EVIDENCE')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+      VELTRIX_ENABLE_PHASE5_V2_PREDICTION_FEATURE_LINKS: ${{ inputs.apply && 'YES' || 'NO' }}
+    steps:
+      - name: Checkout integration branch
+        uses: actions/checkout@v4
+        with:
+          ref: integration/v2-report-bundle-wiring-20261114
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install staging linker dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "psycopg[binary]>=3.2,<4"
+
+      - name: Download original immutable forecast and feature admission artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: veltrix-openplay-pit-feature-snapshots-43775129579
+          run-id: 43775129579
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          path: artifacts/source
+
+      - name: Compile and test evidence-link contracts
+        run: |
+          python -m compileall -q scripts/link_v2_prediction_feature_snapshots.py tests/test_link_v2_prediction_feature_snapshots.py
+          python -m pytest --import-mode=importlib -q tests/test_link_v2_prediction_feature_snapshots.py
+
+      - name: Validate exact artifact hashes and staging links (read-only)
+        run: |
+          python -m scripts.link_v2_prediction_feature_snapshots \
+            --forecast-summary artifacts/source/openplay-v2-forecasts/summary.json \
+            --feature-admission-summary artifacts/source/openplay-feature-snapshot-admission/summary.json \
+            > /tmp/v2-feature-links-dry-run.json
+          python -c 'import json; d=json.load(open("/tmp/v2-feature-links-dry-run.json")); assert d["status"] == "DRY_RUN_READY" and d["forecasts"] == 7 and d["database"] == "veltrix_football_staging" and d["writes_performed"] is False'
+
+      - name: Dry-run or append seven immutable evidence links
+        run: |
+          mkdir -p artifacts/v2-prediction-feature-links
+          if [ "${{ inputs.apply }}" = "true" ]; then
+            python -m scripts.link_v2_prediction_feature_snapshots \
+              --forecast-summary artifacts/source/openplay-v2-forecasts/summary.json \
+              --feature-admission-summary artifacts/source/openplay-feature-snapshot-admission/summary.json \
+              --apply > artifacts/v2-prediction-feature-links/summary.json
+            python -c 'import json; d=json.load(open("artifacts/v2-prediction-feature-links/summary.json")); assert d["status"] == "PASS_V2_PREDICTION_FEATURE_EVIDENCE_LINKS" and d["links_verified"] == 7 and d["fresh_connection_post_commit_verified"] is True'
+          else
+            python -m scripts.link_v2_prediction_feature_snapshots \
+              --forecast-summary artifacts/source/openplay-v2-forecasts/summary.json \
+              --feature-admission-summary artifacts/source/openplay-feature-snapshot-admission/summary.json \
+              > artifacts/v2-prediction-feature-links/summary.json
+            python -c 'import json; d=json.load(open("artifacts/v2-prediction-feature-links/summary.json")); assert d["status"] == "DRY_RUN_READY" and d["forecasts"] == 7 and d["writes_performed"] is False'
+          fi
+
+      - name: Upload evidence-link verification summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-v2-prediction-feature-links-${{ github.run_id }}
+          path: artifacts/v2-prediction-feature-links/summary.json
+          if-no-files-found: warn
+          retention-days: 30

@@ -13,7 +13,7 @@ def evaluate_source_use(
     purpose: DataUsePurpose,
     *,
     at_utc: datetime,
-    commercial: bool = True,
+    commercial: bool = False,
     public_facing: bool = False,
 ) -> RightsDecision:
     if at_utc.tzinfo is None or at_utc.utcoffset() is None:
@@ -54,7 +54,19 @@ def evaluate_fixture_import(
             ImportOutcomeStatus.QUARANTINED, "SOURCE_APPROVAL_IDENTITY_MISMATCH",
             fixture.provider_fixture_id,
         )
-    if approval.competition_scope not in {"*", fixture.provider_competition_id}:
+    # Scope is an explicit comma-separated allowlist of provider competition IDs.
+    # Wildcards are intentionally unsupported: a broad provider approval must never
+    # silently expand beyond the competitions actually reviewed and entitled.
+    approved_competitions = {
+        item.strip()
+        for item in approval.competition_scope.split(",")
+        if item.strip()
+    }
+    if (
+        not approved_competitions
+        or "*" in approved_competitions
+        or fixture.provider_competition_id not in approved_competitions
+    ):
         return FixtureImportDecision(
             ImportOutcomeStatus.QUARANTINED, "COMPETITION_OUTSIDE_SOURCE_APPROVAL",
             fixture.provider_fixture_id,
@@ -76,7 +88,7 @@ def evaluate_fixture_import(
         DataUsePurpose.MODEL_TRAINING,
     )
     decisions = tuple(
-        evaluate_source_use(approval, purpose, at_utc=evaluated_at_utc, commercial=True)
+        evaluate_source_use(approval, purpose, at_utc=evaluated_at_utc, commercial=False)
         for purpose in purposes
     )
     denied = next((decision for decision in decisions if not decision.allowed), None)

@@ -11,12 +11,12 @@ Use a layered, source-specific architecture rather than trying to force one free
 1. **GitHub Actions** for controlled, reproducible Python ingestion, validation and scheduled jobs after explicit activation.
 2. **OpenFootball** for CC0 fixtures/results and the current paired-snapshot qualification.
 3. **OpenPlay** as the leading historical event/player-statistics dataset candidate: 2014/15–2025/26, big-five European leagues and selected international competitions, with lineups, player-match statistics, team-match statistics, shots and shot-level xG. Data is CC BY 4.0; attribution is required.
-4. **FPL public API** is excluded from VELTRIX automated ingestion and production use. Its published terms prohibit automated systems from accessing/extracting game data and prohibit commercial exploitation unless expressly permitted. A one-time read-only probe was captured for schema research only; its data is quarantined and must not enter features, model training, persistence or public outputs.
-5. **PitchAPI** as the leading current-data API candidate to probe for player stats, shots/xG, lineups, events and advanced metrics. Its docs claim 77 leagues and free access, but no discoverable terms, privacy policy or upstream data provenance were found in this research. It is **not approved** for persistence, model training or public product use until the provider clarifies rights and lineage.
+4. **FPL public API**: the project owner confirms source authorization for non-commercial automated use. The prior terms-based rights quarantine is superseded for the authorized project scope. The earlier one-time probe remains quarantined until a fresh bounded read-only schema/access check is performed; no data is admitted solely because rights are resolved.
+5. **PitchAPI** remains a current-data API candidate for player stats, shots/xG, lineups, events and advanced metrics. The project-wide non-commercial authorization removes the rights hold for covered sources; endpoint access, actual upstream lineage, coverage, timestamp semantics and schema stability still require technical qualification.
 6. **5DollarFootballAPI** remains the qualified bounded EPL fixture/results reference. Its published statistics endpoint provides team-level attacks, dangerous attacks, shots and possession; it does not provide the player-level, lineup or injury coverage required for the full intelligence layer.
 7. **Neon** for structured accepted records and metadata; **Cloudflare R2** is the preferred optional object store for larger immutable raw snapshots and Parquet datasets.
 
-No single source currently supplies a complete, rights-cleared, free, all-competition package for player statistics, xG, lineups, injuries, odds and fixtures. Missing fields must remain explicitly missing rather than be fabricated.
+No single source supplies a complete, free, all-competition package for player statistics, xG, lineups, injuries, odds and fixtures. The project owner has confirmed non-commercial authorization across the project's selected sources; technical access, coverage, source timestamps, attribution and data integrity remain separate gates. Missing fields must remain explicitly missing rather than be fabricated.
 
 ## Source qualification register
 
@@ -60,7 +60,7 @@ Terms reviewed: clauses prohibit automated systems from accessing/extracting gam
 
 Decision: **DO NOT USE** for VELTRIX automated collection, feature generation, training, persistence or public outputs. The one-time probe is quarantined and must not be used. Automated retrieval was removed from the workflow.
 
-### C. PitchAPI — high-priority live API candidate, rights gate unresolved
+### C. PitchAPI — high-priority live API candidate, technical qualification pending
 
 Documentation: https://pitchapi.dev/
 
@@ -72,11 +72,11 @@ Its documentation claims:
 - Lineups can be predicted before kickoff; each side has a `confirmed` flag. A predicted lineup must never be recorded as a confirmed lineup.
 
 Critical unresolved checks:
-- The documentation reviewed did not expose a terms of service, privacy policy, data-source lineage, underlying rights statement or clear retention/model-training permission.
+- The documentation reviewed did not expose a terms of service, privacy policy, data-source lineage or reliable coverage statement. The project owner's non-commercial authorization is recorded in the project-wide rights register; it does not replace technical source-lineage and access verification.
 - The public claims need a live read-only endpoint probe and a completeness audit against the already qualified EPL fixtures.
 - Confirm who supplies the underlying event feed, what leagues actually have player stats and xG, whether historical records can be stored, whether commercial model training is allowed, and what attribution is required.
 
-Decision: top API candidate to investigate, **not approved** for persistent production ingestion, training or public use until rights and data provenance are documented.
+Decision: top API candidate to investigate; **rights hold lifted for non-commercial project use**. Persistent ingestion and model use remain blocked only until endpoint access, upstream lineage, data quality and timestamp semantics are technically qualified.
 
 ### D. StatsBomb Open Data — research-only event data
 
@@ -252,7 +252,7 @@ Separate VELTRIX_V2 model/evaluation/publication gates
 - 10 Parquet tables and 5 supporting files downloaded and hash-verified (about 71 MiB).
 - 775,994 player-match rows; 1,068,162 lineup rows; 669,404 shot rows; 53,094 team-match rows.
 - 26,575 matches played in the v1 coverage scope; 26,536 with events; 39 gaps; 58 known data issues in that scope.
-- Technical structure/hash qualification passed. Production and commercial model-training remain blocked pending upstream-rights review because the maintainer identifies WhoScored / Opta (Stats Perform) as the underlying source.
+- Technical structure/hash qualification passed. The project owner has confirmed authorization covering the underlying WhoScored / Opta (Stats Perform) data for non-commercial VELTRIX use. Rights-based quarantine is lifted; static-archive PIT limitations remain.
 - Detailed evidence: `docs/VELTRIX_V2_OPENPLAY_QUALIFICATION_2026-11-11.md`.
 
 ### OpenFootball paired reconciliation result
@@ -277,6 +277,6 @@ Documentation: https://footballapi.org/documentation
 
 ### Current data-source decision
 - 5DollarFootballAPI remains the bounded EPL fixture/results reference and has commercial application rights subject to its attribution and no-raw-feed-resale terms.
-- OpenPlay is the strongest audited historical player/lineup/xG dataset candidate, but upstream rights review is still required before training/production approval.
-- No rights-cleared, free, current-season, multi-competition player-statistics and confirmed-lineup provider has yet passed qualification.
-- PitchAPI remains a high-potential API candidate, but its data lineage and commercial storage/training permissions remain unverified.
+- OpenPlay is the strongest audited historical player/lineup/xG dataset and is now approved for non-commercial model training and research; its 15 release assets have been persisted to Neon staging. It is not yet a historical PIT feature feed.
+- No technically qualified, free, current-season, multi-competition player-statistics and confirmed-lineup provider has yet passed qualification.
+- PitchAPI remains a high-potential API candidate; project rights are confirmed for non-commercial use, while endpoint access, actual data lineage, coverage and timestamp quality remain unverified.

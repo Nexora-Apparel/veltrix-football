@@ -1,7 +1,222 @@
 name: VELTRIX Phase 5 Shadow Regression
 
 on:
+  push:
+    branches:
+      - integration/v2-report-bundle-wiring-20261114
+    paths:
+      - "scripts/phase5_collect_5dollar_shadow.py"
+      - ".github/workflows/phase5-5dollar-shadow-settlement.yml"
+      - "scripts/phase5_settle_5dollar_shadow.py"
+      - "veltrix_v2/ledger/settlement_reconciliation.py"
+      - "veltrix_v2/ledger/paper_predictions.py"
+      - "veltrix_v2/ledger/settlement.py"
+      - "tests/veltrix_v2/test_settlement_reconciliation.py"
+      - "veltrix_v2/evaluation/prospective_settlement_metrics.py"
+      - "tests/veltrix_v2/test_prospective_settlement_metrics.py"
+      - "tests/veltrix_v2/test_phase5_settlement_workflow.py"
+      - "tests/veltrix_v2/test_paper_ledger_postgres.py"
+      - "tests/scripts/test_phase5_collect_5dollar_shadow.py"
+      - "veltrix_v2/data/provider_evidence_capture.py"
+      - "tests/veltrix_v2/test_provider_evidence_capture.py"
+      - "api/telegram.py"
+      - "tests/veltrix_v2/test_api_publication_verifier_injection.py"
+      - "scripts/veltrix_v2/dispatch_public_telegram_bundle.py"
+      - "tests/veltrix_v2/test_v2_release_workflow_guards.py"
+      - "veltrix_v2/reporting/trusted_runtime.py"
+      - "tests/veltrix_v2/test_trusted_runtime.py"
+      - "veltrix_v2/evaluation/certification_manifest_builder.py"
+      - "tests/veltrix_v2/test_certification_manifest_builder.py"
+      - "scripts/veltrix_v2/build_verified_public_bundle.py"
+      - "scripts/veltrix_v2/verify_pre_attestation_report.py"
+      - "docs/VELTRIX_V2_DEPLOYMENT_TRUST_VERIFIER.md"
+      - ".github/workflows/report-certification-attestation.yml"
+      - "requirements.txt"
+      - ".github/workflows/telegram-delivery-recovery.yml"
+      - "docs/VELTRIX_V2_ODDS_API_ONE_EVENT_MARKET_PROBE_RUNBOOK_2026-11-15.md"
+      - "db/migrations/0011_odds_quote_observations.sql"
+      - "veltrix_v2/providers/odds_api_v4/evidence.py"
+      - "tests/providers/odds_api_v4/test_evidence.py"
+      - "veltrix_v2/providers/odds_api_v4/postgres_store.py"
+      - "tests/providers/odds_api_v4/test_postgres_store.py"
+      - "tests/providers/odds_api_v4/test_postgres_store_postgres.py"
+      - "tests/providers/odds_api_v4/test_parser.py"
+      - "docs/VELTRIX_V2_ODDS_QUOTE_EVIDENCE_CONTRACT_2026-11-15.md"
+      - "scripts/db_acceptance.py"
+      - "tests/veltrix_v2/test_full_migration_chain_postgres.py"
+      - ".github/workflows/phase5-shadow-regression.yml"
+      - "scripts/probe_fivedollar_status_only.py"
+      - "tests/scripts/test_probe_fivedollar_status_only.py"
+      - "scripts/veltrix_v2/persist_openplay_feature_snapshots.py"
+      - "tests/scripts/test_persist_openplay_feature_snapshots.py"
+      - "veltrix_v2/models/openplay_xg_poisson.py"
+      - "scripts/veltrix_v2/generate_openplay_v2_forecasts.py"
+      - "tests/veltrix_v2/test_openplay_xg_poisson.py"
+      - ".github/workflows/phase2-5dollar-status-only-entitlement.yml"
+      - "scripts/probe_fivedollar_status_only.py"
+      - "tests/scripts/test_probe_fivedollar_status_only.py"
+      - ".github/workflows/phase2-5dollar-status-only-entitlement.yml"
+      - ".github/workflows/vercel-preview-runtime-publication-smoke.yml"
+      - "scripts/phase4_odds_one_event_probe.py"
+      - "scripts/phase5_prediction_feature_link_migration.py"
+      - "scripts/link_v2_prediction_feature_snapshots.py"
+      - ".github/workflows/phase5-v2-prediction-feature-link-backfill.yml"
+      - "tests/test_link_v2_prediction_feature_snapshots.py"
+      - "tests/test_phase5_prediction_feature_link_migration.py"
+      - "db/migrations/0012_prediction_feature_snapshot_links.sql"
+      - "tests/veltrix_v2/test_full_migration_chain_postgres.py"
+      - "tests/scripts/test_phase4_odds_one_event_probe.py"
+      - "scripts/phase4_odds_one_event_probe.py"
+      - "tests/scripts/test_phase4_odds_one_event_probe.py"
+  pull_request:
+    paths:
+      - "scripts/phase5_collect_5dollar_shadow.py"
+      - "scripts/phase5_settle_5dollar_shadow.py"
+      - "veltrix_v2/ledger/settlement_reconciliation.py"
+      - "veltrix_v2/ledger/paper_predictions.py"
+      - "veltrix_v2/ledger/settlement.py"
+      - "tests/veltrix_v2/test_settlement_reconciliation.py"
+      - "veltrix_v2/evaluation/prospective_settlement_metrics.py"
+      - "tests/veltrix_v2/test_prospective_settlement_metrics.py"
+      - "tests/veltrix_v2/test_paper_ledger_postgres.py"
+      - "tests/scripts/test_phase5_collect_5dollar_shadow.py"
+      - "veltrix_v2/data/provider_evidence_capture.py"
+      - "tests/veltrix_v2/test_provider_evidence_capture.py"
+      - "api/telegram.py"
+      - "tests/veltrix_v2/test_api_publication_verifier_injection.py"
+      - "veltrix_v2/reporting/trusted_runtime.py"
+      - "tests/veltrix_v2/test_trusted_runtime.py"
+      - "veltrix_v2/evaluation/certification_manifest_builder.py"
+      - "tests/veltrix_v2/test_certification_manifest_builder.py"
+      - "scripts/veltrix_v2/build_verified_public_bundle.py"
+      - ".github/workflows/report-certification-attestation.yml"
+      - "requirements.txt"
+      - "db/migrations/0011_odds_quote_observations.sql"
+      - "veltrix_v2/providers/odds_api_v4/postgres_store.py"
+      - "tests/providers/odds_api_v4/test_postgres_store.py"
+      - "tests/providers/odds_api_v4/test_postgres_store_postgres.py"
+      - ".github/workflows/phase5-shadow-regression.yml"
+      - ".github/workflows/vercel-preview-runtime-publication-smoke.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: phase5-shadow-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shadow-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Compile and test isolated 5Dollar status-only probe
+        run: |
+          python -m compileall -q scripts/probe_fivedollar_status_only.py tests/scripts/test_probe_fivedollar_status_only.py scripts/phase4_odds_one_event_probe.py tests/scripts/test_phase4_odds_one_event_probe.py scripts/phase5_prediction_feature_link_migration.py tests/test_phase5_prediction_feature_link_migration.py scripts/link_v2_prediction_feature_snapshots.py tests/test_link_v2_prediction_feature_snapshots.py scripts/veltrix_v2/persist_openplay_feature_snapshots.py tests/scripts/test_persist_openplay_feature_snapshots.py scripts/veltrix_v2/generate_openplay_v2_forecasts.py veltrix_v2/models/openplay_xg_poisson.py tests/veltrix_v2/test_openplay_xg_poisson.py
+          python -m pytest --import-mode=importlib -q tests/scripts/test_probe_fivedollar_status_only.py tests/scripts/test_phase4_odds_one_event_probe.py tests/test_phase5_prediction_feature_link_migration.py tests/test_link_v2_prediction_feature_snapshots.py tests/scripts/test_persist_openplay_feature_snapshots.py tests/veltrix_v2/test_openplay_xg_poisson.py
+      - name: Smoke-test installed Sigstore GitHub verifier CLI
+        run: python -m sigstore verify github --help
+      - name: Compile capture and regression test
+        run: |
+          python -m compileall -q scripts/phase5_collect_5dollar_shadow.py scripts/phase5_settle_5dollar_shadow.py
+          python scripts/phase5_settle_5dollar_shadow.py > /tmp/veltrix-settlement-dry-run.json
+          python -c 'import json; d=json.load(open("/tmp/veltrix-settlement-dry-run.json")); assert d["mode"] == "DRY_RUN" and d["would_connect_to_database"] is False and d["would_call_provider"] is False and d["would_write_database"] is False and d["settlement"] is False'
+          python -m compileall -q veltrix_v2/ledger/settlement_reconciliation.py tests/veltrix_v2/test_settlement_reconciliation.py
+          python -m compileall -q veltrix_v2/evaluation/prospective_settlement_metrics.py tests/veltrix_v2/test_prospective_settlement_metrics.py
+          python -m compileall -q tests/veltrix_v2/test_phase5_settlement_workflow.py
+          python -m compileall -q tests/scripts/test_phase5_collect_5dollar_shadow.py
+          python -m compileall -q veltrix_v2/data/provider_evidence_capture.py
+          python -m compileall -q tests/veltrix_v2/test_provider_evidence_capture.py
+          python -m compileall -q api/telegram.py
+          python -m compileall -q tests/veltrix_v2/test_api_publication_verifier_injection.py
+          python -m compileall -q veltrix_v2/reporting/trusted_runtime.py scripts/veltrix_v2/build_verified_public_bundle.py scripts/veltrix_v2/verify_pre_attestation_report.py
+          python -m compileall -q tests/veltrix_v2/test_trusted_runtime.py
+      - name: Run provider and model evaluation contracts
+        run: >-
+          python -m pytest --import-mode=importlib -q
+          tests/scripts/test_phase5_collect_5dollar_shadow.py
+          tests/veltrix_v2/test_provider_evidence_capture.py
+          tests/veltrix_v2/test_walk_forward.py
+          tests/veltrix_v2/test_model_challengers_and_paper_ledger.py
+          tests/veltrix_v2/test_paper_settlement.py
+          tests/veltrix_v2/test_settlement_reconciliation.py
+          tests/veltrix_v2/test_prospective_settlement_metrics.py
+          tests/veltrix_v2/test_phase5_settlement_workflow.py
+          tests/providers/odds_api_v4
+          --ignore=tests/providers/odds_api_v4/test_reservation_postgres.py
+          --ignore=tests/providers/odds_api_v4/test_quota_evidence_postgres.py
+          --ignore=tests/providers/odds_api_v4/test_capture_state_postgres.py
+          --ignore=tests/providers/odds_api_v4/test_capture_request_postgres.py
+          --ignore=tests/providers/odds_api_v4/test_postgres_store_postgres.py
+      - name: Run publication, bundle and delivery boundaries
+        run: >-
+          python -m pytest --import-mode=importlib -q
+          tests/veltrix_v2/test_api_publication_verifier_injection.py
+          tests/veltrix_v2/test_trusted_runtime.py
+          tests/veltrix_v2/test_publication_certification.py
+          tests/veltrix_v2/test_certification_manifest_builder.py
+          tests/veltrix_v2/test_certification_manifest_cli.py
+          tests/veltrix_v2/test_portable_report_bundle_cli.py
+          tests/veltrix_v2/test_portable_bundle_cross_surface_integration.py
+          tests/veltrix_v2/test_telegram_delivery_runner.py
+          tests/veltrix_v2/test_telegram_v2_delivery.py
+          tests/veltrix_v2/test_telegram_v2_formatting.py
+          tests/veltrix_v2/test_telegram_reconciliation.py
+  postgres-integration:
+    name: PostgreSQL ${{ matrix.postgres-version }} integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres-version: ["16", "18"]
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres-version }}
+        env:
+          POSTGRES_DB: veltrix_reservation_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d veltrix_reservation_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/veltrix_reservation_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt "psycopg[binary]>=3.2,<4"
+      - name: Run isolated PostgreSQL integration contracts
+        run: >-
+          python -m pytest --import-mode=importlib -q
+          tests/providers/odds_api_v4/test_reservation_postgres.py
+          tests/providers/odds_api_v4/test_quota_evidence_postgres.py
+          tests/providers/odds_api_v4/test_capture_state_postgres.py
+          tests/providers/odds_api_v4/test_capture_request_postgres.py
+          tests/providers/odds_api_v4/test_postgres_store_postgres.py
+          tests/veltrix_v2/test_full_migration_chain_postgres.py
+          tests/veltrix_v2/test_paper_ledger_postgres.py

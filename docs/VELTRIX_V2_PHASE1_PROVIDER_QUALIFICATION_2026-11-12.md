@@ -10,7 +10,7 @@
 
 The provider inventory is reconciled and a scoped source stack is identified. The consolidated workflow has run and its evidence is recorded in §3.5. The selected stack is 5DollarFootballAPI for fixtures/results, The Odds API for prospective timestamped bookmaker prices, and the licensed Wyscout public event dataset for historical xG research. InferSports remains a non-benchmark live 1X2/totals candidate. StrikerAPI, GOAL API, OddsPapi and other unapproved or inaccessible sources are explicitly excluded from ingestion. The 5Dollar Community account does not satisfy the 98% historical odds-timestamp gate; use prospective timestamped capture and keep value betting locked. The only remaining Phase 1 check is the offline regression suite after the OddsPapi entrypoint fix.
 
-The project will not treat a successful HTTP response, an SDK licence, a public dataset label, or an API key as blanket data-use permission. Approval is scoped by provider, endpoint, data type, competition, season, retention, model training, public display, and commercial use.
+The project-owner authorization condition has now been confirmed across the selected project sources: non-commercial use is authorized; monetisation is prohibited. The project-wide policy is recorded in [the source authorization register](legal/veltrix-all-source-noncommercial-authorization-2026-11-15.md), with a source-specific OpenPlay / WhoScored / Opta approval. Preserve source-specific attribution, provenance and data-use conditions. Rights are no longer the blocker for sources covered by the owner's confirmation; API entitlements, endpoint access, rate limits, historical depth and point-in-time semantics remain separate qualification gates.
 
 ## 2. Selected source stack
 
@@ -127,7 +127,7 @@ The Pappalardo et al. public dataset contains approximately 1,941 matches and 3.
 
 ### OpenPlay
 
-The v0.1.0 release reports 26,536 in-scope matches, 41.6 million events and 669,404 shots with xG, plus player-match statistics and lineups. It declares CC BY 4.0, but its upstream WhoScored/Opta/Stats Perform lineage is not independently established. Keep it quarantined from production training and display pending upstream rights confirmation. Reference: [OpenPlay release](https://github.com/nlbair/openplay/releases).
+The v0.1.0 release reports 26,536 in-scope matches, 41.6 million events and 669,404 shots with xG, plus player-match statistics and lineups. The project owner has confirmed authorization covering the OpenPlay release and its WhoScored / Opta / Stats Perform lineage for non-commercial VELTRIX use. Rights-based quarantine is lifted. Keep the separate historical PIT restriction: static archive timestamps are not proof of source availability before historical forecast cutoffs. Reference: [OpenPlay release](https://github.com/nlbair/openplay/releases).
 
 ### Excluded / not selected sources
 

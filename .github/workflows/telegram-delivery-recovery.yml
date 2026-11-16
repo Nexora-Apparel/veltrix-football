@@ -1,71 +1,55 @@
-name: Telegram Delivery Recovery
+name: VELTRIX V2 Telegram Delivery (LOCKED)
 
 on:
   workflow_dispatch:
+    inputs:
+      bundle_path:
+        description: "Canonical shared bundle path on command-data"
+        required: true
+        default: "public-data/v2_report_bundle.json"
+        type: string
+      enable_delivery:
+        description: "Must remain false until release certification is complete"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: veltrix-telegram-delivery-recovery
+  group: veltrix-v2-telegram-delivery
   cancel-in-progress: false
 
 jobs:
-  deliver-published-report:
-    # PAUSED by user request until VELTRIX FOOTBALL Phase 3 is complete.
+  v2-telegram-delivery:
+    # Deliberate release lock: do not remove until certification, rights and
+    # production migration gates pass. There is no cron trigger in this workflow.
     if: false
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - name: Check out report sender
-        uses: actions/checkout@v4
-
-      - name: Download today's published report and paper ledger
-        id: report
-        env:
-          GH_REPOSITORY: ${{ github.repository }}
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: command-data
+          path: command-data
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runner dependencies
         run: |
-          set -euo pipefail
-          mkdir -p reports
-          BASE="https://raw.githubusercontent.com/$GH_REPOSITORY/command-data/public-data"
-          curl --fail --silent --show-error --max-time 20 "$BASE/daily_predictions.json" -o reports/daily_predictions.json
-          curl --fail --silent --show-error --max-time 20 "$BASE/paper_tracking_ledger.json" -o reports/paper_tracking_ledger.json || true
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import json
-          from datetime import datetime
-          from zoneinfo import ZoneInfo
-          from pathlib import Path
-          report = json.loads(Path("reports/daily_predictions.json").read_text(encoding="utf-8"))
-          today = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
-          valid = (
-              report.get("as_of_date") == today
-              and report.get("command_data_publication") == "PUBLISHED"
-              and report.get("same_day_only") is True
-              and isinstance(report.get("predictions"), list)
-          )
-          print(f"valid={'true' if valid else 'false'}")
-          print(f"report_date={report.get('as_of_date', 'missing')}")
-          print(f"today={today}")
-          if not valid:
-              print("::notice::Published report is missing, stale, or structurally invalid; delivery skipped.", file=__import__("sys").stderr)
-          PY
-
-      - name: Send today's report if not already delivered
-        if: steps.report.outputs.valid == 'true'
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install "psycopg[binary]>=3.2,<4"
+      - name: Dispatch the authorized portable report bundle
         env:
+          VELTRIX_V2_TELEGRAM_DELIVERY_ENABLED: ${{ inputs.enable_delivery }}
+          VELTRIX_V2_REPORT_BUNDLE_PATH: command-data/${{ inputs.bundle_path }}
+          VELTRIX_V2_TELEGRAM_DATABASE_URL: ${{ secrets.VELTRIX_V2_TELEGRAM_DATABASE_URL }}
+          VELTRIX_V2_TELEGRAM_EXPECTED_DATABASE: ${{ vars.VELTRIX_V2_TELEGRAM_EXPECTED_DATABASE }}
+          VELTRIX_V2_TELEGRAM_EXPECTED_CHAT_ID: ${{ vars.VELTRIX_V2_TELEGRAM_EXPECTED_CHAT_ID }}
+          VELTRIX_V2_PUBLICATION_VERIFIER_FACTORY: ${{ vars.VELTRIX_V2_PUBLICATION_VERIFIER_FACTORY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
-            echo "::warning::Telegram credentials are not configured; published report remains available on command-data."
-            exit 0
-          fi
-          python -m pip install --disable-pip-version-check requests
-          python scripts/send_telegram_report.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json
-
-      - name: Report skipped stale snapshot
-        if: steps.report.outputs.valid != 'true'
-        run: echo "No current-day published report to deliver. No fixture-provider calls were made."
+        run: python scripts/veltrix_v2/dispatch_public_telegram_bundle.py

@@ -1,0 +1,190 @@
+"""Provider capability registry for the provider-independent VELTRIX v2 pipeline.
+
+Policy metadata only: no network calls, secrets, credit consumption, or rights
+certification. Live adapters must still pass evidence-capture gates.
+"""
+from __future__ import annotations
+from dataclasses import dataclass
+from enum import StrEnum
+
+
+class ProviderState(StrEnum):
+    ACTIVE_LIMITED = "ACTIVE_LIMITED"
+    ARCHIVE_ONLY = "ARCHIVE_ONLY"
+    OPTIONAL_GATED = "OPTIONAL_GATED"
+    SUSPENDED_CREDITS = "SUSPENDED_CREDITS"
+
+
+class DataDomain(StrEnum):
+    FIXTURES = "FIXTURES"
+    RESULTS = "RESULTS"
+    TEAM_FORM = "TEAM_FORM"
+    TEAM_STRENGTH = "TEAM_STRENGTH"
+    REST_DAYS = "REST_DAYS"
+    ODDS_1X2 = "ODDS_1X2"
+    ODDS_TOTALS = "ODDS_TOTALS"
+    ODDS_BTTS = "ODDS_BTTS"
+    EXPECTED_GOALS = "EXPECTED_GOALS"
+    LINEUPS = "LINEUPS"
+    INJURIES = "INJURIES"
+    PLAYER_STATS = "PLAYER_STATS"
+
+
+class CapabilityState(StrEnum):
+    AVAILABLE = "AVAILABLE"
+    DERIVED = "DERIVED"
+    CONDITIONAL = "CONDITIONAL"
+    NOT_VERIFIED = "NOT_VERIFIED"
+    UNAVAILABLE = "UNAVAILABLE"
+    EXPLORATORY_ONLY = "EXPLORATORY_ONLY"
+
+
+@dataclass(frozen=True, slots=True)
+class Capability:
+    domain: DataDomain
+    state: CapabilityState
+    evidence_note: str
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderProfile:
+    provider: str
+    source_id: str
+    state: ProviderState
+    capabilities: tuple[Capability, ...]
+    collection_allowed: bool
+    note: str
+
+    def capability(self, domain: DataDomain) -> Capability:
+        matches = tuple(item for item in self.capabilities if item.domain is domain)
+        if len(matches) != 1:
+            raise ValueError(f"PROVIDER_CAPABILITY_NOT_UNIQUE:{self.provider}:{domain.value}")
+        return matches[0]
+
+
+def _caps(*items: tuple[DataDomain, CapabilityState, str]) -> tuple[Capability, ...]:
+    declared = {domain: (state, note) for domain, state, note in items}
+    return tuple(
+        Capability(domain, *declared.get(domain, (
+            CapabilityState.NOT_VERIFIED, "No verified provider capability contract."
+        )))
+        for domain in DataDomain
+    )
+
+
+PROVIDER_REGISTRY: tuple[ProviderProfile, ...] = (
+    ProviderProfile("5DollarFootballAPI", "5dollarfootballapi", ProviderState.ACTIVE_LIMITED,
+        _caps(
+            (DataDomain.FIXTURES, CapabilityState.AVAILABLE, "Fixture feed; five accessible competitions and free-tier quota limits apply."),
+            (DataDomain.RESULTS, CapabilityState.AVAILABLE, "Finished scores exist; current historical rows lack strict publication/availability and revision evidence."),
+            (DataDomain.TEAM_FORM, CapabilityState.DERIVED, "Calculate only from eligible, cutoff-safe result observations."),
+            (DataDomain.TEAM_STRENGTH, CapabilityState.DERIVED, "Calculate Elo/goal strengths only from eligible, cutoff-safe results."),
+            (DataDomain.REST_DAYS, CapabilityState.CONDITIONAL, "Requires exact timezone-aware kickoff timestamps."),
+            (DataDomain.ODDS_1X2, CapabilityState.CONDITIONAL, "Provider documents timestamped 1X2 opening quotes and full tick history with recorded_at; full odds-history endpoint requires Ultra. Current Free account cannot access the tick-history endpoint; a separate odds_quote rights approval and exact account-plan check are required before collection."),
+            (DataDomain.ODDS_TOTALS, CapabilityState.CONDITIONAL, "Provider documents timestamped full tick history for goal-line markets; endpoint requires Ultra. Do not dispatch until a separate odds_quote rights approval and plan entitlement are verified."),
+            (DataDomain.ODDS_BTTS, CapabilityState.CONDITIONAL, "Provider documents timestamped BTTS tick history; endpoint requires Ultra. Do not dispatch until a separate odds_quote rights approval and plan entitlement are verified."),
+            (DataDomain.EXPECTED_GOALS, CapabilityState.NOT_VERIFIED, "No qualified xG contract."),
+            (DataDomain.LINEUPS, CapabilityState.NOT_VERIFIED, "No qualified lineup contract."),
+            (DataDomain.INJURIES, CapabilityState.NOT_VERIFIED, "No qualified injury contract."),
+            (DataDomain.PLAYER_STATS, CapabilityState.NOT_VERIFIED, "No qualified player-stat contract."),
+        ), True, "Free key remains the default live source. Community Access is a separate credential/plan path (top five plus the selected Brazil pack, 12 months, 300 requests/hour); full tick history remains unavailable without Ultra or Education Access."),
+    ProviderProfile("OpenFootball", "openfootball-cc0-archive", ProviderState.ARCHIVE_ONLY,
+        _caps(
+            (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Static, immutable source snapshots only; not a live fixture feed."),
+            (DataDomain.RESULTS, CapabilityState.AVAILABLE, "CC0 historical scores exist; each row still requires exact source-commit, raw-content, retrieval and two-day safety-boundary evidence."),
+            (DataDomain.TEAM_FORM, CapabilityState.EXPLORATORY_ONLY, "Do not enter the production feature path until the Stage 2 archive artifact, archive-proof verifier and cross-provider identity gates pass."),
+            (DataDomain.TEAM_STRENGTH, CapabilityState.EXPLORATORY_ONLY, "Do not enter the production feature path until the Stage 2 archive artifact, archive-proof verifier and cross-provider identity gates pass."),
+            (DataDomain.REST_DAYS, CapabilityState.UNAVAILABLE, "Date-only records do not support exact rest-day calculations."),
+            (DataDomain.ODDS_1X2, CapabilityState.UNAVAILABLE, "No odds data."),
+            (DataDomain.ODDS_TOTALS, CapabilityState.UNAVAILABLE, "No odds data."),
+            (DataDomain.ODDS_BTTS, CapabilityState.UNAVAILABLE, "No odds data."),
+            (DataDomain.EXPECTED_GOALS, CapabilityState.UNAVAILABLE, "No xG data."),
+            (DataDomain.LINEUPS, CapabilityState.UNAVAILABLE, "No lineup data."),
+            (DataDomain.INJURIES, CapabilityState.UNAVAILABLE, "No injury data."),
+            (DataDomain.PLAYER_STATS, CapabilityState.UNAVAILABLE, "No player-stat data."),
+        ), False, "CC0 historical archive; collection is manual and bounded. No live dispatch. Archive-proof verification and actual retrieval-time checks remain mandatory."),
+    ProviderProfile("FootballData CC0", "ferrerasrp-footballdata-cc0", ProviderState.ARCHIVE_ONLY,
+        _caps(
+            (DataDomain.RESULTS, CapabilityState.AVAILABLE, "Supplemental Brazil Serie B historical scores from immutable CC0 JSON snapshots; date-only eligibility is proven, while reported clock strings have unknown timezone."),
+            (DataDomain.TEAM_FORM, CapabilityState.EXPLORATORY_ONLY, "Do not use in production features until the archive proof, source-scoped team identity and 5Dollar crosswalk gates pass."),
+            (DataDomain.TEAM_STRENGTH, CapabilityState.EXPLORATORY_ONLY, "Do not use in production features until the archive proof, source-scoped team identity and 5Dollar crosswalk gates pass."),
+            (DataDomain.REST_DAYS, CapabilityState.UNAVAILABLE, "Source timezone is undocumented; exact rest-day calculations are prohibited."),
+        ), False, "CC0 supplemental archive only: 2025 has a full-season file and 2026 is a stale partial snapshot. No live collection or production feature dispatch; preserve source-specific IDs and local clock strings without timezone conversion."),
+    ProviderProfile("StatsBomb Open Data", "statsbomb-open-data", ProviderState.ARCHIVE_ONLY,
+        _caps(
+            (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Selected historical match lists only; no live fixture feed."),
+            (DataDomain.RESULTS, CapabilityState.AVAILABLE, "Selected historical match records; temporal certification must be established independently."),
+            (DataDomain.TEAM_FORM, CapabilityState.EXPLORATORY_ONLY, "Historical sample coverage is selective and not a substitute for current competition-wide form."),
+            (DataDomain.TEAM_STRENGTH, CapabilityState.EXPLORATORY_ONLY, "Historical sample coverage is selective and not a substitute for current competition-wide ratings."),
+            (DataDomain.EXPECTED_GOALS, CapabilityState.CONDITIONAL, "Shot-level StatsBomb xG exists in selected event files; research-use and attribution review required."),
+            (DataDomain.LINEUPS, CapabilityState.CONDITIONAL, "Lineup JSON exists for selected historical matches; research-use and attribution review required."),
+        ), False, "Static selected-match research archive. No live data; do not use commercially or publish derived material until rights scope is reviewed and attribution requirements are implemented."),
+    ProviderProfile("PitchAPI", "pitchapi", ProviderState.OPTIONAL_GATED,
+        _caps(
+            (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Official docs describe upcoming and played fixture listings across a claimed 77-league catalogue; coverage and source timestamp semantics require independent verification."),
+            (DataDomain.RESULTS, CapabilityState.CONDITIONAL, "Post-match scores and event records are documented; no per-record publication timestamp or complete revision-history contract was found."),
+            (DataDomain.EXPECTED_GOALS, CapabilityState.CONDITIONAL, "Shot-level xG/xGOT and team/player xG are documented provider-derived metrics; model provenance and commercial reuse rights remain unverified."),
+            (DataDomain.LINEUPS, CapabilityState.CONDITIONAL, "Predicted lineups may appear up to 48 hours before kickoff; confirmed status must be checked explicitly."),
+            (DataDomain.PLAYER_STATS, CapabilityState.CONDITIONAL, "Match-level player stats and advanced metrics are documented; scope, freshness and reuse rights remain unverified."),
+            (DataDomain.ODDS_1X2, CapabilityState.UNAVAILABLE, "No odds endpoint documented in the reviewed API reference."),
+            (DataDomain.ODDS_TOTALS, CapabilityState.UNAVAILABLE, "No odds endpoint documented in the reviewed API reference."),
+            (DataDomain.ODDS_BTTS, CapabilityState.UNAVAILABLE, "No odds endpoint documented in the reviewed API reference."),
+        ), False, "Promising free candidate only. Public documentation claims no-cost access but a public data-use license/terms for commercial display, retention and model training were not found. No dispatch until rights and provenance are confirmed."),
+    ProviderProfile("OpenLigaDB", "openligadb", ProviderState.OPTIONAL_GATED,
+        _caps(
+            (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Public fixture schema parsed offline; league coverage, accuracy and recurring-collection scope remain unqualified."),
+            (DataDomain.RESULTS, CapabilityState.CONDITIONAL, "Explicit score result types available; no public revision history or immutable snapshots, so historical PIT certification is unavailable."),
+        ), False, "Conditional candidate only. No live dispatch until operator-use review, ODbL attribution/share-alike controls, competition coverage and prospective capture validation pass."),
+    ProviderProfile("The Odds API", "the-odds-api", ProviderState.OPTIONAL_GATED,
+        _caps(
+            (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Event discovery only; not canonical fixture source."),
+            (DataDomain.ODDS_1X2, CapabilityState.CONDITIONAL, "Soccer h2h market; event, region, bookmaker and quote timestamp coverage must be checked."),
+            (DataDomain.ODDS_TOTALS, CapabilityState.CONDITIONAL, "Totals coverage must be checked per competition/region/bookmaker."),
+            (DataDomain.ODDS_BTTS, CapabilityState.CONDITIONAL, "Event-specific market; verify availability and request budget."),
+        ), False, "Optional odds only; rights, quota, account allowance and explicit spend caps gate dispatch."),
+    ProviderProfile("GOAL API", "goal-api", ProviderState.SUSPENDED_CREDITS,
+        _caps(*((domain, CapabilityState.NOT_VERIFIED, "Dormant while credits are exhausted; do not call.") for domain in DataDomain)),
+        False, "No calls, retries, scans or credit checks until reset and requalification."),
+    ProviderProfile("StrikerAPI", "strikerapi", ProviderState.SUSPENDED_CREDITS,
+        _caps(*((domain, CapabilityState.NOT_VERIFIED, "Dormant while credits are exhausted; do not call.") for domain in DataDomain)),
+        False, "No calls, retries, scans or credit checks until next monthly reset and requalification."),
+)
+
+
+def providers_for(domain: DataDomain, *, include_conditional: bool = False) -> tuple[ProviderProfile, ...]:
+    """List sources with declared coverage, including static archives."""
+    states = {CapabilityState.AVAILABLE, CapabilityState.DERIVED}
+    if include_conditional:
+        states.add(CapabilityState.CONDITIONAL)
+    return tuple(
+        profile for profile in PROVIDER_REGISTRY
+        if profile.state not in {ProviderState.SUSPENDED_CREDITS}
+        and profile.capability(domain).state in states
+    )
+
+
+def dispatchable_providers_for(domain: DataDomain, *, include_conditional: bool = False) -> tuple[ProviderProfile, ...]:
+    """Return sources with the static registry switch enabled, not final authorization.
+
+Callers must still independently pass source rights, account, quota, request
+budget and provider-specific evidence gates before creating a transport.
+"""
+    return tuple(
+        profile for profile in providers_for(domain, include_conditional=include_conditional)
+        if profile.collection_allowed and profile.state is ProviderState.ACTIVE_LIMITED
+    )
+
+
+def assert_provider_dispatch_allowed(provider: str) -> ProviderProfile:
+    """Reject statically disabled sources before transport construction.
+
+A successful return is not complete authorization: callers must still pass
+rights, account, quota, request-budget and endpoint-specific checks.
+"""
+    matches = tuple(p for p in PROVIDER_REGISTRY if p.provider == provider)
+    if len(matches) != 1:
+        raise ValueError("PROVIDER_NOT_REGISTERED")
+    profile = matches[0]
+    if not profile.collection_allowed or profile.state is not ProviderState.ACTIVE_LIMITED:
+        raise PermissionError(f"PROVIDER_COLLECTION_DISABLED:{profile.provider}:{profile.state.value}")
+    return profile

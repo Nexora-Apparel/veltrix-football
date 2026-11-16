@@ -1,0 +1,95 @@
+# Manual-only prospective opening-quote capture. The one-time push batch is complete; future runs require explicit workflow_dispatch.
+# Quotes are opening-only (not current or closing prices); no CLV or value-bet certification is implied.
+# workflow_dispatch remains unavailable until this workflow is on the default branch.
+name: VELTRIX Phase 2 — Manual 5Dollar Opening Odds Capture
+
+on:
+  push:
+    branches:
+      - integration/v2-report-bundle-wiring-20261114
+    paths:
+      - ".github/workflows/phase2-5dollar-opening-odds-capture.yml"
+      - "scripts/phase2_capture_fivedollar_opening_odds.py"
+      - "tests/providers/test_fivedollar_opening_odds.py"
+      - "tests/scripts/test_phase2_capture_fivedollar_opening_odds.py"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Capture window mode"
+        required: true
+        default: "prospective"
+        type: choice
+        options:
+          - prospective
+          - historical
+      future_days:
+        description: "Prospective window (1–7 days)"
+        required: true
+        default: "7"
+        type: string
+      lookback_days:
+        description: "Historical fixture lookback (1–90 days)"
+        required: true
+        default: "90"
+        type: string
+      max_fixtures:
+        description: "Maximum Bet365 1X2 opening quotes (1–25)"
+        required: true
+        default: "25"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-phase2-5dollar-opening-odds
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: github.event_name == 'workflow_dispatch'
+    name: Bounded non-commercial timestamped opening-odds capture
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install project and database driver
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt "psycopg[binary]>=3.2,<4"
+
+      - name: Run opening-odds parser and capture safety tests
+        run: python -m pytest -q tests/providers/test_fivedollar_opening_odds.py tests/scripts/test_phase2_capture_fivedollar_opening_odds.py
+
+      - name: Validate dry-run mode
+        run: python -m scripts.phase2_capture_fivedollar_opening_odds --mode "${{ inputs.mode || 'prospective' }}" --lookback-days "${{ inputs.lookback_days || '90' }}" --future-days "${{ inputs.future_days || '7' }}" --max-fixtures "${{ inputs.max_fixtures || '25' }}"
+
+      - name: Execute bounded opening-odds capture
+        env:
+          FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+          VELTRIX_STAGING_DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+        run: |
+          python -m scripts.phase2_capture_fivedollar_opening_odds \
+            --execute \
+            --mode "${{ inputs.mode || 'prospective' }}" \
+            --lookback-days "${{ inputs.lookback_days || '90' }}" \
+            --future-days "${{ inputs.future_days || '7' }}" \
+            --max-fixtures "${{ inputs.max_fixtures || '25' }}" \
+            --out artifacts/5dollar-opening-odds
+
+      - name: Upload aggregate-only capture summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-phase2-5dollar-opening-odds-${{ github.run_id }}
+          path: artifacts/5dollar-opening-odds/summary.json
+          if-no-files-found: warn
+          retention-days: 7

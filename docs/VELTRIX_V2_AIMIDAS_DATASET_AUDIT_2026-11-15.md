@@ -1,0 +1,303 @@
+# VELTRIX FOOTBALL 2.0 — AI Midas dataset inventory and temporal audit
+
+**Audit date:** 2026-11-15  
+**Classification:** PARTIAL — source authorized; inventory, immutable snapshot and staging file-level evidence import verified; normalized feature admission and model admission not performed  
+**Source repository:** https://github.com/aimidas1/aimidas1  
+**Pinned source commit:** `29baca362a34ce5dcd3924b07ec9c7d5139d83fc`  
+**Repository pushed at:** `2026-11-11T00:00:10Z`  
+**Authorization:** `approval-aimidas-football-data-noncommercial-2026-11-15`  
+**Rights record:** `docs/legal/aimidas-noncommercial-authorization-2026-11-15.md`
+
+## 1. Executive result
+
+AI Midas is a useful supplementary historical-statistics source and materially improves Brazil Série B coverage. It is **not** a replacement for timestamped bookmaker closing odds and does not close the Stage 2 98% odds, CLV or PIT walk-forward gates.
+
+Verified at the pinned commit:
+
+- Six historical match datasets cover Brazil Série A and five European target competitions from 2016 through 2024/25: **19,605 match rows**.
+- The historical files contain complete, numerically valid average 1X2 odds in **19,454/19,605 rows (99.23%)** across those six competitions.
+- Six completed 2025/26 match files add **2,131 rows** across Brazil Série A, EPL, Ligue 1, Bundesliga, Italy Serie A and La Liga.
+- A separate Brazil Série A 2026 file contains **177 rows**, dated 2026-01-28 through 2026-05-31.
+- Brazil Série B has **738 team rows representing 369 distinct matches**, 20 teams and dates 2026-03-21 through 2026-11-08 in its 2026 advanced-statistics CSV.
+- No Brazil Série B historical 2016–2025 match dataset was found. The combined `csv/matches/leagues_total/all_matches.csv` also contains no Brazil Série B label.
+- No 2026/27 European target-league match files were present in the pinned repository tree.
+- Public GitHub raw-file retrieval requires no AI Midas API key and no additional Veltrix secret.
+
+## 2. Seven-competition coverage matrix
+
+| Veltrix competition | Historical match archive | 2025/26 or 2026 match file | Brazil/Europe advanced stats | Decision |
+|---|---|---|---|---|
+| Brazil Série A | 2016–2024: 3,419 rows | 2025–2026-labelled file: 380 rows; separate 2026 file: 177 rows | 2026 advanced stats present | Useful historical/statistical supplement |
+| Brazil Série B | No 2016–2025 match archive found | No standard match/odds file found | 2026 advanced file: 738 team rows / 369 matches | **2026 advanced stats only; historical gap remains** |
+| England Premier League | 2016/17–2024/25: 3,420 rows | 2025/26: 380 rows | No separate EPL advanced-stats file in the advanced-stats directory | Useful historical/statistical supplement |
+| France Ligue 1 | 2016/17–2024/25: 3,171 rows | 2025/26: 305 rows | No separate Ligue 1 advanced-stats file in the advanced-stats directory | Useful historical/statistical supplement |
+| Germany Bundesliga I | 2016/17–2024/25: 2,754 rows | 2025/26: 306 rows | No separate Bundesliga advanced-stats file in the advanced-stats directory | Useful historical/statistical supplement |
+| Italy Serie A | 2016/17–2024/25: 3,421 rows | 2025/26: 380 rows | No separate Italy advanced-stats file in the advanced-stats directory | Useful historical/statistical supplement |
+| Spain La Liga | 2016/17–2024/25: 3,420 rows | 2025/26: 380 rows | No separate La Liga advanced-stats file in the advanced-stats directory | Useful historical/statistical supplement |
+
+The 2025/26 file row counts are inventory counts, not proof that every scheduled fixture is represented. In particular, the Ligue 1 file contains 305 rows; no completeness claim is made without an independent schedule reconciliation.
+
+## 3. Historical 1X2 average-odds audit
+
+The six historical CSVs contain `avg_odds_ft_1`, `avg_odds_ft_x` and `avg_odds_ft_2`. The count below requires all three values to parse as finite numbers greater than 1 and less than 1,000.
+
+| Competition | Historical rows | Complete valid average 1X2 | Coverage |
+|---|---:|---:|---:|
+| Brazil Série A | 3,419 | 3,379 | 98.83% |
+| England Premier League | 3,420 | 3,416 | 99.88% |
+| France Ligue 1 | 3,171 | 3,169 | 99.94% |
+| Germany Bundesliga I | 2,754 | 2,667 | 96.84% |
+| Italy Serie A | 3,421 | 3,420 | 99.97% |
+| Spain La Liga | 3,420 | 3,403 | 99.50% |
+| **Total** | **19,605** | **19,454** | **99.23%** |
+
+The completed 2025/26 files have valid average 1X2 values in: Brazil Série A 380/380; EPL 379/380; Ligue 1 305/305; Bundesliga 306/306; Italy Serie A 380/380; La Liga 380/380. The separate Brazil Série A 2026 file has 177/177.
+
+**Critical market-data distinction:** these are average odds columns. The inspected schema does not identify the bookmaker(s), constituent prices, quote timestamp, collection timestamp, market closing definition or pre-kickoff observation time. Therefore:
+
+- They may be retained as non-certified descriptive historical average-odds context, subject to temporal and leakage controls.
+- They are not bookmaker-specific quotes.
+- They are not proven closing odds.
+- They cannot be used to claim CLV, timestamped-odds coverage, the 98% gate or bookmaker benchmark certification.
+- Brazil Série B's advanced-statistics file contains no odds fields.
+
+## 4. Brazil Série B 2026 advanced-statistics file
+
+File: `advanced stats/Brazil Serie B 2026.csv`  
+Pinned blob: `b6bdb94c053d2149e6232fb100e1f158e46e4533`  
+Size: 192,284 bytes in GitHub tree metadata  
+Parsed rows: 738  
+Distinct `Match` labels: 369  
+Distinct teams: 20  
+Date range: 2026-03-21 to 2026-11-08  
+Columns: 50
+
+The file contains team-match rows and advanced fields including xG/xGA/xGD, open-play xG, set-piece xG, non-penalty xG, possession, field tilt, vertical tendency, xT, passes into the box, shots, PPDA, high recoveries, crosses, corners, fouls and pressure/control metrics.
+
+It contains `Team`, `Match` and date-only `Date` fields, not a canonical fixture ID or a timezone-aware kickoff timestamp. Match identity must be reconciled against Veltrix's canonical fixture registry using both teams, competition and date, with ambiguity quarantined. Two team rows per distinct match are expected in this file.
+
+These are match-completion statistics. They are not pre-match features for the same fixture. The file's date field does not establish when the source first published each row.
+
+## 5. Temporal and feature-use classification
+
+| Field family | Observed semantics | Admission decision |
+|---|---|---|
+| `homeGoalCount`, `awayGoalCount`, final/half-time scores, result labels | Settled match outcomes | Retrospective labels; preserve actual Veltrix import time; no backdated PIT claim |
+| Actual `team_a_xg`, `team_b_xg`, total xG, shots, possession, PPDA, cards, corners and advanced Brazil B metrics | Match/post-match observations | Never use as same-match pre-kickoff features |
+| `pre_match_*` and `*_prematch` fields | Named as pre-match in the schema, but no row-level source availability timestamp or methodology proof was found | PIT-ineligible pending independent temporal evidence |
+| `avg_odds_ft_*` and other `avg_odds_*` fields | Average odds, without bookmaker identity or quote timestamp | Non-certified descriptive market context only; not closing odds or CLV |
+| `date` fields | Local-looking date/time strings; timezone not specified | Preserve raw value; do not manufacture UTC kickoff time |
+| Brazil Série B `Match` + `Date` | Text fixture label and date-only value | Identity reconciliation required; not a time-stamped fixture key |
+
+The source repository commit timestamp is repository revision metadata, not proof of the first public availability of every row or field. Veltrix must store its actual retrieval and recording times and set historical rows to non-PIT unless a separate publication-time proof is available.
+
+The historical match outcomes can support retrospective research and future model development after actual ingestion. They must not be backdated into historical walk-forward cutoffs. Same-match post-match fields must never leak into that match's prediction features.
+
+## 6. Retrieval, pinning and provenance
+
+- Repository: `aimidas1/aimidas1`
+- Pinned commit: `29baca362a34ce5dcd3924b07ec9c7d5139d83fc`
+- Public raw GitHub files can be retrieved without an API key.
+- Do not execute the source repository's `sync_stats.py` as a Veltrix ingestion mechanism. It expects a local `.env`, may use a GitHub token and pushes updates to the source owner's own repository. Veltrix can read the public files directly and immutably.
+- `sync_stats.py` identifies `griffisben/Post_Match_App/Stat_Files` as the upstream location for the `advanced stats` mirror. Preserve this upstream lineage in any future manifest.
+- GitHub repository metadata for AI Midas and the identified upstream repository reports `license: null`; no root `LICENSE` file was present in the inspected trees. The user-confirmed AI Midas authorization is recorded separately. Do not infer an independent upstream SPDX licence or redistribute raw files.
+
+### Audited file pins
+
+| Dataset | Repository path | Git blob SHA |
+|---|---|---|
+| Brazil Série A historical 2016–2024 | `csv/past-seasons/leagues/Brasileirão_Série_A_2016-2024.csv` | `5a42af579f336938eaad8ab08e60bd83ca0ed66d` |
+| EPL historical 2016–2025 | `csv/past-seasons/leagues/England_Premier_League_2016-2025.csv` | `92bebb1ba8471fdd404ea48193fe2cacbe51ccdb` |
+| Ligue 1 historical 2016–2025 | `csv/past-seasons/leagues/France_Ligue_1_2016-2025.csv` | `666555e3e60a3b59ef720ecd52557ac0522a0038` |
+| Bundesliga historical 2016–2025 | `csv/past-seasons/leagues/Germany_Bundesliga_2016-2025.csv` | `f39c8fbedcea2d1dc0771d844657f437a76663d6` |
+| Italy Serie A historical 2016–2025 | `csv/past-seasons/leagues/Italy_Serie_A_2016-2025.csv` | `56478b8dc15ec0af0a340253889e10dbf2f51283` |
+| La Liga historical 2016–2025 | `csv/past-seasons/leagues/Spain_La_Liga_2016-2025.csv` | `e0dfc6f2129df1c857022b16fe1693811f8870a1` |
+| Brazil Série A 2025–2026-labelled match file | `csv/matches/leagues/Brasileirão_Série_A_2025-2026.csv` | `0779b8d3d1a626ae2dc4e2e9b30debc0f1e4ed89` |
+| Brazil Série A 2026 match file | `csv/matches/leagues/Brasileirão_Série_A_2026.csv` | `a3fffa1187ad0a1745c11a77f57e1d632168f768` |
+| EPL 2025–2026 | `csv/matches/leagues/England_Premier_League_2025-2026.csv` | `3589069f19f804efcb7bc8b97dffb412ea1d4ded` |
+| Ligue 1 2025–2026 | `csv/matches/leagues/France_Ligue_1_2025-2026.csv` | `4b3b3db181dcb8e6a0249ded8b7cfe7cd8b8c9e7` |
+| Bundesliga 2025–2026 | `csv/matches/leagues/Germany_Bundesliga_2025-2026.csv` | `e1674246aa2f9d6f2006d46887e9ee69ee7eaec3` |
+| Italy Serie A 2025–2026 | `csv/matches/leagues/Italy_Serie_A_2025-2026.csv` | `ae6ee88284cf474b226a39561d13008fa07d3368` |
+| La Liga 2025–2026 | `csv/matches/leagues/Spain_La_Liga_2025-2026.csv` | `076fea41135d65ad8fee7993b167bc7ddce7c1bf` |
+| Brazil Série B 2026 advanced stats | `advanced stats/Brazil Serie B 2026.csv` | `b6bdb94c053d2149e6232fb100e1f158e46e4533` |
+
+Git blob SHA is recorded as the immutable repository object identifier; it is not relabelled as a SHA-256 digest.
+
+## 7. Stage 2 disposition
+
+**Approved role:** supplementary historical match/statistics research and Brazil Série B 2026 advanced-statistics research, under the non-commercial authorization.
+
+**Not approved by this audit:** historical PIT walk-forward admission, same-match feature use, bookmaker benchmark certification, timestamped closing-odds certification, CLV or value-bet activation.
+
+**Not performed:** Neon writes, production imports, model training, prediction changes, deployment, schedule activation, Telegram delivery or PR merge.
+
+## 8. Brazil Série B crosswalk audit — read-only staging comparison
+
+The AI Midas 2026 Brazil Série B advanced-statistics file was reconciled against the canonical 5DollarFootballAPI Brazil Série B fixture registry using a read-only query on Neon project `withered-sky-75161174`, branch `br-silent-violet-bc5de88s` (`veltrix-phase3-import-dry-run`), database `veltrix_football_staging`. No rows were inserted or updated.
+
+- Canonical competition: Brazil Série B; 5Dollar provider competition ID `522514093`.
+- Canonical 2026 fixture universe in this branch: **371 fixtures**, all FINISHED and with canonical result rows; 20 distinct teams.
+- AI Midas source: **369 distinct matches**, 738 team rows.
+- Team identity: **20/20 source teams** map to the canonical team registry after accent/spelling normalization. Ten source labels required aliases: América Mineiro → America MG; Atlético Goianiense → Atletico GO; Avaí → Avai; Ceará → Ceara; Criciúma → Criciuma; Cuiabá → Cuiaba; Goiás → Goias; Náutico → Nautico; Operário PR → Operario PR; São Bernardo → Sao Bernardo.
+- Fixture identity: **369/369** source matches map to one unique canonical fixture; **0 unmatched, 0 ambiguous, 369 distinct fixture IDs**.
+- Score reconciliation: **369/369** AI Midas match labels agree with the canonical 5Dollar result; no canonical result is missing.
+- Date reconciliation: all 369 source date values fall within one UTC calendar day of the canonical kickoff date; 333 share the same UTC date and 36 are one UTC day later. This confirms the source date is not a UTC kickoff timestamp.
+- Coverage against the inspected 371-fixture canonical universe: **369/371 = 99.46%**. Two canonical fixtures are absent from the AI Midas file. The source file ends on 2026-11-08, while the canonical fixture universe extends to 2026-11-11.
+
+This is a verified identity crosswalk result, not a PIT admission. Keep the source date-only value unchanged; do not convert it to UTC or use it as a precise kickoff time. The two missing fixtures remain missing; no imputation is permitted.
+
+## 9. Immutable snapshot execution — 2026-11-15
+
+- Added `scripts/veltrix_v2/collect_aimidas_snapshot.py` and `scripts/veltrix_v2/verify_aimidas_snapshot.py`.
+- Added `tests/veltrix_v2/test_aimidas_snapshot.py`: **7 passed**.
+- Added no-key workflow `.github/workflows/phase2-aimidas-snapshot-audit.yml`, triggered only by relevant integration-branch pushes; no schedule or provider API secret is used.
+- Workflow [#43752239352](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752239352) first passed the collector/verifier but uploaded a raw-source artifact. That artifact was deleted by the subsequent privacy correction; the prior run now has no artifacts.
+- Workflow [#43752435643](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752435643) completed **success** on code commit `4b666d6666b0aaf32daaa60a6ffb75cc2d76a306`. The cleanup step confirmed deletion of the prior raw artifact.
+- Collector captured **14/14 pinned CSV files**, 11,599,486 source bytes, with expected Git blob SHA-1 checks and SHA-256 manifests. Independent offline verifier reproduced all 14 CSV audits and returned `PASS`.
+- The public artifact now contains **only** `manifest.json` and `verification.json`; the 11.6 MB raw snapshots remain ephemeral on the runner and are not uploaded. Artifact [#14176976339](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752435643/artifacts/14176976339), ZIP SHA-256 `54ce4e05d6fd84f410c6723c181030ecde4376a10003ed6523ff9b536591b595`.
+- A subsequent idempotency regression run [#43752821538](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752821538) passed after the prior raw artifact had already been deleted; it retained only metadata artifact [#14176614669](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752821538/artifacts/14176614669), ZIP SHA-256 `02377544a7c9f361b441e641fcad37bc575e3dd16a43092355d3e3dd2123718a`.
+- Workflow output confirms `database_written=false`, `production_written=false`, `model_admitted=false`, `predictions_changed=false`, `point_in_time_certifiable=false`. The metadata artifact is not a Neon import or PIT evidence.
+
+
+### Staging-only raw evidence import — 2026-11-15
+
+- Implemented `scripts/veltrix_v2/import_aimidas_staging.py` and the independent-process readback runner `scripts/veltrix_v2/audit_aimidas_staging_import.py`.
+- Registered the source-specific approval in the isolated staging `source_approvals` and `source_approval_status_events` tables using the project-owner authorization evidence. Approval remains non-commercial, attribution-required and raw-redistribution-prohibited.
+- Workflow [#43753939202](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43753939202) passed on commit `27ecf03ff3530b52ff91f8e0b3120af0fabc6551`: focused tests passed; 14/14 pinned files fetched; independent snapshot verification passed; staging import passed; separate-process post-commit readback passed.
+- Staging readback confirms **14 immutable `provider_responses` records / 11,599,486 raw bytes** and **14 linked file-level `source_observations`**: 6 historical-match CSVs, 7 season-match CSVs and 1 Brazil Série B advanced-statistics CSV. The 14 source response hashes are distinct.
+- All 14 observations have `point_in_time_certifiable=false`, null source-publication/effective timestamps and `source_timestamp_basis=unknown`. No row-level kickoff timestamp was fabricated.
+- Capture-manifest completion evidence records 14 files, 14 responses, 14 observations and the exact raw-byte count. The first execution's capture manifest is preserved; a corrected retry used a distinct manifest key and did not duplicate provider-response or source-observation rows.
+- Sanitized artifact [#14177201895](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43753939202/artifacts/14177201895), ZIP SHA-256 `8f609bc5c7ae2b8fdcf7f879c3257228188af32d9a7efb34d7b469f60b382d68`. It contains metadata/report files only; raw source CSVs were not uploaded as artifacts.
+- No normalized fixture/result rows, fixture crosswalks, odds quote observations, model features or predictions were written. Production was untouched; model admission remains false.
+
+### Remaining bounded actions
+
+1. COMPLETE — staging-only importer and independent read-after-commit verifier; workflow #43753939202 passed and 14/14 raw file observations were read back.
+2. COMPLETE — read-only historical identity audit for the six 2016–2025 archives: 19,605/19,605 rows inspected, zero exact/conflicting duplicate groups, zero canonical fixture candidates because the canonical fixture registry begins after the archive date range. No crosswalks or normalized rows were written. See `docs/VELTRIX_V2_AIMIDAS_HISTORICAL_IDENTITY_RECONCILIATION_2026-11-15.md`.
+3. Keep the 2016–2025 Brazil Série B historical gap explicit; do not silently substitute Brazil Série A or Italy Série B.
+4. Keep average odds separate from bookmaker quote observations and continue searching for timestamped closing odds.
+5. Admit only leakage-safe features for future cutoffs after the actual Veltrix import timestamp; keep retrospective walk-forward certification blocked.
+
+
+### Historical archive identity reconciliation — 2026-11-15
+
+The six pinned historical archives were reconciled in a separate read-only workflow. All 19,605 source rows received stable file/line/row-fingerprint identities with raw season and date values preserved. Exact and conflicting duplicate groups: 0. The current canonical fixture registry contains 2,496 fixtures but starts in November 2025, after the historical archive end dates (May 2025); therefore no canonical fixture candidates were found. 6,495 rows have both exact-normalized teams represented but no matching canonical fixture; 13,110 rows have at least one team absent from the current canonical registry. No `RESOLVED` mappings, fixture rows or result rows were created. The workflow passed (19 focused tests) and uploaded only a sanitized aggregate summary. Full audit: `docs/VELTRIX_V2_AIMIDAS_HISTORICAL_IDENTITY_RECONCILIATION_2026-11-15.md`.
+
+
+## 10. Brazil Série B 2026 independent fixture reconciliation — 2026-11-15
+
+The earlier section 8 reported 369 unique source-to-canonical fixture candidates and 369 score agreements. A dedicated independent reconciliation now rechecked the complete 738-row raw CSV against the 2026 canonical 5DollarFootballAPI fixture registry and clarifies the crosswalk disposition:
+
+- 738/738 team-stat rows parsed; 369/369 distinct match labels; 20/20 source team identities mapped one-to-one to distinct canonical team IDs.
+- 371 canonical 2026 fixtures inspected. All 369 source matches resolve to one unique canonical fixture ID; all 369 canonical fixture IDs are distinct.
+- Independent score check: 369/369 canonical full-time scores agree with the source match-label score. Additional source-row validation: 738/738 team-level Goals / Goals Conceded pairs agree with home/away score orientation.
+- Date reconciliation: 333 canonical UTC kickoff dates equal the source date; 36 are one UTC calendar day later. The source date remains a date-only value and is not converted to a kickoff timestamp.
+- Exact discrepancies: (1) Náutico 1–0 Botafogo SP, 2026-09-03 23:00 UTC, canonical fixture 1927 / provider fixture 3538579905, is absent despite being inside the source file date range; this is an unexplained source-coverage hole. (2) Londrina 2–1 Náutico, 2026-11-11 22:00 UTC, canonical fixture 1807 / provider fixture 1878457839, is after the source file's final date of 2026-11-08 and is a snapshot cutoff gap.
+- No replacement mappings or rows were invented. Both missing fixtures remain unresolved.
+- A dedicated read-only reconciliation implementation now emits stable source row IDs, canonical-row SHA-256 fingerprints, match-key hashes and the 369 candidate fixture links. Raw CSV rows are not included in the sanitized artifact.
+- Important correction: the 369 are independently verified candidate identities, not persisted or reviewer-approved RESOLVED crosswalks. The database contains file-level AI Midas evidence only; no match-level crosswalk records were written. All 369 candidates remain REVIEW_REQUIRED pending a recorded reviewer acceptance event.
+- Full report: docs/VELTRIX_V2_AIMIDAS_BRAZIL_SERIE_B_2026_IDENTITY_RECONCILIATION_2026-11-15.md.
+- AI Midas evidence remains non-PIT. It does not qualify historical closing odds, bookmaker-specific closing quotes or CLV. Value betting remains LOCKED.
+
+
+### Correction — AI Midas Série B team-stat integrity exception
+
+A deeper row-level check of the 738 CSV team rows found two exceptions in the Náutico 0–3 CRB match (source lines 8–9). The AI Midas Match label and canonical 5Dollar result both report 0–3, so the match-level fixture identity and score agreement remain verified. However, the CRB row records Goals=2 / Goals Conceded=0 and the Náutico row records Goals=0 / Goals Conceded=2. These values conflict with the match-label score orientation.
+
+- Team-row Goals / Goals Conceded checks: **736/738 pass; 2 fail**.
+- The two source rows are individually quarantined from advanced-stat feature admission. Their source IDs and row SHA-256 fingerprints are retained in the reconciliation artifact.
+- Do not alter either row, infer corrected statistics, or reject the verified match-level 0–3 identity solely because the separate team-stat fields disagree.
+- This supersedes the earlier 738/738 team-row consistency wording in the preceding Brazil Série B addendum. Match-level canonical score agreements remain 369/369.
+- Full discrepancy and disposition: docs/VELTRIX_V2_AIMIDAS_BRAZIL_SERIE_B_2026_IDENTITY_RECONCILIATION_2026-11-15.md.
+
+
+### Completed audit artifact — 2026-11-15
+
+- Dedicated Phase 2 audit job completed successfully in workflow run 43758559130; 21 focused tests passed.
+- 738/738 row IDs and canonical-row SHA-256 fingerprints generated and retained; 369 unique match-key hashes and 369 distinct canonical fixture links.
+- Sanitized artifact #14178319188, ZIP SHA-256 4b8c0ed7489cf82dd48c34ca1ba55f884ae5fe652fb2190c919139721a764500.
+- The two quarantined row fingerprints are line 8 / CRB: 78d9492295da1b8dfa9ef735b786f63412089a37640b1f01aa3d57395707abc6; and line 9 / Náutico: ce5bf78a5090a5bef9997ae65c3b5a8e864e117218ed0404e59384b57a62bfb4.
+- No raw CSV body was uploaded; no crosswalk or normalized records were written.
+
+
+- The Odds API is not an eligible replacement source for Brazil Série B under its current five-European-league approval scope. Metadata-only discovery results were not persisted or admitted; the two missing canonical fixtures remain unresolved, with no replacement mappings.
+- Reviewer-backed crosswalk acceptance remains pending; the 369 verified candidates have not been marked resolved or written to the crosswalk table.
+
+## 8. Brazil Série B 2026 — independent identity and score reconciliation
+
+**Audit result:** PASS WITH TWO UNMATCHED CANONICAL FIXTURES AND ONE SOURCE TEAM-STAT SCORE CONFLICT. The subsequent reviewer acceptance is recorded in section 9.
+
+Reconciliation workflow [#43761387345](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43761387345) passed at code head a55dc20a385a82e6886946850f1aec3b4971ebe5. The sanitized provenance-preserving 369-match JSON report is artifact [#14180247939](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43761387345/artifacts/14180247939), ZIP digest sha256:33f0b1f78f3dd0cf4993b9957e99f562386f8d4c6f56123ad6490dc1dd29cd47.
+
+### Source and staging provenance
+
+- Pinned repository/commit: aimidas1/aimidas1@29baca362a34ce5dcd3924b07ec9c7d5139d83fc
+- File: advanced stats/Brazil Serie B 2026.csv
+- Git blob SHA-1: b6bdb94c053d2149e6232fb100e1f158e46e4533
+- Raw file SHA-256: 55b0c00629abd2d4ff3c31659ada950b67ffc2752609284b32c15c99f71152ab
+- 192,284 bytes; 738 source rows; 369 match labels; 20 distinct source teams; source dates 2026-03-21 through 2026-11-08.
+- Staging source observation ID 432397; provider response ID 1238; response SHA-256 matches the pinned raw-file SHA-256. The observation's separate metadata-payload digest is 21d05be37e65f8e0856045c50819863e111bad3d06e8589757e678eedc59766c.
+- Rights approval: approval-aimidas-football-data-noncommercial-2026-11-15. Source remains non-PIT.
+
+### Team identity result
+
+All 20 source team names map one-to-one to 20 unique canonical 5DollarFootballAPI team registry IDs. Ten mappings use exact names and ten use explicit alias pairs (accent removal or source/canonical naming differences). There are no team-ID collisions or ambiguous team identities. The full source-to-canonical mapping and provider team IDs are in the report artifact. These candidates remain REVIEW_REQUIRED, not accepted crosswalks.
+
+### Match and score result
+
+- 738/738 source rows retained with line numbers, stable source row IDs and SHA-256 row fingerprints.
+- 369/369 source match groups contain exactly two team rows.
+- 369/369 match labels have one unique, correctly oriented canonical fixture candidate.
+- 369/369 match-label final scores agree independently with canonical fixture results.
+- 333 source dates equal the canonical UTC kickoff date; 36 differ by one calendar day. The source field is date-only, so this offset is recorded rather than silently normalized.
+- No duplicate source match groups, ambiguous fixture candidates or canonical score mismatches.
+- The audit run itself wrote no crosswalk or normalized rows and made no database mutation; the separate acceptance transaction is documented in section 9.
+
+**One source-data integrity discrepancy:** source match label Náutico 0-3 CRB (2026-11-07) agrees with canonical fixture ID 1811, provider fixture ID 4070869087, whose result is 0-3. However, the two source team rows report CRB Goals=2, Goals Conceded=0 and Náutico Goals=0, Goals Conceded=2. Both team rows are quarantined from advanced-stat use:
+- line 8, source row SHA-256 78d9492295da1b8dfa9ef735b786f63412089a37640b1f01aa3d57395707abc6
+- line 9, source row SHA-256 ce5bf78a5090a5bef9997ae65c3b5a8e864e117218ed0404e59384b57a62bfb4
+
+The match identity and Match-label score comparison remain valid; the contradictory team-stat rows are not admitted. This is two quarantined team rows in one match, not two canonical score disagreements.
+
+### Two canonical fixtures absent from the source file
+
+1. Canonical fixture ID 1927, provider fixture ID 3538579905: Náutico 1-0 Botafogo SP, 2026-09-03 23:00 UTC. This date falls inside the source file's 2026-03-21–2026-11-08 date range, but no corresponding source match row exists. Exact discrepancy: **within-range match-row omission**. Root cause beyond the source file's omission is not evidenced.
+2. Canonical fixture ID 1807, provider fixture ID 1878457839: Londrina 2-1 Náutico, 2026-11-11 22:00 UTC. This kickoff is after the source file's latest date, 2026-11-08. Exact discrepancy: **source file ends before this fixture**.
+
+Both remain UNRESOLVED_NO_REPLACEMENT_MAPPING. No synthetic, date-shifted or replacement source rows were created.
+
+### Reviewer and admission disposition
+
+- At audit time, 369 candidate mappings were NOT_RESOLVED; see section 9 for subsequent accepted crosswalks.
+- The two unmatched canonical fixtures remain unresolved.
+- The two inconsistent team-stat rows remain quarantined.
+- No normalized results, advanced-stat features or model-training rows were created.
+- All source observations remain non-PIT; no historical walk-forward admission.
+- AI Midas average odds are not bookmaker-specific timestamped closing odds and do not qualify for CLV.
+- Value betting remains **LOCKED**.
+
+
+## 9. Reviewer-backed crosswalk acceptance — 2026-11-15 21:13:49 UTC
+
+**Disposition:** accepted in staging with explicit quarantine boundaries.
+
+Acceptance workflow [#43762497871](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43762497871) passed at code head cb30b76ba8446170eb8639fe58789dca7176d8c2. The final sanitized acceptance report is artifact [#14180892673](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43762497871/artifacts/14180892673), ZIP SHA-256 1870fc9066afed1ee0cc0db11911270808408cc77dee34013b3d63e5ce20ac81.
+
+The independent automated reviewer recorded by ID automated-independent-reconciliation-v1 accepted and inserted **389 RESOLVED crosswalk versions** into the isolated staging database:
+- 20 TEAM crosswalks: 10 EXACT_NAME and 10 EXPLICIT_ALIAS_TABLE.
+- 369 FIXTURE crosswalks: EXACT_TEAM_ORIENTATION_DATE_SCORE; every source match maps to one unique canonical fixture with exact home/away orientation, a recorded source-date-to-UTC-kickoff delta, and 369/369 Match-label score agreement.
+- Evidence observation ID 432397 is linked to every accepted row.
+- All mappings have mapping_version 1 and valid_from 2026-11-15T21:13:49.803Z. They are not backdated.
+- Staging read-back independently confirmed 389/389 RESOLVED rows, 389/389 reviewer IDs, 389/389 evidence links, 369 unique fixture IDs and 20 unique team IDs.
+
+The one score-stat conflict does **not** invalidate fixture identity: canonical fixture 1811 / provider fixture 4070869087 is resolved from the source Match label and canonical 0-3 result. The two source team-stat rows (lines 8 and 9) remain QUARANTINED and are not admitted as advanced statistics.
+
+The two canonical fixtures with no source row remain unresolved and have no AI Midas crosswalk:
+- fixture 1927 / provider 3538579905, Náutico–Botafogo SP, 2026-09-03: within-range source match-row omission;
+- fixture 1807 / provider 1878457839, Londrina–Náutico, 2026-11-11: after the source file's last date.
+
+**Write boundary:** the acceptance transaction wrote only 389 rows to entity_crosswalk_versions in veltrix_football_staging. It did not write normalized fixtures, fixture results, advanced-stat features, odds observations, predictions or production data. No deployment, publication, Telegram delivery or schedule activation occurred.
+
+Reviewer identity is an automated independent audit identifier, not a human signature. If a future governance rule requires a named human sign-off, that must be recorded as a separate decision; it must not be inferred from this automated review.
+
+All source observations remain non-PIT and model-ineligible. The two team-stat rows remain quarantined. AI Midas average odds do not satisfy timestamped bookmaker-specific closing odds or CLV. Value betting remains **LOCKED**.

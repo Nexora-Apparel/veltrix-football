@@ -2,10 +2,28 @@ name: OpenPlay Historical Data Qualification
 
 on:
   push:
-    branches: [main]
+    branches: [main, integration/v2-report-bundle-wiring-20261114]
     paths:
       - '.github/workflows/openplay-historical-data-qualification.yml'
       - 'scripts/veltrix_v2/qualify_openplay_release.py'
+      - 'scripts/veltrix_v2/import_openplay_staging.py'
+      - 'scripts/veltrix_v2/audit_openplay_staging.py'
+      - 'scripts/veltrix_v2/build_openplay_identity_crosswalk_candidates.py'
+      - 'scripts/veltrix_v2/apply_openplay_exact_identity_crosswalk.py'
+      - 'scripts/veltrix_v2/audit_openplay_feature_rows.py'
+      - 'scripts/veltrix_v2/build_openplay_feature_bundle.py'
+      - 'veltrix_v2/data/openplay_features.py'
+      - 'veltrix_v2/data/openplay_feature_bundle.py'
+      - 'veltrix_v2/evaluation/walk_forward.py'
+      - 'tests/veltrix_v2/test_openplay_feature_bundle.py'
+      - 'tests/veltrix_v2/test_openplay_staging_feature_pipeline.py'
+      - 'tests/veltrix_v2/test_openplay_features.py'
+      - 'tests/veltrix_v2/test_walk_forward.py'
+      - 'tests/veltrix_v2/test_openplay_identity_crosswalk_candidates.py'
+      - 'tests/veltrix_v2/test_openplay_exact_crosswalk_apply.py'
+      - 'tests/veltrix_v2/test_openplay_staging_import.py'
+      - 'docs/legal/openplay-whoscored-opta-authorization-2026-11-15.md'
+      - 'tests/veltrix_v2/test_openplay_rights_acceptance.py'
   workflow_dispatch:
 
 permissions:
@@ -30,19 +48,62 @@ jobs:
           python-version: "3.12"
 
       - name: Install pinned Parquet reader
-        run: python -m pip install duckdb==1.4.2
+        run: python -m pip install duckdb==1.4.2 pytz==2025.2
 
-      - name: Validate qualification script
-        run: python -m py_compile scripts/veltrix_v2/qualify_openplay_release.py
+      - name: Validate qualification script and rights contract
+        run: |
+          python -m py_compile scripts/veltrix_v2/qualify_openplay_release.py scripts/veltrix_v2/import_openplay_staging.py scripts/veltrix_v2/audit_openplay_staging.py scripts/veltrix_v2/build_openplay_identity_crosswalk_candidates.py scripts/veltrix_v2/apply_openplay_exact_identity_crosswalk.py scripts/veltrix_v2/audit_openplay_feature_rows.py scripts/veltrix_v2/build_openplay_feature_bundle.py veltrix_v2/data/openplay_features.py veltrix_v2/data/openplay_feature_bundle.py veltrix_v2/evaluation/walk_forward.py
+          python -m pip install pytest==8.4.2 "psycopg[binary]>=3.2,<4"
+          python -m pytest -q tests/veltrix_v2/test_openplay_rights_acceptance.py tests/veltrix_v2/test_openplay_staging_import.py tests/veltrix_v2/test_openplay_identity_crosswalk_candidates.py tests/veltrix_v2/test_openplay_exact_crosswalk_apply.py tests/veltrix_v2/test_openplay_features.py tests/veltrix_v2/test_openplay_feature_bundle.py tests/veltrix_v2/test_openplay_staging_feature_pipeline.py tests/veltrix_v2/test_walk_forward.py
 
       - name: Download and qualify OpenPlay release
         run: python scripts/veltrix_v2/qualify_openplay_release.py openplay-audit
 
-      - name: Upload audit report only
+      - name: Import verified OpenPlay assets into isolated Neon staging
+        if: github.ref == 'refs/heads/integration/v2-report-bundle-wiring-20261114'
+        env:
+          DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+          VELTRIX_ENABLE_OPENPLAY_STAGING_IMPORT: "YES"
+        run: python scripts/veltrix_v2/import_openplay_staging.py --input-dir openplay-audit
+
+      - name: Independently audit Neon staging read-back
+        if: github.ref == 'refs/heads/integration/v2-report-bundle-wiring-20261114'
+        env:
+          DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+          VELTRIX_ENABLE_OPENPLAY_STAGING_IMPORT: "YES"
+        run: python scripts/veltrix_v2/audit_openplay_staging.py --input-dir openplay-audit
+
+      - name: Audit row-level feature timestamp inheritance
+        run: python scripts/veltrix_v2/audit_openplay_feature_rows.py --input-dir openplay-audit --output openplay-audit/openplay-feature-temporal-audit.json
+
+      - name: Build conservative OpenPlay identity crosswalk candidates
+        env:
+          DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+        run: python scripts/veltrix_v2/build_openplay_identity_crosswalk_candidates.py --input-dir openplay-audit --output openplay-audit/openplay_identity_crosswalk_candidates.json
+
+      - name: Persist exact OpenPlay team and competition crosswalks
+        if: github.ref == 'refs/heads/integration/v2-report-bundle-wiring-20261114'
+        env:
+          DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+          VELTRIX_ENABLE_OPENPLAY_CROSSWALK_WRITE: "YES"
+        run: python scripts/veltrix_v2/apply_openplay_exact_identity_crosswalk.py --candidates openplay-audit/openplay_identity_crosswalk_candidates.json
+
+      - name: Build provenance-bound OpenPlay feature bundle from staging
+        if: github.ref == 'refs/heads/integration/v2-report-bundle-wiring-20261114'
+        env:
+          DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+        run: python scripts/veltrix_v2/build_openplay_feature_bundle.py --output-dir openplay-feature-bundle
+
+      - name: Upload derived feature bundle and non-raw audit evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: veltrix-openplay-historical-qualification
-          path: openplay-audit/openplay_qualification_report.json
+          path: |
+            openplay-audit/openplay_qualification_report.json
+            openplay-audit/openplay-feature-temporal-audit.json
+            openplay-audit/openplay_identity_crosswalk_candidates.json
+            openplay-feature-bundle/openplay_team_match_features.jsonl
+            openplay-feature-bundle/openplay_feature_bundle_manifest.json
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 30

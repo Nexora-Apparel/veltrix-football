@@ -5,19 +5,134 @@ import hmac
 import json
 import math
 import os
-from concurrent.futures import ThreadPoolExecutor
+import re
 from datetime import datetime
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from app.telegram_commands import handle_command
-from app.report_artifacts import load_latest_report, load_dashboard_snapshot, load_paper_ledger, load_model_validation_report
 from app.telegram_security import telegram_webhook_secret_token
+from veltrix_v2.reporting.artifact_bundle import (
+    PORTABLE_BUNDLE_MAX_BYTES,
+    load_authorized_portable_report_surface_bundle,
+)
+from veltrix_v2.reporting.telegram_commands import handle_v2_command
 
 app = FastAPI(title="Veltrix Football Command Centre")
+
+
+def configure_publication_verifier(verifier) -> None:
+    """Install the trusted server-side V2 certification/rights verifier at startup."""
+    if not callable(verifier):
+        raise TypeError("AUTHORITATIVE_PUBLICATION_VERIFIER_REQUIRED")
+    app.state.publication_verifier = verifier
+
+
+def _authoritative_publication_verifier():
+    verifier = getattr(app.state, "publication_verifier", None)
+    return verifier if callable(verifier) else None
+
+
+def configure_report_bundle_reader(reader) -> None:
+    """Install the trusted portable V2 report-bundle reader at application startup."""
+    if not callable(reader):
+        raise TypeError("AUTHORITATIVE_REPORT_BUNDLE_READER_REQUIRED")
+    app.state.v2_report_bundle_reader = reader
+
+
+def configure_report_bundle_reader_from_url(url: str) -> None:
+    """Configure the single current V2 bundle pointer or one immutable versioned bundle."""
+    parsed = urlparse(url)
+    allowed_prefix = "/Nexora-Apparel/veltrix-football/command-data/public-data/bundles/"
+    fixed_pointer = (
+        parsed.path
+        == "/Nexora-Apparel/veltrix-football/command-data/public-data/v2_report_bundle.json"
+    )
+    versioned_bundle = (
+        parsed.path.startswith(allowed_prefix)
+        and parsed.path.endswith(".bundle.json")
+        and re.fullmatch(
+            r"[A-Za-z0-9._-]{1,160}",
+            parsed.path[len(allowed_prefix):-len(".bundle.json")],
+        ) is not None
+    )
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname != "raw.githubusercontent.com"
+        or not (fixed_pointer or versioned_bundle)
+        or parsed.query
+        or parsed.fragment
+        or parsed.username
+        or parsed.password
+    ):
+        raise ValueError("PORTABLE_REPORT_BUNDLE_URL_NOT_ALLOWLISTED")
+
+    def reader() -> bytes:
+        request = Request(
+            url,
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "VELTRIX-FOOTBALL/2.0",
+            },
+        )
+        with urlopen(request, timeout=8) as response:
+            status = int(getattr(response, "status", 200))
+            raw = response.read(PORTABLE_BUNDLE_MAX_BYTES + 1)
+        if status != 200:
+            raise RuntimeError("PORTABLE_REPORT_BUNDLE_FETCH_FAILED")
+        if not raw or len(raw) > PORTABLE_BUNDLE_MAX_BYTES:
+            raise ValueError("PORTABLE_REPORT_BUNDLE_SIZE_INVALID")
+        return raw
+
+    configure_report_bundle_reader(reader)
+
+
+def _authoritative_report_bundle_reader():
+    reader = getattr(app.state, "v2_report_bundle_reader", None)
+    return reader if callable(reader) else None
+
+
+def _load_authorized_v2_report_bundle():
+    """Read one portable bundle only when both trusted dependencies are configured."""
+    verifier = _authoritative_publication_verifier()
+    reader = _authoritative_report_bundle_reader()
+    if verifier is None or reader is None:
+        return None
+    raw = reader()
+    if not isinstance(raw, bytes):
+        raise TypeError("PORTABLE_REPORT_BUNDLE_BYTES_REQUIRED")
+    return load_authorized_portable_report_surface_bundle(raw, verifier)
+
+
+def configure_v2_publication_from_environment(environ=None) -> bool:
+    """Wire one trusted verifier and one shared portable bundle reader at cold start."""
+    try:
+        from veltrix_v2.reporting.runtime import load_runtime_publication_dependencies
+
+        dependencies = load_runtime_publication_dependencies(environ)
+        if dependencies is None:
+            app.state.v2_publication_runtime_status = "UNCONFIGURED"
+            return False
+        configure_publication_verifier(dependencies.verifier)
+        configure_report_bundle_reader(dependencies.bundle_reader)
+        app.state.v2_publication_runtime_status = "READY"
+        app.state.v2_publication_bundle_url = dependencies.bundle_url
+        return True
+    except Exception as exc:
+        app.state.v2_publication_runtime_status = "BLOCKED"
+        app.state.v2_publication_runtime_error = type(exc).__name__
+        return False
+
+
+
+
+# Both the website data route and Telegram webhook share this one startup configuration.
+# Missing verifier or bundle URL leaves both surfaces fail-closed.
+configure_v2_publication_from_environment()
+
 
 DASHBOARD_HTML = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -40,30 +155,38 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 @media(min-width:760px){.featurelayout{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;align-items:start}.featurelayout .sectionhead{margin-top:0}.feature{height:100%}.matchhero{padding:32px 0}.statusgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:520px){main{padding:14px 11px}.overview{gap:7px}.metric{padding:11px 9px}.metric .value{font-size:21px}.metric .label{font-size:10px}.feature{padding:14px}.matchhero{grid-template-columns:1fr 28px 1fr;padding:18px 0 14px}.probwrap{gap:10px;align-items:start}.ring{width:78px;height:78px}.ringtext{font-size:20px}.markets{gap:5px}.market{padding:8px 4px}.market .mvalue{font-size:14px}.market .mlabel{font-size:9px}.fixturelist{grid-template-columns:1fr}.brand{font-size:18px}.mark{font-size:33px}.tagline{font-size:10px}.live{padding:5px 8px}.statusgrid{grid-template-columns:1fr 1fr}}
 </style></head><body><div class="shell">
-<header class="topbar"><div class="headrow"><div><div class="brandbox"><div class="mark">V</div><div class="brand">VELTRIX<span>F O O T B A L L</span></div></div><div class="tagline">Command Centre · Football intelligence · Real published data</div></div><div class="live"><i class="dot"></i><span id="liveLabel">CHECKING DATA</span></div></div></header>
+<header class="topbar"><div class="headrow"><div><div class="brandbox"><div class="mark">V</div><div class="brand">VELTRIX<span>F O O T B A L L</span></div></div><div class="tagline">Command Centre · Evidence-gated football intelligence</div></div><div class="live"><i class="dot"></i><span id="liveLabel">CHECKING DATA</span></div></div></header>
 <main>
 <section id="dashboardView" class="sectionview active">
-<div class="sectionhead" style="margin-top:0"><div><div class="eyebrow">Match intelligence</div><h2>Featured prediction</h2></div><button class="refresh" id="refresh" onclick="loadDashboard()">↻ Refresh</button></div>
-<div id="featured" class="empty">Loading the next eligible fixture…</div>
-<div class="sectionhead"><div><div class="eyebrow">Model interpretation</div><h2>AI Insights · Recommended angles</h2></div></div>
-<div id="insights" class="insights"><div class="empty">Preparing insights from available data…</div></div>
+<div class="sectionhead" style="margin-top:0"><div><div class="eyebrow">Command centre</div><h2>Publication overview</h2></div><button class="refresh" id="refresh" onclick="loadDashboard()">↻ Refresh</button></div>
+<div class="notice" role="status">Predictions are not shown on Dashboard. Open Prediction to view eligible forecasts; only independently certified markets can be published.</div>
+<div id="featured" class="empty" hidden></div>
+<div id="insights" class="insights" hidden></div>
 <div class="section-divider"></div>
 <div class="sectionhead overview-bottom"><div><div class="eyebrow">Report snapshot</div><h2 id="overviewTitle">Report overview</h2></div></div>
 <div id="reportFreshness" class="notice" role="status">Loading report freshness…</div><div class="overview"><div class="metric"><div class="label">Fixtures received</div><div class="value" id="fixtures">—</div><div class="hint">From published report</div></div><div class="metric"><div class="label">Eligible forecasts</div><div class="value" id="forecasts">—</div><div class="hint">Available model outputs</div></div><div class="metric"><div class="label">With market prices</div><div class="value" id="odds">—</div><div class="hint">Matched bookmaker quotes</div></div></div>
 </section>
 <div class="section-divider"></div>
 <section id="predictionsView" class="sectionview">
-<div class="sectionhead"><div><div class="eyebrow">Model output</div><h2>Predictions</h2></div><span class="small muted" id="fixtureCount">—</span></div>
+<div class="sectionhead"><div><div class="eyebrow">Model output</div><h2>Prediction</h2></div><span class="small muted" id="fixtureCount">—</span></div>
 <div class="filters" id="filters"><button class="filter active" data-filter="all" aria-pressed="true">All fixtures</button><button class="filter" data-filter="btts" aria-pressed="false">BTTS focus</button><button class="filter" data-filter="totals" aria-pressed="false">Over / Under</button></div>
 <div id="predictions"><div class="empty">Loading fixtures…</div></div>
 </section>
 <div class="section-divider"></div>
 <section id="marketView" class="sectionview">
-<div class="sectionhead"><div><div class="eyebrow">Verified price feed</div><h2>Market odds</h2></div><span class="small muted" id="marketCount">Matched prices only</span></div>
+<div class="sectionhead"><div><div class="eyebrow">Verified price feed</div><h2>Market</h2></div><span class="small muted" id="marketCount">Matched prices only</span></div>
 <div id="marketOdds" class="market-list"><div class="empty">Loading matched market prices…</div></div>
 </section>
 <div class="section-divider"></div>
-<section id="trackingView" class="sectionview">
+
+<div class="section-divider"></div>
+<section id="statusView" class="sectionview">
+<div class="sectionhead"><div><div class="eyebrow">Data quality & providers</div><h2>System status</h2></div></div>
+<div class="panel statusgrid" id="systemStatus"><div class="statusitem"><div class="stitle">Published report</div><div class="svalue">Checking…</div></div></div>
+<div class="panel status-detail" id="statusDetails" style="margin-top:12px">Loading provider and historical coverage details…</div>
+<div class="footer">Football data by <a href="https://5dollarfootballapi.com" target="_blank" rel="noopener noreferrer">5DollarFootballAPI</a>. Predictions include evidence-weighted estimates; value-bet verdicts are shown only when supported by the available evidence. Market prices are displayed only when matched to a fixture. Missing statistics are not invented; their coverage is not assumed complete. <span id="reporttime"></span></div>
+
+
 <div class="sectionhead"><div><div class="eyebrow">Retrospective evaluation</div><h2>Paper tracking & results</h2></div></div>
 <div class="notice">Paper tracking only · historical outcomes are not proof of profitability.</div>
 <div class="sectionhead"><div><div class="eyebrow">Release controls</div><h2>Value validation</h2></div></div>
@@ -74,16 +197,10 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 <div class="filters" id="historyFilters"><button class="filter active" data-history-filter="all" aria-pressed="true">All results</button><button class="filter" data-history-filter="wins" aria-pressed="false">Wins</button><button class="filter" data-history-filter="losses" aria-pressed="false">Losses</button><label class="filter" style="display:flex;align-items:center;gap:7px">Date <select id="historyDateSort" style="background:#061721;color:#d8edf3;border:0;outline:0"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label></div>
 <div id="historySummary" class="overview" style="margin-bottom:12px"></div>
 <div id="trackingResults" class="market-list"><div class="empty">Loading results…</div></div>
-</section>
-<div class="section-divider"></div>
-<section id="statusView" class="sectionview">
-<div class="sectionhead"><div><div class="eyebrow">Data quality & providers</div><h2>System status</h2></div></div>
-<div class="panel statusgrid" id="systemStatus"><div class="statusitem"><div class="stitle">Published report</div><div class="svalue">Checking…</div></div></div>
-<div class="panel status-detail" id="statusDetails" style="margin-top:12px">Loading provider and historical coverage details…</div>
-<div class="footer">Football data by <a href="https://5dollarfootballapi.com" target="_blank" rel="noopener noreferrer">5DollarFootballAPI</a>. Predictions include evidence-weighted estimates; value-bet verdicts are shown only when supported by the available evidence. Market prices are displayed only when matched to a fixture. Missing statistics are not invented; their coverage is not assumed complete. <span id="reporttime"></span></div>
+
 </section>
 </main></div>
-<nav class="bottomnav"><a class="navitem active" href="#dashboardView" data-view="dashboardView"><span>⌂</span>Dashboard</a><a class="navitem" href="#predictionsView" data-view="predictionsView"><span>◎</span>Predictions</a><a class="navitem" href="#marketView" data-view="marketView"><span>▤</span>Market odds</a><a class="navitem" href="#trackingView" data-view="trackingView"><span>◷</span>Tracking</a><a class="navitem" href="#statusView" data-view="statusView"><span>▥</span>Status</a></nav>
+<nav class="bottomnav"><a class="navitem active" href="#dashboardView" data-view="dashboardView"><span>⌂</span>Dashboard</a><a class="navitem" href="#predictionsView" data-view="predictionsView"><span>◎</span>Prediction</a><a class="navitem" href="#statusView" data-view="statusView"><span>▥</span>Status</a><a class="navitem" href="#marketView" data-view="marketView"><span>▤</span>Market</a></nav>
 <script>
 let dashboardRows=[];let currentFilter='all';
 function num(v){return v===null||v===undefined||v===''?NaN:Number(v)}
@@ -101,8 +218,10 @@ function marketPriceLines(m){
  if(five.length){const b=five[0],bt=b.btts||{},ou=b.over_under||{};if(Number.isFinite(Number(bt.yes))&&Number.isFinite(Number(bt.no)))out.push('5Dollar BTTS: Yes '+Number(bt.yes).toFixed(2)+' / No '+Number(bt.no).toFixed(2));if(Number.isFinite(Number(ou.over))&&Number.isFinite(Number(ou.under)))out.push('5Dollar O/U '+(ou.line||2.5)+': Over '+Number(ou.over).toFixed(2)+' / Under '+Number(ou.under).toFixed(2))}
  return out;
 }
-function topProbability(m){const p=m.probabilities||{};const opts=[['Home',num(p.home_win)],['Draw',num(p.draw)],['Away',num(p.away_win)]].filter(x=>Number.isFinite(x[1]));opts.sort((a,b)=>b[1]-a[1]);return opts[0]||['Outcome',NaN]}
-function hasModelForecast(m){const p=m&&m.probabilities;return Boolean(p&&typeof p==='object'&&Number.isFinite(num(p.home_win))&&Number.isFinite(num(p.draw))&&Number.isFinite(num(p.away_win))&&Number.isFinite(num(m.btts_yes))&&Number.isFinite(num(m.over_2_5)))}
+function certifiedMarketList(m){return m&&Array.isArray(m.certified_markets)?m.certified_markets:[]}
+function marketValues(m,key){const markets=m&&m.markets&&typeof m.markets==='object'?m.markets:{};return markets[key]&&typeof markets[key]==='object'?markets[key]:{}}
+function topProbability(m){if(!certifiedMarketList(m).includes('1X2'))return ['Outcome',NaN];const p=marketValues(m,'1X2');const opts=[['Home',num(p.home)],['Draw',num(p.draw)],['Away',num(p.away)]].filter(x=>Number.isFinite(x[1]));opts.sort((a,b)=>b[1]-a[1]);return opts[0]||['Outcome',NaN]}
+function hasModelForecast(m){return certifiedMarketList(m).some(key=>['1X2','BTTS','TOTALS_2_5'].includes(key))}
 async function fetchTeamBadge(team){
  try{const r=await fetch('https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t='+encodeURIComponent(team));if(!r.ok)return null;const d=await r.json();const rows=Array.isArray(d.teams)?d.teams:[];const normalized=team.toLowerCase().replace(/[^a-z0-9]/g,'');const match=rows.find(x=>String(x.strSport||'').toLowerCase()==='soccer'&&String(x.strTeam||'').toLowerCase().replace(/[^a-z0-9]/g,'')===normalized)||rows.find(x=>String(x.strSport||'').toLowerCase()==='soccer');return match?.strBadge||match?.strTeamBadge||null}catch(e){return null}
 }
@@ -111,95 +230,59 @@ function teamVisual(name){
 }
 function loadBadge(visual,name){fetchTeamBadge(name).then(url=>{if(!url)return;visual.img.onload=()=>{visual.img.style.display='block';visual.fallback.style.display='none'};visual.img.onerror=()=>{visual.img.style.display='none';visual.fallback.style.display='grid'};visual.img.src=url})}
 function renderFeatured(m,targetId='featured',insightTarget='insights'){
- const box=document.getElementById(targetId);box.replaceChildren();if(!m){box.className='empty';box.textContent='No upcoming eligible fixture is available in the published report.';if(insightTarget)renderInsights(null,insightTarget);return}box.className='feature';
- const top=document.createElement('div');top.className='featuretop';const left=document.createElement('div');const league=document.createElement('div');league.className='league';league.textContent=m.league||'Competition unavailable';const kickoff=document.createElement('div');kickoff.className='kickoff';kickoff.textContent=m.kickoff_local||m.kickoff||'Kickoff not supplied';left.append(league,kickoff);const badge=document.createElement('div');badge.className='forecastbadge';const hasForecast=hasModelForecast(m);badge.textContent=hasForecast?(m.status==='LOW_HISTORY_FORECAST'?'LIMITED EVIDENCE':'MATCH ANALYSIS'):(m.status||'FORECAST UNAVAILABLE').replaceAll('_',' ');top.append(left,badge);
+ const box=document.getElementById(targetId);box.replaceChildren();if(!m){box.className='empty';box.textContent='No upcoming certified fixture is available in the published report.';if(insightTarget)renderInsights(null,insightTarget);return}box.className='feature';
+ const certified=certifiedMarketList(m);const top=document.createElement('div');top.className='featuretop';const left=document.createElement('div');const league=document.createElement('div');league.className='league';league.textContent=m.league||m.competition_name||'Competition unavailable';const kickoff=document.createElement('div');kickoff.className='kickoff';kickoff.textContent=m.kickoff_local||m.kickoff_wat||m.kickoff_utc||'Kickoff not supplied';left.append(league,kickoff);const badge=document.createElement('div');badge.className='forecastbadge';badge.textContent=hasModelForecast(m)?'CERTIFIED MARKETS':'FORECAST UNAVAILABLE';top.append(left,badge);
  const hero=document.createElement('div');hero.className='matchhero';const home=document.createElement('div');const hv=teamVisual(m.home_team);const hn=document.createElement('div');hn.className='teamname';hn.textContent=m.home_team||'Home team';const hc=document.createElement('div');hc.className='teamcaption';hc.textContent='HOME';home.append(hv.wrap,hn,hc);const vs=document.createElement('div');vs.className='versus';vs.textContent='VS';const away=document.createElement('div');const av=teamVisual(m.away_team);const an=document.createElement('div');an.className='teamname';an.textContent=m.away_team||'Away team';const ac=document.createElement('div');ac.className='teamcaption';ac.textContent='AWAY';away.append(av.wrap,an,ac);hero.append(home,vs,away);loadBadge(hv,m.home_team);loadBadge(av,m.away_team);
  const wrap=document.createElement('div');wrap.className='probwrap';
- if(hasForecast){
-  const best=topProbability(m);const pw=document.createElement('div');pw.className='probmain';const ring=document.createElement('div');ring.className='ring';ring.style.setProperty('--p',pct(best[1])+'%');const rt=document.createElement('div');rt.className='ringtext';rt.textContent=fmt(best[1]);ring.append(rt);const rl=document.createElement('div');rl.className='ringlabel';rl.textContent=(best[0]==='Home'?m.home_team:best[0]==='Away'?m.away_team:'Draw')+' highest 1X2';pw.append(ring,rl);
-  const mk=document.createElement('div');mk.className='markets';for(const [label,value,sub] of [['BTTS Yes',fmt(m.btts_yes),'model probability'],['Over 2.5',fmt(m.over_2_5),'model probability'],['Under 2.5',Number.isFinite(Number(m.over_2_5))?fmt(1-Number(m.over_2_5)):'—','derived estimate']]){const c=document.createElement('div');c.className='market';const l=document.createElement('div');l.className='mlabel';l.textContent=label;const v=document.createElement('div');v.className='mvalue';v.textContent=value;const su=document.createElement('div');su.className='msub';su.textContent=sub;c.append(l,v,su);mk.append(c)}wrap.append(pw,mk);
+ if(hasModelForecast(m)){
+  const values=[];
+  if(certified.includes('1X2')){const p=marketValues(m,'1X2');const best=topProbability(m);if(Number.isFinite(best[1])){const pw=document.createElement('div');pw.className='probmain';const ring=document.createElement('div');ring.className='ring';ring.style.setProperty('--p',pct(best[1])+'%');const rt=document.createElement('div');rt.className='ringtext';rt.textContent=fmt(best[1]);ring.append(rt);const rl=document.createElement('div');rl.className='ringlabel';rl.textContent=best[0]+' highest 1X2';pw.append(ring,rl);wrap.append(pw)}for(const [label,key] of [['Home','home'],['Draw','draw'],['Away','away']])values.push(['1X2 '+label,fmt(p[key])])}
+  if(certified.includes('BTTS')){const p=marketValues(m,'BTTS');values.push(['BTTS Yes',fmt(p.yes)],['BTTS No',fmt(p.no)])}
+  if(certified.includes('TOTALS_2_5')){const p=marketValues(m,'TOTALS_2_5');values.push(['Over 2.5',fmt(p.over)],['Under 2.5',fmt(p.under)])}
+  const mk=document.createElement('div');mk.className='markets';for(const [label,value] of values){const c=document.createElement('div');c.className='market';const l=document.createElement('div');l.className='mlabel';l.textContent=label;const v=document.createElement('div');v.className='mvalue';v.textContent=value;const su=document.createElement('div');su.className='msub';su.textContent='certified probability';c.append(l,v,su);mk.append(c)}wrap.append(mk);
  }else{
-  const unavailable=document.createElement('div');unavailable.className='notice warn';unavailable.textContent='Forecast unavailable for this fixture. Status: '+(m.status||'NOT REPORTED').replaceAll('_',' ')+'. The fixture remains visible; no probability has been fabricated.';wrap.append(unavailable);
+  const unavailable=document.createElement('div');unavailable.className='notice warn';unavailable.textContent='No market passed publication certification for this fixture. The fixture remains visible without forecast probabilities.';wrap.append(unavailable);
  }
  const odds=marketPriceLines(m);if(odds.length){const price=document.createElement('div');price.className='prices';price.textContent='AVAILABLE MARKET PRICES · '+odds.join(' · ');wrap.append(price)}
  box.append(top,hero,wrap);if(insightTarget)renderInsights(m,insightTarget);
-}
-const VALUE_BET_MODEL_VALIDATED=false; // Enable only after repeated chronological out-of-sample validation.
-function findValueBets(m){
- if(!VALUE_BET_MODEL_VALIDATED)return [];
- const markets=(m.the_odds_api_market_odds||{}).markets||{};const candidates=[
-  {key:'h2h',label:'1X2 Home',p:num((m.probabilities||{}).home_win),names:[String(m.home_team||'').toLowerCase()]},
-  {key:'h2h',label:'1X2 Draw',p:num((m.probabilities||{}).draw),names:['draw']},
-  {key:'h2h',label:'1X2 Away',p:num((m.probabilities||{}).away_win),names:[String(m.away_team||'').toLowerCase()]},
-  {key:'btts',label:'BTTS Yes',p:num(m.btts_yes),names:['yes','btts yes']},
-  {key:'btts',label:'BTTS No',p:Number.isFinite(num(m.btts_yes))?1-num(m.btts_yes):NaN,names:['no','btts no']},
-  {key:'totals',label:'Over 2.5',p:num(m.over_2_5),names:['over 2.5','over'],point:2.5},
-  {key:'totals',label:'Under 2.5',p:Number.isFinite(num(m.over_2_5))?1-num(m.over_2_5):NaN,names:['under 2.5','under'],point:2.5}
- ];const bets=[];
- for(const c of candidates){
-  if(!Number.isFinite(c.p)||c.p<=0||c.p>=1)continue;
-  const list=markets[c.key]||[];const market=(list.find(x=>Number.isFinite(c.point)?Number(x.point)===c.point:true))||list[0];if(!market)continue;
-  const outcome=(market.outcomes||[]).find(o=>c.names.includes(String(o.name||'').toLowerCase())&&Number.isFinite(Number(o.price)));if(!outcome)continue;
-  const price=Number(outcome.price);if(price<=1)continue;const edge=c.p-1/price,ev=c.p*price-1;
-  if(edge>=.05&&ev>=.05)bets.push({label:c.label,prob:c.p,price,edge,ev,bookmaker:market.bookmaker||'Matched bookmaker'});
- }
- return bets.sort((a,b)=>b.ev-a.ev);
 }
 function renderValueBet(m,box){
  const card=document.createElement('article');card.className='insightcard';
  const i=document.createElement('div');i.className='insighticon';i.textContent='◇';
  const t=document.createElement('div');t.className='insighttitle';t.textContent='Value Bet Verdict';
- const screen=m&&m.value_bet_screen&&typeof m.value_bet_screen==='object'?m.value_bet_screen:{};
- const markets=screen.markets&&typeof screen.markets==='object'?screen.markets:{};
- const candidates=Object.entries(markets).flatMap(([market,result])=>[
-  ...(result&&Array.isArray(result.candidates)?result.candidates.map(candidate=>({market,candidate,paper:true})):[]),
-  ...(result&&Array.isArray(result.paper_candidates)?result.paper_candidates.map(candidate=>({market,candidate,paper:true})):[])
- ]);
- const v=document.createElement('div');v.className='insightbody insightvalue';
- const d=document.createElement('div');d.className='insightbody';
- if(candidates.length){
-  const best=candidates.sort((a,b)=>Number(b.candidate.edge_percentage_points||0)-Number(a.candidate.edge_percentage_points||0))[0];
-  const c=best.candidate;
-  v.textContent=(best.paper?'POTENTIAL EDGE · UNDER REVIEW':'APPROVED VALUE BET')+' · '+best.market+' · '+String(c.selection||'Selection')+' @ '+Number(c.decimal_odds||0).toFixed(2);
-  d.textContent='Estimated edge '+Number(c.edge_percentage_points||0).toFixed(1)+' percentage points.'+(best.paper?' This is a research candidate, not an approved betting recommendation.':'');
- }else{
-  v.textContent='NO QUALIFYING VALUE BET';
-  d.textContent='Available bookmaker prices do not currently show a sufficiently supported edge.';
- }
+ const v=document.createElement('div');v.className='insightbody insightvalue';v.textContent='LOCKED · NOT CERTIFIED';
+ const d=document.createElement('div');d.className='insightbody';d.textContent='Value betting remains disabled until its separate prospective and market-level certification is complete.';
  card.append(i,t,v,d);box.append(card);
 }
 function renderInsights(m,targetId='insights'){
  const box=document.getElementById(targetId);if(!box)return;box.replaceChildren();if(!m){box.textContent='No eligible fixture available for insight generation.';return}
- const x=m.expected_goals||{},homeX=num(x.home),awayX=num(x.away),btts=num(m.btts_yes),over=num(m.over_2_5),best=topProbability(m),rows=[];
- rows.push(['◉','Model lean',Number.isFinite(best[1])?(best[0]==='Home'?m.home_team:best[0]==='Away'?m.away_team:'Draw')+' leads at '+fmt(best[1]):'1X2 probability unavailable','Computed from published model probabilities.']);
- rows.push(['◎','BTTS outlook',Number.isFinite(btts)?(btts>=.55?'Higher estimated chance both teams score':btts<=.45?'Model leans toward at least one team not scoring':'No strong BTTS lean'):'BTTS probability unavailable',Number.isFinite(btts)?'Model estimate: '+fmt(btts):'No value supplied.']);
- rows.push(['↗','Goal total',Number.isFinite(over)?(over>=.55?'Model leans Over 2.5':over<=.45?'Model leans Under 2.5':'No strong 2.5-goal lean'):'Totals estimate unavailable',Number.isFinite(over)?'Over 2.5 estimate: '+fmt(over):'No value supplied.']);
- rows.push(['⌁','Expected goals',Number.isFinite(homeX)&&Number.isFinite(awayX)?m.home_team+' '+homeX.toFixed(2)+' · '+m.away_team+' '+awayX.toFixed(2):'Expected-goals data unavailable','Goal estimates from the published model; not live xG statistics.']);
- if(m.prediction_basis)rows.push(['⚑','Why this verdict',m.prediction_basis,m.evidence_grade==='VERY_LOW'?'Very limited verified match history is available.':'Based on the verified results and scoring rates available before kick-off.']);
+ const certified=certifiedMarketList(m),rows=[];
+ if(certified.includes('1X2')){const best=topProbability(m);const p=marketValues(m,'1X2');rows.push(['◉','1X2 outlook',best[0]+' leads at '+fmt(best[1]),'Certified probabilities: Home '+fmt(p.home)+' · Draw '+fmt(p.draw)+' · Away '+fmt(p.away)+'.'])}
+ if(certified.includes('BTTS')){const p=marketValues(m,'BTTS');rows.push(['◎','BTTS outlook',p.yes>=.55?'Higher certified chance both teams score':p.yes<=.45?'Certified model leans No':'No strong BTTS lean','Yes '+fmt(p.yes)+' · No '+fmt(p.no)+'.'])}
+ if(certified.includes('TOTALS_2_5')){const p=marketValues(m,'TOTALS_2_5');rows.push(['↗','Goal total',p.over>=.55?'Certified model leans Over 2.5':p.over<=.45?'Certified model leans Under 2.5':'No strong 2.5-goal lean','Over 2.5 '+fmt(p.over)+' · Under 2.5 '+fmt(p.under)+'.'])}
+ const insight=typeof m.ai_insight==='string'?m.ai_insight:(m.ai_insight&&typeof m.ai_insight.summary==='string'?m.ai_insight.summary:null);
+ if(insight)rows.push(['⚑','AI insight',insight,'Report-supplied analysis tied to this fixture.'])
+ if(!rows.length)rows.push(['⚑','Evidence status','No certified market is available.','The fixture remains visible, but the publication gate has not approved a forecast.'])
  for(const [icon,title,value,desc] of rows){const card=document.createElement('article');card.className='insightcard';const a=document.createElement('div');a.className='insighticon';a.textContent=icon;const b=document.createElement('div');b.className='insighttitle';b.textContent=title;const c=document.createElement('div');c.className='insightbody insightvalue';c.textContent=value;const d=document.createElement('div');d.className='insightbody';d.textContent=desc;card.append(a,b,c,d);box.append(card)}
  renderValueBet(m,box);
 }
 function renderRows(){
  const box=document.getElementById('predictions');box.replaceChildren();let rows=dashboardRows;
- if(currentFilter==='btts')rows=rows.filter(m=>m.btts_yes!==null&&m.btts_yes!==undefined&&m.btts_yes!==''&&Number.isFinite(Number(m.btts_yes)));
- if(currentFilter==='totals')rows=rows.filter(m=>m.over_2_5!==null&&m.over_2_5!==undefined&&m.over_2_5!==''&&Number.isFinite(Number(m.over_2_5)));
+ if(currentFilter==='btts')rows=rows.filter(m=>certifiedMarketList(m).includes('BTTS'));
+ if(currentFilter==='totals')rows=rows.filter(m=>certifiedMarketList(m).includes('TOTALS_2_5'));
  document.getElementById('fixtureCount').textContent=rows.length+' fixtures shown';
  if(!rows.length){const e=document.createElement('div');e.className='empty';e.textContent='No fixtures match this filter in the published data.';box.append(e);return}
  rows.forEach((m,i)=>{
   const card=document.createElement('article');card.className='prediction-card reveal';card.style.transitionDelay=Math.min(i*45,250)+'ms';
   const title=document.createElement('h3');title.className='prediction-title';title.textContent=(m.home_team||'Home')+' vs '+(m.away_team||'Away');
-  const meta=document.createElement('div');meta.className='meta';meta.textContent=(m.league||'Competition')+' · '+(m.kickoff_local||m.kickoff||'Kickoff unavailable')+(m.fixture_visibility_note?' · '+m.fixture_visibility_note:'');
-  const chips=document.createElement('div');chips.className='chips';
-  const hasForecast=hasModelForecast(m);
-  if(hasForecast){
-   const p=m.probabilities;for(const [label,value] of [['1X2 Home',fmt(p.home_win)],['1X2 Draw',fmt(p.draw)],['1X2 Away',fmt(p.away_win)],['BTTS Yes',fmt(m.btts_yes)],['Over 2.5',fmt(m.over_2_5)],['Under 2.5',Number.isFinite(num(m.over_2_5))?fmt(1-num(m.over_2_5)):'—']]){
-    const chip=document.createElement('span');chip.className='chip';chip.textContent=label+' '+value;chips.append(chip);
-   }
-  }else{
-   const chip=document.createElement('span');chip.className='chip';chip.textContent='FORECAST UNAVAILABLE · '+(m.status||'STATUS NOT REPORTED');chips.append(chip);
-  }
+  const meta=document.createElement('div');meta.className='meta';meta.textContent=(m.league||m.competition_name||'Competition')+' · '+(m.kickoff_local||m.kickoff_wat||m.kickoff_utc||'Kickoff unavailable')+(m.fixture_visibility_note?' · '+m.fixture_visibility_note:'');
+  const chips=document.createElement('div');chips.className='chips';const certified=certifiedMarketList(m);
+  if(certified.includes('1X2')){const p=marketValues(m,'1X2');for(const [label,key] of [['1X2 Home','home'],['1X2 Draw','draw'],['1X2 Away','away']]){const chip=document.createElement('span');chip.className='chip';chip.textContent=label+' '+fmt(p[key]);chips.append(chip)}}
+  if(certified.includes('BTTS')){const p=marketValues(m,'BTTS');for(const [label,key] of [['BTTS Yes','yes'],['BTTS No','no']]){const chip=document.createElement('span');chip.className='chip';chip.textContent=label+' '+fmt(p[key]);chips.append(chip)}}
+  if(certified.includes('TOTALS_2_5')){const p=marketValues(m,'TOTALS_2_5');for(const [label,key] of [['Over 2.5','over'],['Under 2.5','under']]){const chip=document.createElement('span');chip.className='chip';chip.textContent=label+' '+fmt(p[key]);chips.append(chip)}}
+  if(!hasModelForecast(m)){const chip=document.createElement('span');chip.className='chip';chip.textContent='FORECAST UNAVAILABLE · NOT CERTIFIED';chips.append(chip)}
   const odds=marketPriceLines(m);const price=document.createElement('div');price.className='prices';price.textContent=odds.length?odds.join(' · '):'No matched market odds available';
-  const open=document.createElement('button');open.type='button';open.className='refresh';open.textContent=hasForecast?'View AI Insights & Value Bet →':'View fixture status →';open.style.marginTop='12px';
+  const open=document.createElement('button');open.type='button';open.className='refresh';open.textContent=hasModelForecast(m)?'View AI Insights · Value betting locked →':'View fixture status →';open.style.marginTop='12px';
   const detail=document.createElement('div');detail.hidden=true;detail.className='prediction-detail';detail.style.marginTop='14px';
   const close=document.createElement('button');close.type='button';close.className='refresh';close.textContent='← Back to predictions';
   const feature=document.createElement('div');const insightHead=document.createElement('div');insightHead.className='sectionhead';const heading=document.createElement('h2');heading.textContent='AI Insights';insightHead.append(heading);
@@ -244,7 +327,7 @@ function renderPaperTracking(d){
  for(const [title,value] of values){const el=document.createElement('div');el.className='statusitem';const t=document.createElement('div');t.className='stitle';t.textContent=title;const v=document.createElement('div');v.className='svalue';v.textContent=value;el.append(t,v);metrics.append(el)}
  const modelBox=document.getElementById('trackingModels');modelBox.replaceChildren();const models=data.cumulative_metrics_by_model||{};const entries=Object.entries(models);
  if(!entries.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No completed forecasts scored yet.';modelBox.append(empty)}
- for(const [name,m] of entries){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');const friendlyModelName=name.replace(/^experimental_/,'').replaceAll('_',' ');title.textContent=friendlyModelName;const line=document.createElement('div');line.className='market-line';const acc=Number(m.result_accuracy);line.textContent=String(m.matches??0)+' scored · accuracy '+(Number.isFinite(acc)?(acc*100).toFixed(1)+'%':'—')+' · Brier '+(Number.isFinite(Number(m.brier_score))?Number(m.brier_score).toFixed(3):'—')+' · Log loss '+(Number.isFinite(Number(m.log_loss))?Number(m.log_loss).toFixed(3):'—');card.append(title,line);modelBox.append(card)}
+ for(const [name,m] of entries){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');const friendlyModelName=name.replaceAll('_',' ');title.textContent=friendlyModelName;const line=document.createElement('div');line.className='market-line';const acc=Number(m.result_accuracy);line.textContent=String(m.matches??0)+' scored · accuracy '+(Number.isFinite(acc)?(acc*100).toFixed(1)+'%':'—')+' · Brier '+(Number.isFinite(Number(m.brier_score))?Number(m.brier_score).toFixed(3):'—')+' · Log loss '+(Number.isFinite(Number(m.log_loss))?Number(m.log_loss).toFixed(3):'—');card.append(title,line);modelBox.append(card)}
  const results=document.getElementById('trackingResults');results.replaceChildren();
  const rawRows=Array.isArray(data.scored_matches)?data.scored_matches.slice():[];
  const dayOf=row=>String(row.match_date||row.fixture_date||row.report_date||'').slice(0,10);
@@ -306,92 +389,13 @@ async function fetchWithDeadline(url,ms){
  try{return await fetch(url,{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timer)}
 }
 async function fetchDashboardPayload(){
- let apiError=null;
- try{
-  const response=await fetchWithDeadline('/api/dashboard-data',6500);
-  if(response.ok){const payload=await response.json();if(payload&&payload.status==='OK'&&Array.isArray(payload.predictions))return payload;apiError=new Error('Dashboard API returned no published report')}
-  else apiError=new Error('Dashboard API HTTP '+response.status);
- }catch(error){apiError=error}
- // Independent browser-side recovery path: the published report is a static,
- // public JSON snapshot. This keeps fixture visibility working if a serverless
- // function, GitHub API rate limit, or Vercel runtime has a transient failure.
- const stamp=Date.now();
- const rawUrl='https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/dashboard_snapshot.json?v='+stamp;
- try{
-  const response=await fetchWithDeadline(rawUrl,7000);
-  if(!response.ok)throw new Error('Published snapshot HTTP '+response.status);
-  const report=await response.json();
-  if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('Published snapshot failed validation');
-  return await normalizeStaticReport(report);
- }catch(rawFallbackError){
-  // Second CDN route is independent of raw.githubusercontent.com.
-  try{
-   const cdn='https://cdn.jsdelivr.net/gh/Nexora-Apparel/veltrix-football@command-data/public-data/dashboard_snapshot.json';
-   const response=await fetchWithDeadline(cdn+'?v='+stamp,6000);
-   if(!response.ok)throw new Error('Mirror HTTP '+response.status);
-   const report=await response.json();
-   if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('Mirror snapshot failed validation');
-   return await normalizeStaticReport(report);
-  }catch(mirrorError){
-   // Final recovery route uses the GitHub Contents API; decode UTF-8 safely.
-   try{
-    const api='https://api.github.com/repos/Nexora-Apparel/veltrix-football/contents/public-data/dashboard_snapshot.json?ref=command-data&v='+stamp;
-    const response=await fetchWithDeadline(api,5000);
-    if(!response.ok)throw new Error('GitHub API HTTP '+response.status);
-    const wrapper=await response.json();
-    if(!wrapper||!wrapper.content)throw new Error('GitHub API returned no file content');
-    const bytes=Uint8Array.from(atob(wrapper.content.replace(/\s/g,'')),c=>c.charCodeAt(0));
-    const report=JSON.parse(new TextDecoder().decode(bytes));
-    if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('GitHub API snapshot failed validation');
-    return await normalizeStaticReport(report);
-   }catch(apiFallbackError){
-    throw new Error('Dashboard API, raw CDN, mirror CDN and GitHub API all failed: '+(apiFallbackError?.message||'unknown'));
-   }
-  }
+ const response=await fetchWithDeadline('/api/dashboard-data',6500);
+ if(!response.ok)throw new Error('Dashboard API HTTP '+response.status);
+ const payload=await response.json();
+ if(!payload||payload.status!=='OK'||!Array.isArray(payload.predictions)){
+  throw new Error('No authoritative V2 report is currently available');
  }
-}
-async function normalizeStaticReport(report){
- const visibleRows=report.predictions.map(row=>{
-  if(!row||typeof row!=='object')return row;
-  const kickoff=Date.parse(row.kickoff_local||row.kickoff||'');
-  const phase=row.fixture_phase||(Number.isFinite(kickoff)?(kickoff>Date.now()?'UPCOMING':'KICKOFF_PASSED'):'KICKOFF_UNVERIFIED');
-  const note=row.fixture_visibility_note||(phase==='KICKOFF_PASSED'?'Kickoff has passed; fixture remains visible in this report.':phase==='KICKOFF_UNVERIFIED'?'Kickoff could not be verified; fixture retained for visibility.':undefined);
-  return {...row,fixture_phase:phase,...(note?{fixture_visibility_note:note}:{})};
- });
- const normalized = {
-  ...report,status:'OK',predictions:visibleRows,
-  as_of_date:report.as_of_date,generated_at_utc:report.generated_at_utc,
-  published_at_utc:report.command_data_published_at_utc,
-  fixtures_received:report.fixtures_received??report.predictions.length,
-  available_forecasts:report.predictions.filter(x=>hasModelForecast(x)).length,
-  fixtures_visible:visibleRows.length,
-  unsupported_fixtures:report.predictions.filter(x=>!x||!['EXPERIMENTAL_ONLY','EXPERIMENTAL_LOW_DATA','LOW_HISTORY_FORECAST'].includes(x.status)).length,
-  fixtures_with_market_odds:report.fixtures_with_market_odds??0,
-  data_connection:{status:'CONNECTED',freshness:report.as_of_date===new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())?'CURRENT':'STALE',report_date:report.as_of_date,provider:(report.primary_provider_request||{}).provider,provider_status:(report.primary_provider_request||{}).status},
-  model_validation:{status:'NOT_LOADED_FROM_STATIC_FALLBACK',dataset:{},historical_1x2:{},release_controls:{}},
-  paper_tracking:null,
-  warning:'Dashboard is using the published static report because the live API is temporarily unavailable. Fixtures remain visible; paper history is loaded independently.'
- };
- try{
-  const url='https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/paper_tracking_ledger.json?v='+Date.now();
-  const response=await fetchWithDeadline(url,3500);
-  if(response.ok){
-   const ledger=await response.json();
-   if(ledger&&ledger.model_status==='PAPER_TRACKING_ONLY'&&Array.isArray(ledger.scored_matches)){
-    normalized.paper_tracking={
-     model_status:ledger.model_status,updated_at_utc:ledger.updated_at_utc,
-     evaluated_report_dates:ledger.evaluated_report_dates,
-     cumulative_metrics_by_model:ledger.cumulative_metrics_by_model||{},
-     last_attempt:ledger.last_attempt||{},
-     value_market_metrics_by_market:ledger.value_market_metrics_by_market||{},
-     value_model_versions:ledger.value_model_versions||[],
-     calibration_versions:ledger.calibration_versions||[],
-     scored_matches:ledger.scored_matches
-    };
-   }
-  }
- }catch(_ledgerFallbackError){}
- return normalized;
+ return payload;
 }
 async function loadDashboard(){
  const btn=document.getElementById('refresh');btn.disabled=true;btn.textContent='Loading…';
@@ -401,9 +405,9 @@ async function loadDashboard(){
   const liveLabel=document.getElementById('liveLabel');if(liveLabel)liveLabel.textContent=connection.status==='CONNECTED'?(stale?'CONNECTED · STALE DATA':'DATA CONNECTED'):'DATA OFFLINE';
   const dateParts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const today=dateParts.filter(p=>['year','month','day'].includes(p.type)).reduce((o,p)=>(o[p.type]=p.value,o),{});const todayKey=today.year+'-'+today.month+'-'+today.day;
   document.getElementById('overviewTitle').textContent=reportDate?(reportDate===todayKey?"Today's overview":'Report overview · '+reportDate):'Report overview';
-  const localHour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Lagos',hour:'2-digit',hourCycle:'h23'}).format(new Date()));const offline=connection.status!=='CONNECTED'||d.status!=='OK';const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=offline?(d.warning||'Dashboard data source is not connected. Published predictions could not be loaded.') :stale?'Published-data connection is working, but the latest report is '+reportDate+'. Today’s automated report is '+(localHour<6?'scheduled for 06:00 WAT':'overdue after 06:00 WAT')+'. Older fixtures remain visible in Predictions and are not treated as today’s featured picks.':reused?'The dashboard is connected, but this is a reused snapshot; no fresh fixture retrieval completed. '+(d.report_freshness_note||'Wait for the next successful live report.'):(dashboardRows.length?'Connected to the latest current-day published report.':'Connected, but no fixtures are present in the current report.');if(!offline&&!stale&&!reused&&dashboardRows.length){reportNotice.textContent+=' Predictions: '+(d.available_forecasts??0)+'; fixtures retained without forecasts: '+(d.unsupported_fixtures??0)+'. Unsupported fixtures remain visible; no predictions are fabricated.';}reportNotice.classList.toggle('warn',offline||stale||reused||!dashboardRows.length);}
+  const localHour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Lagos',hour:'2-digit',hourCycle:'h23'}).format(new Date()));const offline=connection.status!=='CONNECTED'||d.status!=='OK';const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=offline?(d.warning||'Dashboard data source is not connected. Published predictions could not be loaded.') :stale?'Published-data connection is working, but the latest report is '+reportDate+'. The daily report schedule is paused; no automatic report is scheduled. Older reports are not treated as current predictions.':reused?'The dashboard is connected, but this is a reused snapshot; no fresh fixture retrieval completed. '+(d.report_freshness_note||'Wait for the next successful live report.'):(dashboardRows.length?'Connected to the latest current-day published report.':'Connected, but no fixtures are present in the current report.');if(!offline&&!stale&&!reused&&dashboardRows.length){reportNotice.textContent+=' Predictions: '+(d.available_forecasts??0)+'; fixtures retained without forecasts: '+(d.unsupported_fixtures??0)+'. Unsupported fixtures remain visible; no predictions are fabricated.';}reportNotice.classList.toggle('warn',offline||stale||reused||!dashboardRows.length);}
   text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.available_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
-  const currentFixtures=stale?[]:dashboardRows.filter(m=>m&&m.fixture_phase==='UPCOMING');renderFeatured(currentFixtures.find(m=>['EXPERIMENTAL_ONLY','LOW_HISTORY_FORECAST'].includes(m.status))||currentFixtures[0]||null);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
+  renderFeatured(null);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
   document.getElementById('reporttime').textContent='Report date '+(d.as_of_date||'unknown')+' · published '+(d.published_at_utc||'unknown')+' UTC';
  }catch(e){
   const liveLabel=document.getElementById('liveLabel');if(liveLabel)liveLabel.textContent='DATA OFFLINE';
@@ -415,7 +419,7 @@ async function loadDashboard(){
  }finally{btn.disabled=false;btn.textContent='↻ Refresh'}
 }
 loadDashboard();
-</script></body></html>"""
+</script><footer id="data-attribution" style="padding:20px 24px;text-align:center;font-size:12px;color:#8b93a7">Football data by <a href="https://5dollarfootballapi.com" target="_blank" rel="noopener noreferrer">5DollarFootballAPI</a></footer></body></html>"""
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard() -> HTMLResponse:
@@ -431,18 +435,30 @@ def dashboard_data() -> dict:
         except Exception:
             return None
 
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        report_future = pool.submit(_safe_load, load_dashboard_snapshot)
-        validation_future = pool.submit(_safe_load, load_model_validation_report)
-        ledger_future = pool.submit(_safe_load, load_paper_ledger)
-        report = report_future.result()
-        if not isinstance(report, dict):
-            report = _safe_load(load_latest_report)
-        model_validation = validation_future.result()
-        ledger = ledger_future.result()
+    bundle = _safe_load(_load_authorized_v2_report_bundle)
+    report = bundle.website_projection if bundle is not None else None
+    # Legacy paper ledgers and legacy model-validation snapshots are not V2 evidence.
+    ledger = None
+    model_validation = (
+        report.get("model_validation")
+        if isinstance(report, dict) and isinstance(report.get("model_validation"), dict)
+        else None
+    )
 
     if not isinstance(report, dict):
-        return {"status": "UNAVAILABLE", "warning": "No published report could be loaded.", "predictions": []}
+        verifier_configured = _authoritative_publication_verifier() is not None
+        bundle_reader_configured = _authoritative_report_bundle_reader() is not None
+        runtime_status = getattr(app.state, "v2_publication_runtime_status", "UNCONFIGURED")
+        return {
+            "status": "UNAVAILABLE",
+            "warning": "No published report could be loaded.",
+            "predictions": [],
+            "runtime_configuration": {
+                "status": runtime_status,
+                "verifier_configured": verifier_configured,
+                "bundle_reader_configured": bundle_reader_configured,
+            },
+        }
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
     upcoming = []
@@ -453,7 +469,9 @@ def dashboard_data() -> dict:
         # unsupported competitions, insufficient-history rows and unverified
         # kickoff rows visible with their explicit status; never invent odds
         # or probabilities for them.
-        raw = row.get("kickoff_local") or row.get("kickoff")
+        row.setdefault("league", row.get("competition_name"))
+        row.setdefault("kickoff_local", row.get("kickoff_wat") or row.get("kickoff_utc"))
+        raw = row.get("kickoff_utc") or row.get("kickoff_local") or row.get("kickoff")
         try:
             kickoff = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
             if kickoff.tzinfo is None:
@@ -498,6 +516,35 @@ def dashboard_data() -> dict:
             )
             for bookmaker in bookmakers
         )
+
+    # Never expose report-supplied candidate arrays as releasable dashboard cards.
+    for row in upcoming:
+        raw_screen = row.get("value_bet_screen")
+        if not isinstance(raw_screen, dict):
+            continue
+        raw_markets = raw_screen.get("markets")
+        safe_markets = {}
+        if isinstance(raw_markets, dict):
+            for market, details in raw_markets.items():
+                if market not in {"1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"}:
+                    continue
+                if not isinstance(details, dict):
+                    continue
+                safe_markets[market] = {
+                    "status": "DISABLED_UNVALIDATED",
+                    "candidates": [],
+                    "paper_candidates": [],
+                    "candidate_count": 0,
+                    "paper_candidate_count": 0,
+                }
+        row["value_bet_screen"] = {
+            "status": "PAPER_ONLY_CANDIDATES",
+            "model_validated": False,
+            "alerts_enabled": False,
+            "candidate_count": 0,
+            "paper_candidate_count": 0,
+            "markets": safe_markets,
+        }
 
     matched_odds_rows = sum(1 for row in upcoming if has_matched_market_odds(row))
     live_odds = report.get("live_odds_sync") if isinstance(report.get("live_odds_sync"), dict) else {}
@@ -575,10 +622,14 @@ def dashboard_data() -> dict:
     return {
         "status": "OK",
         "as_of_date": report.get("as_of_date"),
+        "data_attribution": {
+            "text": "Football data by 5DollarFootballAPI",
+            "url": "https://5dollarfootballapi.com",
+        },
         "generated_at_utc": report.get("generated_at_utc"),
-        "published_at_utc": report.get("command_data_published_at_utc"),
-        "publication_status": report.get("command_data_publication", "UNKNOWN"),
-        "report_generation_status": report.get("publication_status", "UNKNOWN"),
+        "published_at_utc": report.get("published_at_utc"),
+        "publication_status": "PUBLISHED",
+        "report_generation_status": "PUBLISHED",
         "report_freshness_note": report.get("publication_notice"),
         "data_connection": {
             "status": "CONNECTED",
@@ -595,27 +646,48 @@ def dashboard_data() -> dict:
         "multi_source_odds_sync": report.get("multi_source_odds_sync"),
         "live_odds_sync": report.get("live_odds_sync"),
         "historical_data_coverage": report.get("historical_data_coverage"),
-        "fixtures_received": report.get("fixtures_received", 0),
-        "available_forecasts": sum(1 for row in rows if isinstance(row, dict) and isinstance(row.get("probabilities"), dict) and row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}),
+        "fixtures_received": len(rows),
+        "available_forecasts": sum(
+            1 for row in rows
+            if isinstance(row, dict)
+            and row.get("publication_status") == "PUBLISHED"
+            and isinstance(row.get("certified_markets"), list)
+            and bool(row.get("certified_markets"))
+        ),
         "fixtures_visible": len(upcoming),
-        "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and row.get("status") not in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}),
+        "unsupported_fixtures": sum(
+            1 for row in upcoming
+            if isinstance(row, dict)
+            and not (
+                row.get("publication_status") == "PUBLISHED"
+                and isinstance(row.get("certified_markets"), list)
+                and bool(row.get("certified_markets"))
+            )
+        ),
         "fixtures_with_market_odds": odds_count,
         "model_validation": model_validation or {"status": "NOT_REPORTED", "dataset": {}, "historical_1x2": {}, "rolling_origin_1x2_calibration": {}, "rolling_origin_goal_market_calibration": {}, "release_controls": {}},
         "goal_market_calibration": report.get("goal_market_calibration") or {
             "status": "NOT_REPORTED", "markets": [], "compatible_forecasts": 0,
             "applied_forecasts": 0,
         },
-        "value_bet_screen": report.get("value_bet_screen") or {
-            "status": "NOT_REPORTED", "model_validated": False,
+        "value_bet_screen": {
+            "status": "LOCKED_UNVALIDATED",
+            "model_validated": False,
+            "alerts_enabled": False,
             "markets": ["1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"],
             "candidate_count": 0,
+            "paper_candidate_count": 0,
         },
-        "value_validation_certificate": report.get("value_validation_certificate") or {
-            "status": "LOCKED_INSUFFICIENT_EVIDENCE",
+        # Published report JSON is not a trusted certificate. The dashboard API
+        # exposes a fixed locked state until the signed release-token verifier
+        # is wired into this read path.
+        "value_validation_certificate": {
+            "status": "LOCKED_SOURCE_ATTESTATION_REQUIRED",
             "approved_markets": [],
+            "betting_validation": False,
             "alerts_enabled": False,
             "market_diagnostics": {},
-            "note": "No current evidence-backed certificate is published; value alerts remain disabled.",
+            "note": "Report-supplied certificate fields are untrusted; value alerts remain disabled.",
         },
         "paper_tracking": paper_tracking,
         "warning": "Predictions are evidence-weighted estimates. Value-bet verdicts are shown only when supported by the available evidence. The report may not be the latest live run.",
@@ -731,59 +803,21 @@ async def telegram_webhook(
     command = BUTTON_COMMANDS.get(text.strip().casefold(), text)
     if not command.startswith("/"):
         return JSONResponse({"ok": True})
-    if command.strip().split()[0].split("@", 1)[0].casefold() == "/oddsdiag":
-        try:
-            report = load_latest_report()
-            request_meta = report.get("primary_provider_request") or {}
-            odds_meta = report.get("multi_source_odds_sync") or {}
-            live_odds = report.get("live_odds_sync") or {}
-            five = odds_meta.get("five_dollar") or {}
-            odds_api = odds_meta.get("the_odds_api") or {}
-            infer = odds_meta.get("infer_sports") or {}
-            predictions = report.get("predictions") if isinstance(report.get("predictions"), list) else []
-            five_rows = sum(1 for row in predictions if isinstance(row, dict) and row.get("five_dollar_market_odds"))
-            odds_api_rows = sum(1 for row in predictions if isinstance(row, dict) and row.get("the_odds_api_market_odds"))
-            infer_rows = sum(1 for row in predictions if isinstance(row, dict) and row.get("infer_sports_market_odds"))
-            diagnostic = "\n".join([
-                "VELTRIX MULTI-SOURCE ODDS DIAGNOSTIC",
-                f"Report date: {report.get('as_of_date', 'not available')}",
-                f"Primary fixture provider: {request_meta.get('provider', 'not reported')}",
-                f"Primary fixture status: {request_meta.get('status', 'not reported')}",
-                f"Fixtures received: {request_meta.get('fixtures_received', report.get('fixtures_received', 0))}",
-                f"5DollarFootballAPI odds status: {five.get('status', 'not reported')}",
-                f"Fixtures with 5Dollar odds: {five_rows}",
-                f"The Odds API status: {odds_api.get('status', 'not reported')}",
-                f"Sports queried: {', '.join(odds_api.get('sports_queried', [])) or 'none'}",
-                f"Fixtures with The Odds API prices: {odds_api_rows}",
-                f"The Odds API quota metadata: {odds_api.get('quota', {})}",
-                f"InferSports status: {infer.get('status', 'not reported')}",
-                f"Fixtures with InferSports prices: {infer_rows}",
-                f"Combined odds status: {live_odds.get('status', 'not reported')}",
-                f"Fixtures with matched market odds: {report.get('fixtures_with_market_odds', 0)}",
-                "Odds markets are reference data only; model probabilities remain estimates.",
-                "API-Football/API-Sports is suspended and is not called by this diagnostic.",
-                "No API keys are shown and no provider request is made by this command.",
-            ])
-            _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\n" + diagnostic)
-        except Exception:
-            _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\nMULTI-SOURCE DIAGNOSTIC FAILED — published report details unavailable.")
-        return JSONResponse({"ok": True})
     try:
-        # Read published snapshots only. This never starts prediction jobs or
-        # consumes the football provider's API quota.
+        # V2 commands consume only the authorized immutable V2 report. The
+        # legacy prediction command router is deliberately not called.
+        verifier = _authoritative_publication_verifier()
         try:
-            report = load_latest_report()
-            ledger = load_paper_ledger()
+            bundle = _load_authorized_v2_report_bundle()
         except Exception:
-            # A data-source outage must not break the Telegram webhook.
-            report, ledger = None, None
-        odds_data = None
-        odds_error = None
-        _send_message(
-            bot_token, chat_id,
-            handle_command(command, report=report, ledger=ledger,
-                           odds_data=odds_data, odds_error=odds_error)
+            bundle = None
+        report = bundle.telegram_report if bundle is not None else None
+        reply = handle_v2_command(
+            command,
+            report=report,
+            authorization_verifier=verifier,
         )
+        _send_message(bot_token, chat_id, reply)
     except Exception:
         # Do not expose the update, chat id, token, or Telegram request URL.
         raise HTTPException(status_code=502, detail="Telegram reply delivery failed") from None

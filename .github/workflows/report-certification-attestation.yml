@@ -1,0 +1,38 @@
+name: VELTRIX Report Certification Attestation
+
+on:
+  workflow_dispatch:
+    inputs:
+      report_id:
+        description: Immutable report ID whose report-bound certification manifest is ready
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  attest-report-manifest:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify report-bound metrics, rights, entitlements and source evidence
+        env:
+          REPORT_ID: ${{ inputs.report_id }}
+        run: |
+          python scripts/veltrix_v2/verify_pre_attestation_report.py \
+            --report "reports/${REPORT_ID}.json" \
+            --manifest "reports/certification/publication-manifests/${REPORT_ID}.json"
+      - name: Create GitHub artifact attestation for the exact report-bound manifest
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: reports/certification/publication-manifests/${{ inputs.report_id }}.json

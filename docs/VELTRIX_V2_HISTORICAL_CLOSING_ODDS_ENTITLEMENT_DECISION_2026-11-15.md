@@ -1,0 +1,129 @@
+# VELTRIX FOOTBALL 2.0 — Historical and closing-odds source decision
+
+**Decision date:** 2026-11-15  
+**Scope:** Stage 2 historical / closing-odds evidence  
+**Project use:** Internal, non-commercial research only  
+**Disposition:** ALTERNATIVE IDENTIFIED; ACCOUNT ENTITLEMENT NOT VERIFIED; HISTORICAL ODDS GATE BLOCKED
+
+## 1. Decision summary
+
+No currently evidenced account entitlement provides a usable, timestamped historical closing/tick series for the seven-competition Stage 2 universe.
+
+The acceptable technical alternative is The Odds API V4 historical odds snapshot service, subject to confirmation that the connected account has paid historical-odds access and the required soccer sport-key / UK bookmaker coverage. Its snapshots are point-in-time evidence at the provider's returned snapshot timestamp, not tick-by-tick bookmaker close records. Historical snapshots are documented at 10-minute intervals initially and five-minute intervals from September 2022. The historical endpoint is paid-plan-only; the documented event-level endpoint cost is 10 credits per region per market per event. The aggregate historical sport-odds endpoint has a documented 10-credit cost per region per market per request.
+
+No credit-consuming request was made for this decision. The prior no-credit catalogue probe does not prove historical endpoint entitlement, bookmaker availability, event coverage, or market-level timestamps.
+
+## 2. 5DollarFootballAPI
+
+### Community-access route
+
+GET /v1/fixtures/{id}/odds exposes Bet365 opening, closing and in-play price fields. The opening 1X2 quote includes opened_at (UTC), and the capture workflow stores this as the source publication/availability timestamp. The 400 independently reconciled opening observations are admitted only as opening-price evidence.
+
+The closing and in-play fields in this fixture response do not carry their own timestamped quote history. They cannot establish when the quote was observed, cannot be treated as point-in-time features, and cannot support defensible CLV or price-movement calculations. Do not substitute the fixture's retrieval time, kickoff time, or opening timestamp for a missing closing timestamp.
+
+### Historical tick route
+
+GET /v1/fixtures/{id}/odds/history?market=1x2 provides timestamped price ticks, ordered oldest first, but the provider documentation explicitly requires Ultra or above; Free and Pro receive 403 insufficient_plan. The connected account's Ultra entitlement has not been evidenced. No request has been made to this restricted endpoint.
+
+**Disposition:** retain the Community opening route; formally block tick-history acquisition pending actual Ultra entitlement evidence. No upgrade or paid request is authorized by this decision.
+
+## 3. The Odds API V4 alternative
+
+Official documentation describes:
+- Historical odds snapshots from 2020-06-06; 10-minute intervals initially and five-minute intervals from September 2022.
+- Historical odds endpoints are available only on paid usage plans.
+- Historical event odds can retrieve a single event's odds at a specified timestamp; the endpoint returns the closest snapshot equal to or earlier than the requested time.
+- Historical event odds cost 10 credits per region per market per event.
+- Historical sport odds cost 10 credits per region per market per request.
+- Historical events / markets discovery endpoints can be used to inspect coverage on any plan, at one credit per request, but they do not return odds.
+
+This source is acceptable for **snapshot-based historical odds evidence** if all of the following are proven:
+1. Account entitlement permits the historical endpoint.
+2. The relevant soccer sport keys map unambiguously to the seven canonical competitions.
+3. UK-region bookmaker coverage includes the selected bookmaker(s) and h2h (1X2) market at the requested historical timestamps.
+4. The returned snapshot timestamp is retained exactly and is strictly before kickoff for pre-match use.
+5. Event identity, bookmaker, market, outcome prices, snapshot time, response hash, retrieval time, and quota headers are preserved.
+6. Missing snapshots and bookmaker gaps remain missing; no interpolation or assumed close is permitted.
+
+A five-minute snapshot immediately before kickoff is a defensible **near-close snapshot**, not proof of the bookmaker's exact final closing tick. The project must label it as snapshot-derived and must not claim tick-perfect CLV.
+
+The existing catalogue-only account probe (three /v4/sports/ responses in the earlier audit) is not sufficient to prove any of these conditions. The previously observed no-credit quota headers are historical observations, not a current quota preflight. No credit-consuming probe is authorized here.
+
+## 4. Certification and coverage impact
+
+- Current 5Dollar Community opening observations: 400 / 763 = 52.42% of the frozen 90-day seven-competition fixture universe, subject to the latest independent read-back.
+- Opening-only quotes do not establish closing-price coverage.
+- 5Dollar tick-history observations: zero.
+- The Odds API event-odds responses: zero.
+- The Odds API historical-odds responses: zero.
+- Timestamped closing / near-close snapshots: zero.
+- CLV and price-movement evidence: unavailable.
+- The 98% timestamped odds-coverage certification threshold is not met.
+- Market certification and value betting remain locked.
+
+The absence of historical/closing evidence does not invalidate the 400 valid opening observations. It limits their use to the explicitly timestamped opening-price context and prevents closing-line benchmarks, CLV evaluation, and any certification gate requiring 98% timestamped odds coverage.
+
+## 5. Required next evidence
+
+Before any The Odds API credit-consuming probe:
+- Verify current account historical endpoint entitlement from account/provider evidence.
+- Confirm sport-key-to-competition mappings and UK bookmaker/market availability using non-credit documentation or permitted discovery.
+- Run a fresh no-credit quota preflight.
+- Set a one-request, one-region, one-market hard cap (maximum documented estimate: 10 credits for a historical odds request), no retries, staging-only persistence, and preserve exact response plus quota headers.
+- Do not run the probe unless the separate credit cap is explicitly authorized.
+
+Before any 5Dollar tick-history request:
+- Obtain evidence that the actual API key/account has Ultra access.
+- Revalidate current rights, scope, quota and rate limits.
+- Keep the existing no-retry, staging-only and bounded-request controls.
+
+## 6. Formal decision
+
+**Historical/closing odds source decision: BLOCKED — ENTITLEMENT NOT VERIFIED.**
+
+The Odds API V4 is the technically acceptable alternative for timestamped historical snapshots, with a clear distinction between near-close snapshots and exact closing ticks. The 5Dollar Ultra history endpoint remains the direct tick-level source but is not entitled on the evidence currently available. Neither route has been used to collect historical/closing observations.
+
+Stage 2 cannot pass the historical/closing-odds gate or the 98% timestamped odds-coverage requirement on current evidence. Keep model certification, value betting, production publication, Telegram delivery and schedule activation disabled.
+
+## 7. Official provider documentation
+
+- 5Dollar odds history: https://5dollarfootballapi.com/docs/odds-history
+- 5Dollar fixture odds and plan history: https://5dollarfootballapi.com/docs
+- The Odds API V4 historical odds guide: https://the-odds-api.com/liveapi/guides/v4/
+- The Odds API historical data and usage-cost guide: https://the-odds-api.com/historical-odds-data/
+
+## 8. Opening-odds acquisition continuation — 2026-11-15
+
+Fourteen additional bounded batches have now been independently reconciled after manifests 109 and 110, bringing manifests 109–124 to 400/400 opening quote observations across 400 distinct fixtures. Each completed batch had 25 requests, 25 responses, 25 PIT-eligible observations, zero duplicates, zero ineligible quotes, fresh Community quota preflight, no retries and no more than 25 fixture requests. Latest verified batch: workflow #43734920511, artifact #14170381591, ZIP SHA-256 `e45a5d9b092affa0e6cfd8a70f70c4695c2b81de83b1a5cce837655950490827`. The fixed 763-fixture denominator leaves 363 fixtures (47.58%) without a captured opening quote. The latest observed Community quota remaining is 16, below the 26-request headroom needed for the next batch; resume only after a fresh preflight at/after the 17:00 UTC reset. This progress does not change the historical/closing odds entitlement decision or Stage 2 release gate.
+
+
+## 9. Historical endpoint entitlement probe — 2026-11-15 20:49–20:50 UTC
+
+A single bounded attempt was made against the already-approved Spain La Liga scope using the existing The Odds API key. The provider returned HTTP 401 with the explicit error that historical odds are available only on paid usage plans. No historical odds payload was returned; no raw prices were captured; no staging source observation or normalized quote was written.
+
+The immediate subsequent no-credit account probe [#43760295591](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43760295591) returned:
+- 187 sport keys; approved Spain La Liga sport key available.
+- Brazil Série B sport key technically discoverable, but Brazil Série B is outside the current five-competition source approval and is not authorized for collection.
+- 226 requests used / 274 remaining; last request cost 0; no historical odds calls made by the preflight itself.
+- No database writes and no raw response artifact.
+
+The 401 is direct negative evidence that the current connected account does not have historical endpoint entitlement. The quota preflight is not a paid-plan entitlement check and does not override the 401. Do not retry the historical endpoint until actual paid historical access is independently confirmed. No subscription or payment was made.
+
+This probe does not alter the 5Dollar Community opening-odds dataset. The 5Dollar quota and The Odds API quota are separate provider accounts and must never be conflated.
+
+
+## 10. Verified account plan and comparative source update — 2026-11-15 23:31 WAT
+
+The staging entitlement history contains one provider-observed 5Dollar account record:
+- `plan_code=community`
+- `entitlement_status=ACTIVE`
+- seven approved competition IDs
+- checked at `2026-11-12T22:51:54.745Z`
+- quota remaining 299 at that observation
+- no Ultra entitlement observation
+
+This strengthens the prior statement "Ultra entitlement not evidenced": the last verified plan is Community, not Ultra. The record is dated 12 November and does not prove the live plan state on 15 November. Do not call the Ultra-only tick-history route. A fresh entitlement check must use an authorized no-credit account-status mechanism or written provider confirmation. No upgrade, payment or restricted endpoint request was made.
+
+The comparative provider review now identifies 5Dollar Ultra as the lowest-cost direct bookmaker-level tick-history route if entitlement is already available (published $25/month, 19 bookmakers and full tick history), but no paid plan change is authorized. Odds-API.io is a technically strong bulk closing-line alternative but its public coverage table lists Brazil Série A and not Série B; exact Série B coverage and rights are unverified. SockOdds has recorded price history and graded results but its current catalogue has no Brazil Série B coverage. OddsIntel is consensus-only and cannot replace raw bookmaker-specific quotes. OddsPapi remains blocked by rights and quota. The Odds API historical route remains blocked by HTTP 401.
+
+Full comparison: `docs/VELTRIX_V2_CLOSING_ODDS_PROVIDER_COMPARATIVE_QUALIFICATION_2026-11-15.md`.

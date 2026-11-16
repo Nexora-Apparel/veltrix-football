@@ -1,0 +1,59 @@
+name: VELTRIX — 5Dollar Status-Only Entitlement Check
+
+on:
+  push:
+    branches:
+      - integration/v2-report-bundle-wiring-20261114
+    paths:
+      - ".github/workflows/phase2-5dollar-status-only-entitlement.yml"
+      - "scripts/probe_fivedollar_status_only.py"
+      - "tests/scripts/test_probe_fivedollar_status_only.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-5dollar-status-only
+  cancel-in-progress: false
+
+jobs:
+  status-only:
+    if: >
+      (github.event_name == 'push' &&
+       contains(github.event.head_commit.message, '[status-check]')) ||
+      github.event_name == 'workflow_dispatch'
+    name: Single authenticated /v1/status request (no odds quota)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout integration branch
+        uses: actions/checkout@v4
+        with:
+          ref: integration/v2-report-bundle-wiring-20261114
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run isolated status-only unit tests (no provider calls)
+        run: |
+          python -m pip install pytest
+          python -m pytest --import-mode=importlib -q tests/scripts/test_probe_fivedollar_status_only.py
+
+      - name: Run isolated status-only probe
+        env:
+          FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+        run: |
+          python -m scripts.probe_fivedollar_status_only \
+            --output artifacts/5dollar-status/evidence.json
+
+      - name: Upload raw status evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-5dollar-status-only-${{ github.run_id }}
+          path: artifacts/5dollar-status/evidence.json
+          if-no-files-found: error
+          retention-days: 30

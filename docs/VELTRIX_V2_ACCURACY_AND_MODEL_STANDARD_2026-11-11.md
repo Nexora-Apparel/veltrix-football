@@ -166,7 +166,7 @@ For the additional 80% high-confidence target, require at least 300 prospective 
 
 - No changes to the legacy prediction system.
 - No production ingestion until source reconciliation and isolated database dry-run pass.
-- No model training until accepted datasets and rights approvals exist.
+- Non-commercial source rights are registered in the project-wide and source-specific approval records. Model training may proceed only with datasets that pass schema, provenance, temporal-eligibility, competition-coverage and leakage controls.
 - No value-bet publication until certification.
 - No Vercel deployment until the quota/build-limit issue is cleared.
 - No Telegram schedule activation until the user-authorized release gate is complete.
@@ -177,7 +177,22 @@ For the additional 80% high-confidence target, require at least 300 prospective 
 1. Fix the 5Dollar EPL catalogue discovery using documented `country=GB-ENG`, `search=Premier League` and `popular=1` discovery paths; retain strict exact identity matching and emit sanitized catalogue diagnostics if no unique EPL row is found.
 2. Rerun paired acquisition; do not accept source download alone as reconciliation.
 3. Add an exact team crosswalk and row-level score/kickoff/status reconciliation.
-4. Qualify OpenPlay historical player/event/xG data and its CC BY 4.0 attribution requirements.
+4. OpenPlay historical player/event/xG structure, hashes, rights and staging persistence are qualified. Continue competition-season coverage checks, feature extraction and temporal-eligibility tests; preserve CC BY 4.0 attribution and the source xG model ID.
 5. Qualify FPL EPL player snapshots as a limited, undocumented source; keep it optional until terms and schema stability are reviewed.
-6. Probe PitchAPI only after provider confirms source lineage, storage, commercial display and model-training rights.
+6. Probe PitchAPI for endpoint access, actual upstream lineage, field coverage, timestamp semantics and schema stability. The project-wide authorization covers non-commercial use; monetisation remains prohibited.
 7. Build point-in-time feature snapshots, then candidate score models and market-specific evaluation.
+
+
+## 9. Personal-use scope and independent control domains (2026-11-15)
+
+VELTRIX FOOTBALL is a personal-use project. Commercial monetisation assumptions are excluded from architecture, model development and release criteria. Do not require invoices, billing documents, business registration, commercial subscription proof, a revenue plan or advertising evidence to collect data, build models, run evaluation, certify a market or publish an integrity-verified personal report.
+
+Keep these controls independent:
+
+- **MODEL_QUALITY_GATES:** point-in-time provenance, data completeness, leakage prevention, chronological walk-forward evaluation, prospective settlements, calibration, benchmark performance, confidence intervals and market-specific certification.
+- **PROVIDER_USAGE_GUARDS:** provider terms, endpoint entitlement, request/rate limits, current observable quota and bounded request/credit caps. A provider-specific usage guard may defer that provider request, but must not block independent work using 5DollarFootballAPI or another authorized source.
+- **PUBLICATION_INTEGRITY_GATES:** exact report identity/hash, fixture/team/competition identity, cutoff-before-kickoff chronology, eligible evidence, authoritative certification, same-bundle website/report/Telegram parity, duplicate prevention, idempotent delivery and reconciliation of uncertain outcomes.
+
+5DollarFootballAPI is the primary source. The Odds API is supplementary and should be queried only where bookmaker/market coverage, source quote timestamps, odds baselines or closing-line evidence add measurable analytical value. Do not treat odds-provider availability as a prerequisite for every prediction; only markets and analyses that require odds data should depend on it.
+
+Provider terms and data rights remain binding regardless of personal use. However, billing paperwork and commercial subscription evidence are not model-quality, certification or publication-integrity requirements.

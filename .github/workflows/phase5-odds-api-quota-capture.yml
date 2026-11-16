@@ -1,6 +1,11 @@
 name: VELTRIX Phase 5 — The Odds API no-credit account verification
 
 on:
+  push:
+    branches:
+      - integration/v2-report-bundle-wiring-20261114
+    paths:
+      - ".github/workflows/phase5-odds-api-quota-capture.yml"
   workflow_dispatch:
 
 permissions:
@@ -12,6 +17,7 @@ concurrency:
 
 jobs:
   account-probe:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[odds-account-probe]')
     name: No-credit account scope and quota evidence
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -30,7 +36,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt "psycopg[binary]>=3.2,<4"
       - name: Validate dry-run mode
-        run: python -m scripts.phase5_capture_odds_api_quota
+        run: python -m scripts.phase5_capture_odds_api_quota --persist-staging
       - name: Capture no-credit account and sport-entitlement evidence
         env:
           THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}

@@ -1,0 +1,59 @@
+name: Phase 2 — AI Midas Brazil Serie B 2026 Identity Reconciliation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    branches: [main]
+    paths:
+      - "scripts/veltrix_v2/collect_aimidas_serieb_snapshot.py"
+      - "scripts/veltrix_v2/reconcile_aimidas_brazil_serie_b_2026.py"
+      - "tests/veltrix_v2/test_aimidas_brazil_serie_b_2026.py"
+      - ".github/workflows/phase2-aimidas-serieb-identity-reconciliation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-aimidas-serieb-identity
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/integration/v2-report-bundle-wiring-20261114') || (github.event_name == 'pull_request' && (github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'run-veltrix-aimidas-serieb-identity-audit')) && github.event.pull_request.head.ref == 'integration/v2-report-bundle-wiring-20261114')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install read-only reconciliation dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+          python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
+      - name: Compile and test Brazil Serie B identity reconciliation
+        run: |
+          python -m compileall -q scripts/veltrix_v2/collect_aimidas_serieb_snapshot.py scripts/veltrix_v2/reconcile_aimidas_brazil_serie_b_2026.py
+          python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_aimidas_brazil_serie_b_2026.py
+      - name: Fetch only the pinned Brazil Serie B 2026 file
+        run: python scripts/veltrix_v2/collect_aimidas_serieb_snapshot.py --output-dir /tmp/veltrix-aimidas-serieb-pack
+      - name: Reconcile all 369 matches against staging (read-only)
+        run: |
+          python scripts/veltrix_v2/reconcile_aimidas_brazil_serie_b_2026.py \
+            --input-dir /tmp/veltrix-aimidas-serieb-pack \
+            --output /tmp/veltrix-aimidas-serieb-identity-report.json
+      - name: Upload provenance-preserving report (no raw advanced statistics)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-aimidas-serieb-2026-identity-reconciliation
+          path: /tmp/veltrix-aimidas-serieb-identity-report.json
+          if-no-files-found: warn
+          retention-days: 90

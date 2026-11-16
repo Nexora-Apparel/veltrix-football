@@ -1,0 +1,67 @@
+name: Phase 2 — AI Midas authorized staging import
+
+on:
+  push:
+    branches:
+      - integration/v2-report-bundle-wiring-20261114
+    paths:
+      - "scripts/veltrix_v2/collect_aimidas_snapshot.py"
+      - "scripts/veltrix_v2/verify_aimidas_snapshot.py"
+      - "scripts/veltrix_v2/import_aimidas_staging.py"
+      - "scripts/veltrix_v2/audit_aimidas_staging_import.py"
+      - "tests/veltrix_v2/test_aimidas_snapshot.py"
+      - "tests/veltrix_v2/test_aimidas_staging_import.py"
+      - ".github/workflows/phase2-aimidas-staging-import.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-aimidas-staging-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    if: github.ref == 'refs/heads/integration/v2-report-bundle-wiring-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+      VELTRIX_ENABLE_AIMIDAS_STAGING_IMPORT: "YES"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+          python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
+      - name: Compile and run focused tests
+        run: |
+          python -m compileall -q scripts/veltrix_v2/collect_aimidas_snapshot.py scripts/veltrix_v2/verify_aimidas_snapshot.py scripts/veltrix_v2/import_aimidas_staging.py scripts/veltrix_v2/audit_aimidas_staging_import.py
+          python -m pytest -q tests/veltrix_v2/test_aimidas_snapshot.py tests/veltrix_v2/test_aimidas_staging_import.py
+      - name: Fetch exact pinned public CSV files
+        run: python scripts/veltrix_v2/collect_aimidas_snapshot.py --output-dir /tmp/veltrix-aimidas-pack
+      - name: Independently verify raw snapshot
+        run: python scripts/veltrix_v2/verify_aimidas_snapshot.py --input-dir /tmp/veltrix-aimidas-pack
+      - name: Import immutable source evidence into isolated staging
+        run: python scripts/veltrix_v2/import_aimidas_staging.py --input-dir /tmp/veltrix-aimidas-pack --output reports/aimidas/staging-import.json
+      - name: Independent-process post-commit readback
+        run: python scripts/veltrix_v2/audit_aimidas_staging_import.py --input-dir /tmp/veltrix-aimidas-pack --output reports/aimidas/staging-audit.json
+      - name: Upload sanitized evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-aimidas-staging-import
+          path: |
+            /tmp/veltrix-aimidas-pack/manifest.json
+            /tmp/veltrix-aimidas-pack/verification.json
+            reports/aimidas/staging-import.json
+            reports/aimidas/staging-audit.json
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,6 +1,6 @@
 name: VELTRIX 2.0 Phase 2 Data Foundation Tests
 # Historical source rights, fixture parsing, provenance and ingestion contracts only.
-# Model estimators and prediction evaluation remain out of scope until their later phases.
+# Includes clean-room model-core tests; full predictive evaluation remains a separate gate.
 
 on:
   push:
@@ -9,14 +9,72 @@ on:
     paths:
       - "veltrix_v2/**"
       - "tests/veltrix_v2/**"
+      - "tests/test_v2_advanced_estimators.py"
+      - "tests/test_v2_challenger_advanced.py"
+      - "scripts/phase5_staging_coverage_audit.py"
+      - "scripts/phase5_collect_5dollar_shadow.py"
+      - "scripts/phase2_capture_fivedollar_opening_odds.py"
+      - "tests/scripts/test_phase2_capture_fivedollar_opening_odds.py"
+      - ".github/workflows/phase2-5dollar-opening-odds-capture.yml"
+      - "db/migrations/0008_prospective_paper_ledger.sql"
+      - "db/migrations/0012_prediction_feature_snapshot_links.sql"
+      - "scripts/phase5_prediction_feature_link_migration.py"
+      - "tests/test_phase5_prediction_feature_link_migration.py"
+      - "veltrix_v2/ledger/postgres_store.py"
+      - "tests/veltrix_v2/test_paper_ledger_postgres.py"
+      - "tests/veltrix_v2/test_phase5_staging_paper_ledger_migration.py"
+      - "tests/veltrix_v2/test_full_migration_chain_postgres.py"
+      - "scripts/phase5_staging_paper_ledger_migration.py"
+      - ".github/workflows/phase5-staging-paper-ledger-migration.yml"
+      - "docs/VELTRIX_V2_STAGING_PAPER_LEDGER_2026-11-14.md"
+      - ".github/workflows/phase5-5dollar-shadow-capture.yml"
+      - "tests/veltrix_v2/test_phase5_5dollar_shadow_capture.py"
+      - "veltrix_v2/data/crosswalk_bootstrap.py"
+      - "tests/veltrix_v2/test_crosswalk_bootstrap.py"
+      - "docs/VELTRIX_V2_STAGING_COVERAGE_AUDIT_CLI_2026-11-14.md"
+      - "docs/VELTRIX_V2_MANUAL_5DOLLAR_SHADOW_CAPTURE_2026-11-14.md"
+      - "docs/VELTRIX_V2_PROSPECTIVE_FIRST_OBSERVED_SHADOW_EVIDENCE_2026-11-14.md"
+      - "docs/VELTRIX_V2_OPENLIGADB_OFFLINE_PARSER_2026-11-14.md"
+      - "scripts/veltrix_v2/**"
+      - "docs/VELTRIX_V2_AIMIDAS_BRAZIL_SERIE_B_2026_IDENTITY_RECONCILIATION_2026-11-15.md"
+      - "docs/VELTRIX_V2_HISTORICAL_ODDS_SOURCE_RESEARCH_2026-11-15.md"
+      - "docs/VELTRIX_V2_AIMIDAS_DATASET_AUDIT_2026-11-15.md"
+      - "docs/VELTRIX_V2_STAGE2_MASTER_EXECUTION_LEDGER.md"
+      - "scripts/send_telegram_report.py"
+      - "scripts/publish_command_data.py"
+      - "tests/test_publish_command_data.py"
+      - "tests/test_telegram_report.py"
+      - "tests/providers/odds_api_v4/**"
+      - "tests/providers/test_fivedollar_odds_history.py"
+      - "tests/providers/test_fivedollar_opening_odds.py"
+      - "tests/scripts/test_phase2_capture_fivedollar_opening_odds.py"
+      - "scripts/phase2_capture_fivedollar_opening_odds.py"
+      - ".github/workflows/phase2-5dollar-opening-odds-capture.yml"
+      - "tests/providers/test_openfootball_archive.py"
+      - "tests/scripts/test_export_openfootball_archive.py"
       - "scripts/veltrix_v2/**"
       - ".github/workflows/veltrix-v2-foundation.yml"
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - "veltrix_v2/**"
+      - "scripts/veltrix_v2/**"
+      - "scripts/send_telegram_report.py"
+      - "scripts/publish_command_data.py"
+      - "tests/test_publish_command_data.py"
+      - "tests/test_telegram_report.py"
       - "tests/veltrix_v2/**"
+      - "tests/test_v2_advanced_estimators.py"
+      - "tests/test_v2_challenger_advanced.py"
+      - "tests/providers/odds_api_v4/**"
+      - "tests/providers/test_fivedollar_odds_history.py"
+      - "db/migrations/0005_provider_credit_reservation_ledger.sql"
+      - "db/migrations/0006_provider_quota_evidence.sql"
+      - "db/migrations/0007_provider_capture_state_events.sql"
       - "tests/test_phase2_data_foundation.py"
       - "scripts/phase2_fivedollar_history_dry_run.py"
+      - "scripts/phase3_import_fivedollar_history.py"
+      - "scripts/phase3_audit_staging_import.py"
       - ".github/workflows/veltrix-v2-foundation.yml"
   workflow_dispatch:
 
@@ -32,15 +90,294 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install test dependencies
-        run: python -m pip install --upgrade pip && pip install pytest
+      - name: Install application and test dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
       - name: Compile Phase 2 data foundation
-        run: python -m compileall -q veltrix_v2 scripts/phase2_fivedollar_history_dry_run.py
+        run: python -m compileall -q veltrix_v2 scripts/phase2_fivedollar_history_dry_run.py scripts/phase3_import_fivedollar_history.py scripts/phase3_audit_staging_import.py scripts/phase4_odds_account_probe.py scripts/phase2_capture_fivedollar_opening_odds.py scripts/phase5_capture_odds_api_quota.py scripts/veltrix_v2/collect_openfootball_pit_snapshots.py
+      - name: Validate V2 dashboard JavaScript syntax
+        run: |
+          python - <<'PY'
+          import ast
+          import pathlib
+          import re
+          source = pathlib.Path("api/telegram.py").read_text(encoding="utf-8")
+          module = ast.parse(source, filename="api/telegram.py")
+          dashboard = None
+          for node in ast.walk(module):
+              if isinstance(node, ast.Assign) and any(
+                  isinstance(target, ast.Name) and target.id == "DASHBOARD_HTML"
+                  for target in node.targets
+              ):
+                  dashboard = ast.literal_eval(node.value)
+                  break
+          if not isinstance(dashboard, str):
+              raise SystemExit("DASHBOARD_HTML literal assignment not found")
+          scripts = re.findall(r"<script>(.*?)</script>", dashboard, re.S)
+          if not scripts:
+              raise SystemExit("No embedded dashboard JavaScript found")
+          pathlib.Path("/tmp/veltrix-v2-dashboard.js").write_text("\\n".join(scripts), encoding="utf-8")
+          PY
+          node --check /tmp/veltrix-v2-dashboard.js
       - name: Test Phase 2 data contracts
         run: python -m pytest --import-mode=importlib -q tests/test_phase2_data_foundation.py
+      - name: Test offline Odds API parser and budget planner
+        run: python -m pytest --import-mode=importlib -q tests/providers/odds_api_v4 --ignore=tests/providers/odds_api_v4/test_reservation_postgres.py --ignore=tests/providers/odds_api_v4/test_quota_evidence_postgres.py --ignore=tests/providers/odds_api_v4/test_capture_state_postgres.py --ignore=tests/providers/odds_api_v4/test_capture_request_postgres.py
+      - name: Test no-credit Odds API account probe and staging persistence
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_phase4_odds_account_probe.py
+      - name: Test provider-neutral free-first access policy
+        run: python -m pytest --import-mode=importlib -q tests/providers/test_provider_access.py
+      - name: Test offline OpenLigaDB response parser
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_openligadb_parser.py
+      - name: Test independent results-only Poisson model
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_results_only_poisson.py
+      - name: Test point-in-time Elo rating features
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_elo.py
+      - name: Test point-in-time team form features
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_form.py
+      - name: Test chronological Elo challenger evaluation
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_elo_challenger.py
+      - name: Test chronological team form and shared-sample challengers
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_model_challengers_and_paper_ledger.py
+      - name: Test Dixon-Coles, calibration estimators and rolling challenger integration
+        run: python -m pytest --import-mode=importlib -q tests/test_v2_advanced_estimators.py tests/test_v2_challenger_advanced.py
+      - name: Test rights-gated prospective paper forecast admission
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_paper_admission.py
+      - name: Test rights-verified paper settlements
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_paper_settlement.py
+      - name: Test deterministic batch prediction engine
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_prediction_engine.py
+      - name: Test evidence-backed team identity crosswalk
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_team_identity.py
+      - name: Test provider-to-model observation adapter
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_observation_adapter.py
+      - name: Test OpenPlay post-match feature adapter and PIT gate
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_openplay_features.py
+      - name: Test immutable provider evidence capture
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_provider_evidence_capture.py
+      - name: Test multi-provider coverage and dispatch policy
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_provider_registry.py
+      - name: Test strict 5Dollar timestamped odds-history parser
+        run: python -m pytest --import-mode=importlib -q tests/providers/test_fivedollar_odds_history.py
+      - name: Test 5Dollar Community opening 1X2 PIT quote parser
+        run: python -m pytest --import-mode=importlib -q tests/providers/test_fivedollar_opening_odds.py
+      - name: Test bounded manual 5Dollar opening odds capture
+        run: python -m pytest --import-mode=importlib -q tests/scripts/test_phase2_capture_fivedollar_opening_odds.py
+      - name: Validate manual opening odds capture dry-run
+        run: python -m scripts.phase2_capture_fivedollar_opening_odds --lookback-days 90 --max-fixtures 25
+      - name: Test certified multi-provider observation merge
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_provider_observation_merge.py
+      - name: Test competition-level evidence coverage auditor
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_competition_coverage.py
+      - name: Test persisted evidence coverage adapter
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_persisted_coverage_adapter.py
+      - name: Test read-only staging coverage audit CLI
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_staging_coverage_audit_cli.py
+      - name: Test evidence-backed crosswalk bootstrap
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_crosswalk_bootstrap.py
+      - name: Test manual 5Dollar shadow capture controls
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_phase5_5dollar_shadow_capture.py
+      - name: Test staging paper ledger migration guards
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_phase5_staging_paper_ledger_migration.py
+      - name: Test read-only staging coverage SQL
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_coverage_sql.py
+      - name: Test guarded staging evidence persistence
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_evidence_persistence.py
+      - name: Test StrikerAPI dataset freshness evidence
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_strikerapi_freshness.py
+      - name: Test free-first 5Dollar forecast orchestration
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_fivedollar_engine.py
+      - name: Test bounded 5Dollar forecast dry run
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_fivedollar_forecast_dry_run.py
+      - name: Test OpenFootball archive parser
+        run: python -m pytest --import-mode=importlib -q tests/providers/test_openfootball_archive.py
+      - name: Test OpenFootball archive export script
+        run: python -m pytest --import-mode=importlib -q tests/scripts/test_export_openfootball_archive.py
+      - name: Test rights-scoped OpenFootball PIT snapshot pack
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_openfootball_pit_snapshot_pack.py
+      - name: Test FootballData CC0 Brazil archive parser and snapshot pack
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_football_data_cc0_snapshots.py
+      - name: Test chronological and date-only walk-forward evaluation
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_walk_forward.py
+      - name: Test calibration and date-clustered uncertainty
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_reliability.py
+      - name: Test immutable cross-surface report identity
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_identity.py
+      - name: Test website dashboard and V2 report parity
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_surface_parity.py
+      - name: Test API trusted publication verifier injection
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_api_publication_verifier_injection.py
+      - name: Test V2 publication certification gates
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_publication_certification.py
+      - name: Test V2 release workflow safety guards
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_v2_release_workflow_guards.py
+      - name: Test immutable report artifact bundle
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_artifact_bundle.py
+      - name: Test portable report bundle verifier CLI
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_portable_report_bundle_cli.py
+      - name: Test website scheduler Telegram portable bundle parity
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_portable_bundle_cross_surface_integration.py
+      - name: Test local report bundle CLI
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_surface_bundle_cli.py
+      - name: Test offline four-surface report bundle verifier
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_surface_bundle_verify_cli.py
+      - name: Test fail-closed V2 report bundle publisher
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_v2_report_publisher.py
+      - name: Test V2 Telegram publication and formatting boundary
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_v2_formatting.py
+      - name: Test fail-closed V2 Telegram dispatcher
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_delivery_runner.py
+      - name: Test V2 certification manifest builder and offline CLI
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_certification_manifest_builder.py tests/veltrix_v2/test_certification_manifest_cli.py
+      - name: Test V2 Telegram command renderer isolation
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_commands.py
+      - name: Test V2 Telegram duplicate and uncertain-delivery guards
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_v2_delivery.py
+      - name: Test legacy Telegram sender shutdown
+        run: python -m pytest --import-mode=importlib -q tests/test_telegram_report.py
+      - name: Test legacy command-data publication shutdown
+        run: python -m pytest --import-mode=importlib -q tests/test_publish_command_data.py
+      - name: Test Telegram operator reconciliation evidence
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_reconciliation.py
+      - name: Test read-only Telegram reconciliation inspector
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_reconciliation_read.py
       - name: Enforce no legacy prediction imports in v2
         run: |
           if grep -R -n -E "from app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)|import app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)" veltrix_v2; then
             echo "Legacy prediction dependency found in veltrix_v2."
             exit 1
           fi
+
+  reservation-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: ["16", "18"]
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: veltrix_reservation_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d veltrix_reservation_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/veltrix_reservation_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PostgreSQL test dependencies
+        run: python -m pip install --upgrade pip && pip install pytest "psycopg[binary]"
+      - name: Test credit reservation migration and concurrency
+        run: python -m pytest --import-mode=importlib -q tests/providers/odds_api_v4/test_reservation_postgres.py tests/providers/odds_api_v4/test_quota_evidence_postgres.py tests/providers/odds_api_v4/test_capture_state_postgres.py tests/providers/odds_api_v4/test_capture_request_postgres.py
+      - name: Test append-only provider evidence persistence
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_evidence_persistence_postgres.py
+      - name: Test complete PostgreSQL migration chain
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_full_migration_chain_postgres.py
+      - name: Test append-only PostgreSQL paper ledger persistence
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_paper_ledger_postgres.py
+      - name: Test durable Telegram delivery claims
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_delivery_postgres.py
+      - name: Test append-only Telegram delivery reconciliation
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_reconciliation_postgres.py
+
+
+  aimidas-brazil-serie-b-identity:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'integration/v2-report-bundle-wiring-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install read-only audit dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+          python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
+      - name: Compile and test Brazil Serie B identity audit
+        run: |
+          python -m compileall -q scripts/veltrix_v2/reconcile_aimidas_brazil_serie_b_2026.py
+          python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_aimidas_brazil_serie_b_2026.py tests/veltrix_v2/test_aimidas_snapshot.py tests/veltrix_v2/test_aimidas_staging_import.py
+      - name: Fetch exact pinned AI Midas source snapshot
+        run: python scripts/veltrix_v2/collect_aimidas_snapshot.py --output-dir /tmp/veltrix-aimidas-pack
+      - name: Independently verify source snapshot
+        run: python scripts/veltrix_v2/verify_aimidas_snapshot.py --input-dir /tmp/veltrix-aimidas-pack
+      - name: Reconcile all 369 matches against staging (read-only)
+        run: |
+          python scripts/veltrix_v2/reconcile_aimidas_brazil_serie_b_2026.py \
+            --input-dir /tmp/veltrix-aimidas-pack \
+            --output /tmp/aimidas-brazil-serie-b-identity-detail.json \
+            --summary-output reports/aimidas/brazil-serie-b-2026-identity-audit.json
+      - name: Upload sanitized audit evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-aimidas-brazil-serie-b-2026-identity-audit
+          path: reports/aimidas/brazil-serie-b-2026-identity-audit.json
+          if-no-files-found: warn
+          retention-days: 30
+
+
+  odds-api-no-credit-preflight:
+    if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'run-veltrix-odds-api-quota-check' && github.event.pull_request.head.ref == 'integration/v2-report-bundle-wiring-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install no-credit probe dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+          python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
+      - name: Verify Brazil Serie B sport entitlement and current quota without odds credits
+        run: python -m scripts.veltrix_v2.probe_odds_api_no_credit
+
+
+  odds-api-approved-league-price-pilot:
+    if: github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'run-veltrix-odds-api-approved-league-price-pilot' && github.event.pull_request.head.ref == 'integration/v2-report-bundle-wiring-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+      VELTRIX_STAGING_DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install historical odds capture dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+          python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
+      - name: Compile and test approved-league historical odds capture
+        run: |
+          python -m compileall -q scripts/veltrix_v2/capture_odds_api_historical_price_pilot.py
+          python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_odds_api_historical_price_pilot.py
+      - name: Capture one approved La Liga historical 1X2 sample (maximum 12 credits; staging only)
+        run: python -m scripts.veltrix_v2.capture_odds_api_historical_price_pilot --output /tmp/veltrix-odds-api-historical-price-pilot.json
+      - name: Upload sanitized capture manifest (no odds prices)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-odds-api-approved-la-liga-price-pilot
+          path: /tmp/veltrix-odds-api-historical-price-pilot.json
+          if-no-files-found: warn
+          retention-days: 30
