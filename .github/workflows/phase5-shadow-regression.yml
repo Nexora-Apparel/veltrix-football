@@ -57,6 +57,10 @@ on:
       - "tests/scripts/test_probe_fivedollar_status_only.py"
       - ".github/workflows/phase2-5dollar-status-only-entitlement.yml"
       - ".github/workflows/vercel-preview-runtime-publication-smoke.yml"
+      - "scripts/phase4_odds_one_event_probe.py"
+      - "tests/scripts/test_phase4_odds_one_event_probe.py"
+      - "scripts/phase4_odds_one_event_probe.py"
+      - "tests/scripts/test_phase4_odds_one_event_probe.py"
   pull_request:
     paths:
       - "scripts/phase5_collect_5dollar_shadow.py"
@@ -113,8 +117,8 @@ jobs:
           pip install -r requirements.txt
       - name: Compile and test isolated 5Dollar status-only probe
         run: |
-          python -m compileall -q scripts/probe_fivedollar_status_only.py tests/scripts/test_probe_fivedollar_status_only.py scripts/veltrix_v2/persist_openplay_feature_snapshots.py tests/scripts/test_persist_openplay_feature_snapshots.py scripts/veltrix_v2/generate_openplay_v2_forecasts.py veltrix_v2/models/openplay_xg_poisson.py tests/veltrix_v2/test_openplay_xg_poisson.py
-          python -m pytest --import-mode=importlib -q tests/scripts/test_probe_fivedollar_status_only.py tests/scripts/test_persist_openplay_feature_snapshots.py tests/veltrix_v2/test_openplay_xg_poisson.py
+          python -m compileall -q scripts/probe_fivedollar_status_only.py tests/scripts/test_probe_fivedollar_status_only.py scripts/phase4_odds_one_event_probe.py tests/scripts/test_phase4_odds_one_event_probe.py scripts/veltrix_v2/persist_openplay_feature_snapshots.py tests/scripts/test_persist_openplay_feature_snapshots.py scripts/veltrix_v2/generate_openplay_v2_forecasts.py veltrix_v2/models/openplay_xg_poisson.py tests/veltrix_v2/test_openplay_xg_poisson.py
+          python -m pytest --import-mode=importlib -q tests/scripts/test_probe_fivedollar_status_only.py tests/scripts/test_phase4_odds_one_event_probe.py tests/scripts/test_persist_openplay_feature_snapshots.py tests/veltrix_v2/test_openplay_xg_poisson.py
       - name: Smoke-test installed Sigstore GitHub verifier CLI
         run: python -m sigstore verify github --help
       - name: Compile capture and regression test
