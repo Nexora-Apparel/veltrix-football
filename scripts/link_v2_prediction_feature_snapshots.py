@@ -12,7 +12,9 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
+
+from scripts.phase5_staging_coverage_audit import validate_staging_dsn_target
 
 EXPECTED_DATABASE = "veltrix_football_staging"
 EXPECTED_ROLE = "neondb_owner"
@@ -252,8 +254,11 @@ def _existing_match(existing, link: dict) -> bool:
 
 def link(*, forecast_path: str | Path, admission_path: str | Path, apply: bool=False) -> dict[str, object]:
     dsn=os.environ.get("DATABASE_URL","")
+    validate_staging_dsn_target(dsn)
     if urlsplit(dsn).hostname != EXPECTED_HOST:
         raise PermissionError("V2_PREDICTION_FEATURE_LINK_HOST_NOT_ALLOWLISTED")
+    if parse_qs(urlsplit(dsn).query).get("sslmode",[""])[0].casefold() not in {"require","verify-ca","verify-full"}:
+        raise PermissionError("V2_PREDICTION_FEATURE_LINK_TLS_REQUIRED")
     forecast,admission,forecast_sha,admission_sha=_load_artifacts(forecast_path,admission_path)
     prepared=_prepare_links(forecast,admission,forecast_sha,admission_sha)
     with _connect(dsn,readonly=not apply) as conn:
