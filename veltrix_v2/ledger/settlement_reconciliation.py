@@ -168,16 +168,18 @@ def reconcile_v2_finished_fixtures(
             quarantined.append((fixture.provider_fixture_id,"SETTLEMENT_REQUIRES_FINISHED_5DOLLAR_FIXTURE"))
             continue
         identity_matches=all(
-            event.payload.get(field)==expected
-            for event,_ in matching
-            for field,expected in (
-                ("fixture_id",fixture.source_id+":"+fixture.provider_fixture_id),
-                ("competition_id",fixture.source_id+":"+fixture.provider_competition_id),
-                ("home_team_id",fixture.source_id+":"+fixture.provider_home_team_id),
-                ("away_team_id",fixture.source_id+":"+fixture.provider_away_team_id),
-                ("kickoff_at",fixture.kickoff_at_utc.isoformat()),
-                ("target_provider_competition_id",fixture.provider_competition_id),
+            (
+                event.payload.get("fixture_id")==fixture.source_id+":"+fixture.provider_fixture_id
+                and event.payload.get("competition_id")==str(link.get("canonical_competition_id"))
+                and event.payload.get("home_team_id")==str(link.get("canonical_home_team_id"))
+                and event.payload.get("away_team_id")==str(link.get("canonical_away_team_id"))
+                and event.payload.get("kickoff_at")==fixture.kickoff_at_utc.isoformat()
+                and event.payload.get("target_provider_competition_id")==fixture.provider_competition_id
+                and link.get("provider_competition_id")==fixture.provider_competition_id
+                and link.get("provider_home_team_id")==fixture.provider_home_team_id
+                and link.get("provider_away_team_id")==fixture.provider_away_team_id
             )
+            for event,link in matching
         )
         if not identity_matches:
             quarantined.append((fixture.provider_fixture_id,"SETTLEMENT_FIXTURE_IDENTITY_MISMATCH"))
