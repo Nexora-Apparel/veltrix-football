@@ -116,7 +116,8 @@ def evaluate_prospective_settlements(
             and event.payload.get("evidence_class") == "PROSPECTIVE_OBSERVED_ONLY"
         )
         eligible_v2 = (
-            event.event_type == "PREDICTION"
+            model_version == V2_PIT_MODEL_VERSION
+            and event.event_type == "PREDICTION"
             and event.model_version == V2_PIT_MODEL_VERSION
             and event.payload.get("evidence_class") == "PIT_CERTIFIED"
             and event.payload.get("point_in_time_certifiable") is True
@@ -139,6 +140,8 @@ def evaluate_prospective_settlements(
     settlements = {}
     for event in ledger.events:
         if event.event_type != "SETTLEMENT":
+            continue
+        if model_version is None and event.model_version == V2_PIT_MODEL_VERSION:
             continue
         if model_version is not None and event.model_version != model_version:
             continue
