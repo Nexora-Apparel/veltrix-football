@@ -186,7 +186,6 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
         targets = _targets(ledger)
         shadow_targets = [e for e in targets if e.event_type == "SHADOW_PREDICTION"]
         v2_pit_targets = [e for e in targets if e.event_type == "PREDICTION"]
-        v2_feature_links = _load_v2_feature_links(connection, v2_pit_targets)
         now = datetime.now(timezone.utc)
         eligible = [event for event in targets
                     if datetime.fromisoformat(event.payload["kickoff_at"]) <= now
@@ -215,6 +214,9 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
             }
             _write_summaries(out_dir, result)
             return result
+
+        eligible_v2_pit_targets = [e for e in eligible if e.event_type == "PREDICTION"]
+        v2_feature_links = _load_v2_feature_links(connection, eligible_v2_pit_targets)
 
         by_competition: dict[str, list] = {}
         for event in eligible:
