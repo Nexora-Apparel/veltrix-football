@@ -985,3 +985,15 @@ The status-only 5Dollar workflow, migration 0012 workflow, V2 feature-link backf
 - Side effects all zero: no odds/history/fixture/league requests, database writes, prediction writes or Telegram messages. No upgrade purchased.
 - This is fresh account evidence, not an inference from rate limits. Ultra remains unavailable; no history call is permitted.
 
+
+
+## 2026-11-16 — fresh entitlement and final integration acceptance
+
+- The status-only workflow was safely made push-triggered on the integration branch with a path filter and commit marker; this avoided merging PR #120 or dispatching an unavailable branch-only workflow.
+- Run [43816256678](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43816256678) completed SUCCESS. Exactly one GET /v1/status; HTTP 200; exact plan field `community`; 300/hour limit, 299 remaining; no odds, odds-history, fixtures or leagues calls; zero DB writes. Raw response SHA-256 `3e9d45a8a605349357ffe0911eea10ecbdc8da98eacdbc7457b49ed0b02e1b48`. Ultra is not available. No upgrade purchased.
+- PostgreSQL 16 and 18 full migration acceptance both passed, including migration 0012 and catalog checks, in run [43816214192](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43816214192). This is isolated CI database evidence; it does not mean Neon staging migration 0012 was applied.
+- Phase 2 foundation and reservation PostgreSQL 16/18 jobs passed in run [43816214164](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43816214164). The AI Midas 369-match staging reconciliation job in that run failed at the Neon connection because the project quota is exceeded (HTTP 402); no staging reconciliation/import occurred.
+- Phase 5 regression run [43816086273](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43816086273) passed the shadow-regression job and PostgreSQL 16/18 integration jobs. Historical Model Audit and Certification Evidence Integrity also passed at the same PR head; Daily Fixture Predictions remained SKIPPED.
+- PR #120 remains OPEN / DRAFT / UNMERGED. The new migration, link-backfill and settlement workflows are branch-only and not dispatchable until they exist on the default branch. Do not merge solely to expose them.
+- Neon staging remains HTTP 402. No migration 0012 apply, seven-link backfill, further odds capture or settlement write is attempted until staging is reachable without an upgrade. Value betting remains LOCKED.
+
