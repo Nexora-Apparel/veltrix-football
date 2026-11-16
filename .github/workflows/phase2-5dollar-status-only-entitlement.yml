@@ -1,6 +1,13 @@
 name: VELTRIX — 5Dollar Status-Only Entitlement Check
 
 on:
+  push:
+    branches:
+      - integration/v2-report-bundle-wiring-20261114
+    paths:
+      - ".github/workflows/phase2-5dollar-status-only-entitlement.yml"
+      - "scripts/probe_fivedollar_status_only.py"
+      - "tests/scripts/test_probe_fivedollar_status_only.py"
   workflow_dispatch:
 
 permissions:
@@ -12,6 +19,10 @@ concurrency:
 
 jobs:
   status-only:
+    if: >
+      (github.event_name == 'push' &&
+       contains(github.event.head_commit.message, '[status-check]')) ||
+      github.event_name == 'workflow_dispatch'
     name: Single authenticated /v1/status request (no odds quota)
     runs-on: ubuntu-latest
     timeout-minutes: 5
