@@ -148,7 +148,9 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
         event=conn.execute(
             """
             SELECT ledger_id,sequence,event_sha256,event_type,model_version,
-                   fixture_id,payload->>'evidence_sha256',created_at
+                   fixture_id,payload->>'evidence_sha256',
+                   payload->>'competition_id',payload->>'home_team_id',
+                   payload->>'away_team_id',created_at
             FROM paper_ledger_events
             WHERE event_type='PREDICTION'
               AND model_version=%s
@@ -165,7 +167,8 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
         snapshot=conn.execute(
             """
             SELECT fs.fixture_id,fs.feature_set_sha256,fs.prediction_cutoff_at,fs.created_at,
-                   f.provider_fixture_id::text
+                   f.provider_fixture_id::text,f.competition_id::text,
+                   f.home_team_id::text,f.away_team_id::text
             FROM feature_snapshots fs
             JOIN fixtures f ON f.id=fs.fixture_id
             WHERE fs.feature_snapshot_id=%s AND f.provider='5DollarFootballAPI'
@@ -176,6 +179,9 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
             raise ValueError("V2_FEATURE_SNAPSHOT_CANONICAL_FIXTURE_MISMATCH")
         if (
             str(snapshot[1]).strip()!=item["feature_set_sha256"]
+            or str(event[7])!=str(snapshot[5])
+            or str(event[8])!=str(snapshot[6])
+            or str(event[9])!=str(snapshot[7])
             or snapshot[2].astimezone(timezone.utc)!=_aware(item["feature_snapshot_cutoff_at"])
             or snapshot[2] > _aware(item["forecast_cutoff_at"])
             or snapshot[3] > _aware(item["forecast_cutoff_at"])
@@ -228,7 +234,7 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
             "forecast_summary_sha256":item["forecast_summary_sha256"],
             "feature_admission_summary_sha256":item["feature_admission_summary_sha256"],
         }
-        if link["forecast_cutoff_at"] > event[7].astimezone(timezone.utc):
+        if link["forecast_cutoff_at"] > event[10].astimezone(timezone.utc):
             raise ValueError("V2_FORECAST_CUTOFF_AFTER_LEDGER_EVENT")
         link["link_sha256"]=_sha256(_canonical({
             key:(value.isoformat() if isinstance(value,datetime) else value)
