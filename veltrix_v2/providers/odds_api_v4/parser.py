@@ -204,7 +204,7 @@ def parse_bulk_odds(raw_body: bytes, *, sport_key: str, retrieved_at: datetime) 
 
 
 def parse_event_odds(raw_body: bytes, *, sport_key: str, event_id: str, retrieved_at: datetime) -> ParsedCapture:
-    """Parse a single event-specific response; only BTTS is normalized here."""
+    """Parse one event-specific response for h2h, totals and BTTS markets."""
     if not isinstance(event_id, str) or not event_id:
         raise ValueError("EVENT_ID_REQUIRED")
     return _parse(raw_body, sport_key=sport_key, retrieved_at=retrieved_at,
