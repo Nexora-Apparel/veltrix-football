@@ -413,7 +413,8 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
             "events_response_sha256":hashlib.sha256(events_body).hexdigest(),
             "matching_policy":"exact normalized home/away labels and kickoff within 60 seconds; no aliases or fuzzy matching",
         }
-    fixture, event, kickoff = selected
+    fixture, event, provider_event_kickoff = selected
+    kickoff = fixture["kickoff_at"]
 
     rights_at = datetime.now(timezone.utc)
     created_at = datetime.now(timezone.utc)
