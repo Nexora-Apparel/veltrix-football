@@ -150,10 +150,10 @@ The collector now checks quota headroom on every provider page and verifies the 
 
 ## Branch-only manual workflow references
 
-These direct links are committed on the integration branch. They are not dispatchable from the Actions UI until their workflow files exist on the default branch. Do not merge PR #120 solely to expose them.
+These direct links are committed on the integration branch. The status-only workflow has a narrowly scoped push trigger guarded by the [status-check] commit marker and has already run successfully. The migration, link-backfill and settlement workflows are branch-only; their workflow_dispatch UI is unavailable until their files exist on the default branch. Do not merge PR #120 solely to expose them.
 
 - **5Dollar entitlement, status only:** https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase2-5dollar-status-only-entitlement.yml  
-  No inputs. One authenticated GET /v1/status only; no odds-history call. Expected artifact: veltrix-5dollar-status-only-<run-id>.
+  Already executed via push run 43816256678. The trigger is limited to the integration branch and the [status-check] commit marker. Exactly one authenticated GET /v1/status; no odds-history call. Artifact: veltrix-5dollar-status-only-43816256678.
 - **Apply staging migration 0012:** https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase5-v2-prediction-feature-link-migration.yml  
   First run with apply=false and blank confirmation for read-only dry-run. Only after the dry-run passes and Neon staging is reachable, apply=true with confirmation APPLY_V2_FEATURE_LINK_MIGRATION_TO_STAGING.
 - **Backfill seven V2 PIT feature links:** https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase5-v2-prediction-feature-link-backfill.yml  
@@ -161,5 +161,5 @@ These direct links are committed on the integration branch. They are not dispatc
 - **Settle genuinely finished shadow/V2 targets:** https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase5-5dollar-shadow-settlement.yml  
   No inputs. Use only after Neon staging is reachable and at least one target is due; the runner itself requires provider FINISHED status and exact identity.
 
-Neon currently returns HTTP 402 for staging. Do not run the migration, link backfill or settlement workflow while that condition persists. No upgrade is authorized.
+Neon currently returns HTTP 402 for staging. Do not run the migration, link backfill or settlement workflow while that condition persists. No upgrade is authorized. The status-only workflow does not use Neon and has already completed.
 
