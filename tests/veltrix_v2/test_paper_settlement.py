@@ -150,6 +150,12 @@ def ledger_with_observed_prediction():
 def test_observed_shadow_settlement_uses_collector_first_seen_not_provider_proxy():
     ledger = ledger_with_observed_prediction()
     fixture = source_fixture()
+    fixture = replace(
+        fixture,
+        available_at_utc=fixture.retrieved_at_utc,
+        availability_basis="collector_first_observed_v1",
+        point_in_time_certifiable=False,
+    )
     event = settle_from_verified_fixture(
         ledger, fixture, approval(), recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
     )
