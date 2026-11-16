@@ -146,3 +146,20 @@ The collector now checks quota headroom on every provider page and verifies the 
 - The collector now enforces quota headroom after each provider page, then verifies the full ledger and each appended settlement event hash from a fresh PostgreSQL connection after the write transaction commits.
 - The public scorecard omits row-level fixture IDs and quarantine details. It records the settled count, quarantined count, ledger chain status, post-commit status and prospective metrics. Value betting remains locked.
 - The current target window is 18–21 November 2026. Before a target kickoff, the workflow exits as `NO_ELIGIBLE_FINISHED_TARGETS` without provider calls or settlement writes.
+
+
+## Branch-only manual workflow references
+
+These direct links are committed on the integration branch. They are not dispatchable from the Actions UI until their workflow files exist on the default branch. Do not merge PR #120 solely to expose them.
+
+- **5Dollar entitlement, status only:** https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase2-5dollar-status-only-entitlement.yml  
+  No inputs. One authenticated GET /v1/status only; no odds-history call. Expected artifact: veltrix-5dollar-status-only-<run-id>.
+- **Apply staging migration 0012:** https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase5-v2-prediction-feature-link-migration.yml  
+  First run with apply=false and blank confirmation for read-only dry-run. Only after the dry-run passes and Neon staging is reachable, apply=true with confirmation APPLY_V2_FEATURE_LINK_MIGRATION_TO_STAGING.
+- **Backfill seven V2 PIT feature links:** https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase5-v2-prediction-feature-link-backfill.yml  
+  First run with apply=false and blank confirmation. Only after migration 0012 is applied and dry-run reports seven exact links, apply=true with confirmation LINK_V2_FORECASTS_TO_PIT_FEATURE_EVIDENCE.
+- **Settle genuinely finished shadow/V2 targets:** https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase5-5dollar-shadow-settlement.yml  
+  No inputs. Use only after Neon staging is reachable and at least one target is due; the runner itself requires provider FINISHED status and exact identity.
+
+Neon currently returns HTTP 402 for staging. Do not run the migration, link backfill or settlement workflow while that condition persists. No upgrade is authorized.
+
