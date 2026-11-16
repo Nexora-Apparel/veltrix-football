@@ -60,6 +60,8 @@ def _load_artifacts(forecast_path: str | Path, admission_path: str | Path) -> tu
         or forecast.get("model_artifact_sha256") != EXPECTED_MODEL_ARTIFACT_SHA256
         or forecast.get("forecasts_generated") != 7
         or forecast.get("ledger_events_appended") != 7
+        or forecast.get("ledger_chain_verified") is not True
+        or forecast.get("fresh_connection_post_commit_verified") is not True
         or forecast.get("certification") != "NOT_CERTIFIED"
         or forecast.get("commercial_use_allowed") is not False
         or forecast.get("monetisation_prohibited") is not True
@@ -187,7 +189,7 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
                                      OR source_published_at >= %s OR retrieved_at >= %s)
             FROM feature_snapshot_links WHERE feature_snapshot_id=%s
             """,
-            (item["forecast_cutoff_at"],item["forecast_cutoff_at"],item["feature_snapshot_id"]),
+            (_aware(item["forecast_cutoff_at"]),_aware(item["forecast_cutoff_at"]),item["feature_snapshot_id"]),
         ).fetchone()
         if (
             int(link_counts[0])!=item["feature_count"]
