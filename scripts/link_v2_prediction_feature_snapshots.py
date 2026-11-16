@@ -58,6 +58,9 @@ def _load_artifacts(forecast_path: str | Path, admission_path: str | Path) -> tu
         or forecast.get("model_artifact_sha256") != EXPECTED_MODEL_ARTIFACT_SHA256
         or forecast.get("forecasts_generated") != 7
         or forecast.get("ledger_events_appended") != 7
+        or forecast.get("certification") != "NOT_CERTIFIED"
+        or forecast.get("commercial_use_allowed") is not False
+        or forecast.get("monetisation_prohibited") is not True
         or forecast.get("publication") is not False
         or forecast.get("telegram_delivery") is not False
         or forecast.get("schedule_activation") is not False
@@ -67,8 +70,14 @@ def _load_artifacts(forecast_path: str | Path, admission_path: str | Path) -> tu
     if (
         admission.get("status") != "PASS_OPENPLAY_PIT_FEATURE_SNAPSHOT_ADMISSION"
         or admission.get("eligible_target_snapshots") != 7
+        or admission.get("provider") != "OpenPlay / WhoScored / Opta"
         or admission.get("fresh_connection_post_commit_verified") is not True
         or admission.get("predictions_generated") is not False
+        or admission.get("commercial_use_allowed") is not False
+        or admission.get("monetisation_prohibited") is not True
+        or admission.get("publication") is not False
+        or admission.get("telegram_delivery") is not False
+        or len(admission.get("skipped_targets",[])) != 18
     ):
         raise ValueError("V2_FEATURE_ADMISSION_ARTIFACT_CONTRACT_INVALID")
     if len(forecast.get("forecasts",[])) != 7 or len(admission.get("snapshots",[])) != 7:
