@@ -715,6 +715,7 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
         "odds_request_count":1,
         "provider":"the_odds_api",
         "sport_key":sport_key,
+        "competition":fixture["competition"],
         "fixture_id":fixture["fixture_id"],
         "provider_event_id":event["id"],
         "home_team":fixture["home"],
@@ -764,7 +765,7 @@ def main() -> int:
         print(json.dumps({
             "mode":"DRY_RUN",
             "provider":PROVIDER,
-            "sport_key":SPORT,
+            "approved_sport_keys":list(APPROVED_SPORTS),
             "markets":list(MARKETS),
             "region":REGION,
             "max_credits":MAX_CREDITS,
