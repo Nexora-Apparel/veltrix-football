@@ -47,6 +47,19 @@ def test_complete_schema_migration_chain_on_clean_postgres16_plus(monkeypatch):
                 "SELECT to_regclass('public.odds_quote_observations') IS NOT NULL"
             ).fetchone()[0]
             assert connection.execute(
+                "SELECT to_regclass('public.prediction_feature_snapshot_links') IS NOT NULL"
+            ).fetchone()[0]
+            assert connection.execute(
+                """
+                SELECT COUNT(*) FROM pg_trigger
+                WHERE tgrelid='public.prediction_feature_snapshot_links'::regclass
+                  AND NOT tgisinternal
+                """
+            ).fetchone()[0] == 3
+            assert connection.execute(
+                "SELECT COUNT(*) FROM prediction_feature_snapshot_links"
+            ).fetchone()[0] == 0
+            assert connection.execute(
                 """SELECT COUNT(*) FROM pg_trigger
                    WHERE tgrelid='public.odds_quote_observations'::regclass
                      AND NOT tgisinternal"""
