@@ -971,7 +971,7 @@ PR #120 remains OPEN / DRAFT / UNMERGED at the latest verified head before this 
 
 ## Dispatchability correction — manual workflows remain branch-only
 
-The status-only 5Dollar workflow, migration 0012 workflow, V2 feature-link backfill workflow and V2 settlement workflow currently exist only on PR #120's integration branch. GitHub Actions requires a workflow_dispatch file to exist on the repository default branch before its UI can dispatch it. PR #120 remains draft/unmerged, so the direct workflow URLs are prepared references, not currently runnable UI actions. Do not merge the PR solely to expose these workflows. Do not substitute the older multi-endpoint 5Dollar entitlement workflow for the isolated status-only check. Live Ultra verification, staging migration/backfill and live settlement remain blocked pending an authorized promotion path and Neon quota recovery.
+The status-only 5Dollar workflow exists only on PR #120's integration branch, but it now has a narrowly scoped push trigger guarded by the [status-check] commit marker. It was executed successfully via run 43816256678 without merging the PR. The migration 0012, V2 feature-link backfill and V2 settlement workflows also exist only on the integration branch; their manual workflow_dispatch UI is not available until they exist on the default branch, and no push-marker execution is attempted while Neon staging returns 402. PR #120 remains draft/unmerged. Do not merge solely to expose those workflows. Do not substitute the older multi-endpoint 5Dollar entitlement workflow for the isolated status-only check.
 
 
 
