@@ -1,0 +1,87 @@
+name: VELTRIX Phase 5 — V2 Prediction Feature Evidence Link Migration
+
+on:
+  push:
+    branches:
+      - integration/v2-report-bundle-wiring-20261114
+    paths:
+      - ".github/workflows/phase5-v2-prediction-feature-link-migration.yml"
+      - "db/migrations/0012_prediction_feature_snapshot_links.sql"
+      - "scripts/phase5_prediction_feature_link_migration.py"
+      - "tests/test_phase5_prediction_feature_link_migration.py"
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply migration 0012 to the allowlisted Neon staging database"
+        required: true
+        default: false
+        type: boolean
+      confirmation:
+        description: "Type APPLY_V2_FEATURE_LINK_MIGRATION_TO_STAGING when apply is true"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-v2-prediction-feature-link-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    if: >
+      (github.event_name == 'push' &&
+       contains(github.event.head_commit.message, '[v2-evidence-link-migration]')) ||
+      (github.event_name == 'workflow_dispatch' &&
+       inputs.apply == true &&
+       inputs.confirmation == 'APPLY_V2_FEATURE_LINK_MIGRATION_TO_STAGING')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+      VELTRIX_EXPECTED_DATABASE: veltrix_football_staging
+      VELTRIX_EXPECTED_DATABASE_HOST: ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech
+      VELTRIX_EXPECTED_DATABASE_ROLE: neondb_owner
+      VELTRIX_ENABLE_PHASE5_PREDICTION_FEATURE_LINK_MIGRATION: "YES"
+    steps:
+      - name: Checkout integration branch
+        uses: actions/checkout@v4
+        with:
+          ref: integration/v2-report-bundle-wiring-20261114
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install migration dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "psycopg[binary]>=3.2,<4"
+
+      - name: Compile and test migration guards
+        run: |
+          python -m compileall -q scripts/phase5_prediction_feature_link_migration.py tests/test_phase5_prediction_feature_link_migration.py
+          python -m pytest --import-mode=importlib -q tests/test_phase5_prediction_feature_link_migration.py
+
+      - name: Verify exact staging target and pending migration (read-only)
+        run: |
+          python -m scripts.phase5_prediction_feature_link_migration > /tmp/v2-feature-link-dry-run.json
+          python -c 'import json; d=json.load(open("/tmp/v2-feature-link-dry-run.json")); assert d["status"] == "DRY_RUN_READY" and d["database"] == "veltrix_football_staging" and d["user"] == "neondb_owner" and d["pending"] == ["0012_prediction_feature_snapshot_links"] and d["writes_performed"] is False'
+
+      - name: Apply migration 0012 and verify staging preservation
+        run: |
+          mkdir -p artifacts/v2-prediction-feature-link-migration
+          python -m scripts.phase5_prediction_feature_link_migration --apply > artifacts/v2-prediction-feature-link-migration/summary.json
+          python -c 'import json; d=json.load(open("artifacts/v2-prediction-feature-link-migration/summary.json")); assert d["status"] == "APPLIED_AND_VERIFIED" and d["applied_now"] == 1 and d["verification"]["prediction_feature_snapshot_links"] == 0'
+
+      - name: Upload migration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-v2-prediction-feature-link-migration-${{ github.run_id }}
+          path: artifacts/v2-prediction-feature-link-migration/summary.json
+          if-no-files-found: warn
+          retention-days: 30
