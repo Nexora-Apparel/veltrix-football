@@ -21,7 +21,7 @@ EXPECTED_MODEL = "veltrix-openplay-xg-poisson-v1"
 EXPECTED_ARTIFACT_RUN_ID = 43775129579
 EXPECTED_MODEL_ARTIFACT_SHA256 = "0332c6537e44c189653b4ff74b816beed3c5ab484ee9b205e261c149fef51eda"
 EXPECTED_FORECAST_SUMMARY_SHA256 = "dc9ad20a8fac7bfb6bf480131f0bad3044be83215c5350ef72b789073884aeb6"
-EXPECTED_FEATURE_ADMISSION_SUMMARY_SHA256 = "221cc9a6a2d9d9a2e9d2d2e5e5a5c1a8b4a6d0c9e3f2d1a0b9c8d7e6f5a4b3c2"
+EXPECTED_FEATURE_ADMISSION_SUMMARY_SHA256 = "221cc91126182d35cda147c40517258d2199fce0a1353aed495c7054c0834ac7"
 
 
 def _sha256(raw: bytes) -> str:
@@ -98,6 +98,8 @@ def _prepare_links(forecast: dict, admission: dict, forecast_sha: str, admission
         if snapshot_cutoff > forecast_cutoff:
             raise ValueError("V2_FEATURE_SNAPSHOT_AFTER_FORECAST_CUTOFF")
         payload={
+            "provider_fixture_id":provider_fixture_id,
+            "feature_count":int(snapshot["feature_count"]),
             "feature_snapshot_id":int(snapshot["feature_snapshot_id"]),
             "feature_set_sha256":snapshot["feature_set_sha256"],
             "eligibility_evidence_sha256":snapshot["eligibility_evidence_sha256"],
@@ -144,11 +146,9 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
         if (
             event is None or event[3]!="PREDICTION" or event[4]!=EXPECTED_MODEL
             or str(event[6])!=item["forecast_evidence_sha256"]
-            or str(event[5])!=f"5dollarfootballapi:{item.get('provider_fixture_id','')}"
+            or str(event[5])!=f"5dollarfootballapi:{item['provider_fixture_id']}"
         ):
-            # The provider fixture identity is verified below from the forecast artifact.
-            if event is None or event[3]!="PREDICTION" or event[4]!=EXPECTED_MODEL or str(event[6])!=item["forecast_evidence_sha256"]:
-                raise ValueError("V2_PAPER_LEDGER_EVENT_EVIDENCE_MISMATCH")
+            raise ValueError("V2_PAPER_LEDGER_EVENT_EVIDENCE_MISMATCH")
         snapshot=conn.execute(
             """
             SELECT fs.fixture_id,fs.feature_set_sha256,fs.prediction_cutoff_at,fs.created_at,
@@ -168,6 +168,21 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
             or snapshot[3] > _aware(item["forecast_cutoff_at"])
         ):
             raise ValueError("V2_FEATURE_SNAPSHOT_CUTOFF_OR_HASH_MISMATCH")
+        link_counts=conn.execute(
+            """
+            SELECT COUNT(*),COUNT(*) FILTER (WHERE feature_status='PRESENT'),
+                   COUNT(*) FILTER (WHERE source_published_at IS NULL OR retrieved_at IS NULL
+                                     OR rights_approval_id IS NULL)
+            FROM feature_snapshot_links WHERE feature_snapshot_id=%s
+            """,
+            (item["feature_snapshot_id"],),
+        ).fetchone()
+        if (
+            int(link_counts[0])!=item["feature_count"]
+            or int(link_counts[1])!=item["feature_count"]
+            or int(link_counts[2])!=0
+        ):
+            raise ValueError("V2_FEATURE_SNAPSHOT_LINK_ROWS_INCOMPLETE")
         eligibility=conn.execute(
             """
             SELECT eligibility_event_id,eligibility_status,evidence_sha256,recorded_at
