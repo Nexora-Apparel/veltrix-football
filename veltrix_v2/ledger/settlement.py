@@ -43,6 +43,70 @@ def settle_from_verified_fixture(
     if len(predictions) != 1:
         raise ValueError("PAPER_SETTLEMENT_PREDICTION_NOT_UNIQUE")
     prediction = predictions[0]
+    is_v2_pit_prediction = (
+        prediction.event_type == "PREDICTION"
+        and prediction.model_version == V2_PIT_MODEL_VERSION
+    )
+    feature_link_fields = {}
+    if is_v2_pit_prediction:
+        if prediction_feature_link is None:
+            raise ValueError("SETTLEMENT_V2_FEATURE_EVIDENCE_LINK_REQUIRED")
+        required_link_fields = (
+            "link_sha256","prediction_event_sha256","feature_snapshot_id",
+            "eligibility_event_id","feature_set_sha256","eligibility_evidence_sha256",
+            "forecast_evidence_sha256","model_artifact_sha256",
+            "forecast_cutoff_at","feature_snapshot_cutoff_at","recorded_at",
+        )
+        if any(field not in prediction_feature_link for field in required_link_fields):
+            raise ValueError("SETTLEMENT_V2_FEATURE_EVIDENCE_LINK_INCOMPLETE")
+        if (
+            prediction_feature_link["prediction_event_sha256"] != prediction.event_sha256
+            or prediction_feature_link["forecast_evidence_sha256"] != prediction.payload.get("evidence_sha256")
+            or prediction.payload.get("evidence_class") != "PIT_CERTIFIED"
+        ):
+            raise ValueError("SETTLEMENT_V2_FEATURE_EVIDENCE_LINK_IDENTITY_MISMATCH")
+        for field in (
+            "link_sha256","feature_set_sha256","eligibility_evidence_sha256",
+            "forecast_evidence_sha256","model_artifact_sha256",
+        ):
+            value=prediction_feature_link[field]
+            if not isinstance(value,str) or len(value)!=64 or any(ch not in "0123456789abcdef" for ch in value):
+                raise ValueError("SETTLEMENT_V2_FEATURE_EVIDENCE_HASH_INVALID")
+        for field in ("feature_snapshot_id","eligibility_event_id"):
+            value=prediction_feature_link[field]
+            if not isinstance(value,int) or isinstance(value,bool) or value<=0:
+                raise ValueError("SETTLEMENT_V2_FEATURE_EVIDENCE_ID_INVALID")
+        feature_cutoff=prediction_feature_link["feature_snapshot_cutoff_at"]
+        forecast_cutoff=prediction_feature_link["forecast_cutoff_at"]
+        link_recorded=prediction_feature_link["recorded_at"]
+        if isinstance(feature_cutoff,str):
+            feature_cutoff=datetime.fromisoformat(feature_cutoff)
+        if isinstance(forecast_cutoff,str):
+            forecast_cutoff=datetime.fromisoformat(forecast_cutoff)
+        if isinstance(link_recorded,str):
+            link_recorded=datetime.fromisoformat(link_recorded)
+        prediction_recorded=datetime.fromisoformat(prediction.recorded_at)
+        if (
+            feature_cutoff.tzinfo is None or forecast_cutoff.tzinfo is None
+            or link_recorded.tzinfo is None
+            or feature_cutoff > forecast_cutoff
+            or forecast_cutoff > prediction_recorded
+            or link_recorded < prediction_recorded
+            or link_recorded > recorded_at
+        ):
+            raise ValueError("SETTLEMENT_V2_FEATURE_EVIDENCE_CLOCK_INVALID")
+        feature_link_fields={
+            "prediction_feature_link_sha256":prediction_feature_link["link_sha256"],
+            "feature_snapshot_id":prediction_feature_link["feature_snapshot_id"],
+            "eligibility_event_id":prediction_feature_link["eligibility_event_id"],
+            "feature_set_sha256":prediction_feature_link["feature_set_sha256"],
+            "eligibility_evidence_sha256":prediction_feature_link["eligibility_evidence_sha256"],
+            "forecast_evidence_sha256":prediction_feature_link["forecast_evidence_sha256"],
+            "model_artifact_sha256":prediction_feature_link["model_artifact_sha256"],
+        }
+    elif prediction_feature_link is not None:
+        raise ValueError("SETTLEMENT_FEATURE_EVIDENCE_LINK_ONLY_FOR_V2_PREDICTION")
+
     observed_only = prediction.payload.get("evidence_class") == "PROSPECTIVE_OBSERVED_ONLY"
     if observed_only:
         if fixture.available_at_utc is None:
