@@ -357,6 +357,8 @@ def link(*, forecast_path: str | Path, admission_path: str | Path, apply: bool=F
             row=verify.execute(
                 """
                 SELECT link_sha256,feature_snapshot_id,eligibility_event_id,
+                       canonical_competition_id,canonical_home_team_id,canonical_away_team_id,
+                       provider_competition_id,provider_home_team_id,provider_away_team_id,
                        prediction_event_sha256,feature_set_sha256
                 FROM prediction_feature_snapshot_links
                 WHERE ledger_id=%s AND prediction_sequence=%s
