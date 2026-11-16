@@ -20,6 +20,9 @@ EXPECTED_DATABASE = "veltrix_football_staging"
 EXPECTED_ROLE = "neondb_owner"
 EXPECTED_HOST = "ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech"
 EXPECTED_MODEL = "veltrix-openplay-xg-poisson-v1"
+EXPECTED_OPENPLAY_RIGHTS_APPROVAL_ID = "approval-openplay-whoscored-opta-noncommercial-2026-11-15"
+EXPECTED_OPENPLAY_PROVIDER = "OpenPlay / WhoScored / Opta"
+EXPECTED_OPENPLAY_SOURCE_ID = "openplay-data-v0.1.0"
 EXPECTED_ARTIFACT_RUN_ID = 43775129579
 EXPECTED_MODEL_ARTIFACT_SHA256 = "0332c6537e44c189653b4ff74b816beed3c5ab484ee9b205e261c149fef51eda"
 EXPECTED_FORECAST_SUMMARY_SHA256 = "dc9ad20a8fac7bfb6bf480131f0bad3044be83215c5350ef72b789073884aeb6"
@@ -192,13 +195,45 @@ def _resolve_links(conn, prepared: list[dict]) -> list[dict]:
             raise ValueError("V2_FEATURE_SNAPSHOT_CUTOFF_OR_HASH_MISMATCH")
         link_counts=conn.execute(
             """
-            SELECT COUNT(*),COUNT(*) FILTER (WHERE feature_status='PRESENT'),
-                   COUNT(*) FILTER (WHERE source_published_at IS NULL OR retrieved_at IS NULL
-                                     OR rights_approval_id IS NULL
-                                     OR source_published_at >= %s OR retrieved_at >= %s)
-            FROM feature_snapshot_links WHERE feature_snapshot_id=%s
+            SELECT COUNT(*),
+                   COUNT(*) FILTER (WHERE fsl.feature_status='PRESENT'),
+                   COUNT(*) FILTER (
+                       WHERE fsl.feature_status <> 'PRESENT'
+                          OR fsl.source_published_at IS NULL
+                          OR fsl.retrieved_at IS NULL
+                          OR fsl.rights_approval_id IS DISTINCT FROM %s
+                          OR so.id IS NULL
+                          OR so.provider IS DISTINCT FROM %s
+                          OR so.source_id IS DISTINCT FROM %s
+                          OR so.point_in_time_certifiable IS DISTINCT FROM TRUE
+                          OR so.source_timestamp_basis IS DISTINCT FROM 'documented_guarantee'
+                          OR so.rights_approval_id IS DISTINCT FROM %s
+                          OR so.source_published_at IS NULL
+                          OR so.available_at IS NULL
+                          OR so.recorded_at IS NULL
+                          OR so.source_published_at >= %s
+                          OR so.available_at >= %s
+                          OR so.recorded_at >= %s
+                          OR fsl.source_published_at >= %s
+                          OR fsl.retrieved_at >= %s
+                          OR fsl.crosswalk_version_id IS NULL
+                   )
+            FROM feature_snapshot_links fsl
+            LEFT JOIN source_observations so ON so.id=fsl.source_observation_id
+            WHERE fsl.feature_snapshot_id=%s
             """,
-            (_aware(item["forecast_cutoff_at"]),_aware(item["forecast_cutoff_at"]),item["feature_snapshot_id"]),
+            (
+                EXPECTED_OPENPLAY_RIGHTS_APPROVAL_ID,
+                EXPECTED_OPENPLAY_PROVIDER,
+                EXPECTED_OPENPLAY_SOURCE_ID,
+                EXPECTED_OPENPLAY_RIGHTS_APPROVAL_ID,
+                _aware(item["forecast_cutoff_at"]),
+                _aware(item["forecast_cutoff_at"]),
+                _aware(item["forecast_cutoff_at"]),
+                _aware(item["forecast_cutoff_at"]),
+                _aware(item["forecast_cutoff_at"]),
+                item["feature_snapshot_id"],
+            ),
         ).fetchone()
         if (
             int(link_counts[0])!=item["feature_count"]
