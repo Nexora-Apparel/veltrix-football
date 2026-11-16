@@ -501,29 +501,47 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
         response_id=response_id,
     )
 
+    # Reconcile the single provider request before parsing or quote admission.
+    actual_credits = reconcile_quota(
+        _sports_envelope_from_account(account, envelope),
+        envelope,
+        max_credits=MAX_CREDITS,
+    )
+
     # Validate response identity before any normalized quote persistence.
     event_payload = payload if isinstance(payload, dict) else None
+    try:
+        response_kickoff = _utc(str(event_payload.get("commence_time"))) if event_payload else None
+    except ValueError:
+        response_kickoff = None
     identity_valid = bool(
         event_payload
         and event_payload.get("id") == event["id"]
         and _normalize_team(str(event_payload.get("home_team",""))) == _normalize_team(fixture["home"])
         and _normalize_team(str(event_payload.get("away_team",""))) == _normalize_team(fixture["away"])
-        and abs((_utc(str(event_payload.get("commence_time"))) - kickoff).total_seconds()) <= 60
+        and response_kickoff is not None
+        and abs((response_kickoff - kickoff).total_seconds()) <= 60
     )
     if not identity_valid:
+        now = datetime.now(timezone.utc)
         _append_state_chain(store,capture_request_id,request_id,[
             ("PREFLIGHT_APPROVED",created_at,"RIGHTS_QUOTA_AND_EXACT_EVENT_PREFLIGHT",manifest.manifest_sha256),
             ("CREDIT_RESERVED",requested_at,"THREE_CREDIT_ONE_REQUEST_LOCAL_GUARD",manifest.manifest_sha256),
             ("REQUEST_STARTED",requested_at,"SINGLE_EVENT_ODDS_REQUEST_DISPATCHED",manifest.request_fingerprint),
             ("RESPONSE_RECEIVED",retrieved_at,"HTTP_200_RAW_RESPONSE_PERSISTED",response.response_sha256),
             ("PARSE_REJECTED",retrieved_at,"ODDS_RESPONSE_EVENT_IDENTITY_MISMATCH",response.response_sha256),
+            ("QUOTA_RECONCILED",retrieved_at,"PROVIDER_QUOTA_COUNTERS_MATCHED_EXACTLY",response.response_sha256),
+            ("COMMITTED",now,"INVALID_EVENT_RESPONSE_RETAINED_WITHOUT_QUOTES",response.response_sha256),
         ])
         return {
             "status":"PARSE_REJECTED_EVENT_IDENTITY_MISMATCH",
             "odds_request_dispatched":True,
+            "actual_credits":actual_credits,
+            "quota_remaining":envelope.quota_evidence.requests_remaining,
             "response_sha256":response.response_sha256,
             "provider_response_id":response_id,
             "capture_request_id":capture_request_id,
+            "quotes_persisted":0,
         }
 
     parsed = parse_event_odds(raw_body,sport_key=SPORT,event_id=event["id"],retrieved_at=retrieved_at)
@@ -538,11 +556,6 @@ def run_probe(*, api_key: str, staging_dsn: str, run_id: str) -> dict[str, objec
     from dataclasses import replace
     parsed_eligible = replace(parsed,observations=timestamped)
 
-    actual_credits = reconcile_quota(
-        _sports_envelope_from_account(account, envelope),
-        envelope,
-        max_credits=MAX_CREDITS,
-    )
     crosswalk_id = None
     write_result = None
     if timestamped:
